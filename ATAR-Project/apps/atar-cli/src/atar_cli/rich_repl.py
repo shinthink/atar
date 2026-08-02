@@ -170,16 +170,14 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
 
     logo = Text()
     logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
-    # Cosmike-style smooth banner
+    # ATAR stylized ASCII
     banner_lines = [
-        "    ╭─── ∘ ∘ ∘ ∘ ───╮",
-        "   ∘   █████╗ ████████╗   ∘",
-        "   ∘  ██╔══██╗╚══██╔══╝  ∘",
-        "   ·  ███████║   ██║     ·",
-        "   ·  ██╔══██║   ██║     ·",
-        "   ∘  ██║  ██║   ██║    ∘",
-        "   ∘  ╚═╝  ╚═╝   ╚═╝    ∘",
-        "    ╰─── · · · · ───╯",
+        "  :::. :::::::::::::::.    :::::::..         :::.      .,-:::::/ .,:::::::::.    :::.::::::::::::",
+        "  ;;`;;;;;;;;;;'''';;`;;   ;;;;``;;;;        ;;`;;   ,;;-'````'  ;;;;''''`;;;;,  `;;;;;;;;;;;''''",
+        " ,[[ '[[,   [[    ,[[ '[[,  [[[,/[[['       ,[[ '[[, [[[   [[[[[[/[[cccc   [[[[[. '[[     [[     ",
+        "c$$$cc$$$c  $$   c$$$cc$$$c $$$$$$c        c$$$cc$$$c\"$$c.    \"$$ $$\"\"\"\"   $$$ \"Y$c$$     $$     ",
+        " 888   888, 88,   888   888,888b \"88bo,     888   888,`Y8bo,,,o88o888oo,__ 888    Y88     88,    ",
+        " YMM   \"\"`  MMM   YMM   \"\"` MMMM   \"W\"      YMM   \"\"`   `'YMUP\"YMM\"\"\"\"YUMMMMMM     YM     MMM",
     ]
     for i, line in enumerate(banner_lines):
         style = logo_colors[min(i, len(logo_colors)-1)]
