@@ -151,48 +151,39 @@ def _switch_model(idx: int) -> str:
     return f"{name} \u2014 {model}"
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Hermes-style startup: large ATAR AGENT logo + tools/skills panel."""
+    """Cosmike-style banner + compact info panel."""
     from atar_core.theme import current_theme
     theme = current_theme()
     c = theme.colors
 
-    # Large ATAR AGENT ASCII logo (two-part like Hermes OBSIDIAN)
-    atar_logo = [
-        " █████╗ ████████╗ █████╗ ██████╗        █████╗  ██████╗ ███████╗███╗   ██╗████████╗",
-        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝",
-        "███████║   ██║   ███████║██████╔╝█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║  ",
-        "██╔══██║   ██║   ██╔══██║██╔══██╗╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║  ",
-        "██║  ██║   ██║   ██║  ██║██║  ██║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║  ",
-        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝  ",
-    ]
+    # Cosmike-style ATAR ASCII
     logo = Text()
-    for line in atar_logo:
-        logo.append(line + "\n", style=f"bold {c.primary}")
-
-    short_cwd = cwd.replace(os.path.expanduser("~"), "~")
-    if len(short_cwd) > 40:
-        short_cwd = "..." + short_cwd[-37:]
-
-    # Build info panel
-    panel_lines = []
-    panel_lines.append(f"  [bold {c.primary}]{model}[/] · [dim]{short_cwd}[/]")
-    panel_lines.append(f"  [dim]Session:[/] {session_id}")
-    panel_lines.append("")
-    panel_lines.append(f"  [bold {c.secondary}]Tools:[/] read_file write_file terminal web_search web_fetch git run_tests")
-    panel_lines.append(f"  [bold {c.secondary}]Skills:[/] [dim]coding research file-ops[/]")
-    panel_lines.append("")
-    panel_lines.append("  [dim]6 tools · 3 skills · /help for commands[/]")
-
-    panel_content = "\n".join(panel_lines)
+    banner_lines = [
+        "  :::. :::::::::::::::.    :::::::..         :::.      .,-:::::/ .,:::::::::.    :::.::::::::::::",
+        "  ;;`;;;;;;;;;;'''';;`;;   ;;;;``;;;;        ;;`;;   ,;;-'````'  ;;;;''''`;;;;,  `;;;;;;;;;;;''''",
+        " ,[[ '[[,   [[    ,[[ '[[,  [[[,/[[['       ,[[ '[[, [[[   [[[[[[/[[cccc   [[[[[. '[[     [[     ",
+        "c$$$cc$$$c  $$   c$$$cc$$$c $$$$$$c        c$$$cc$$$c\"$$c.    \"$$ $$\"\"\"\"   $$$ \"Y$c$$     $$     ",
+        " 888   888, 88,   888   888,888b \"88bo,     888   888,`Y8bo,,,o88o888oo,__ 888    Y88     88,    ",
+        " YMM   \"\"`  MMM   YMM   \"\"` MMMM   \"W\"      YMM   \"\"`   `'YMUP\"YMM\"\"\"\"YUMMMMMM     YM     MMM",
+    ]
+    logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
+    for i, line in enumerate(banner_lines):
+        logo.append(line + "\n", style=f"bold {logo_colors[min(i, len(logo_colors)-1)]}")
+    logo.append("Clarity in Complexity.\n\n", style=f"italic {c.primary}")
     console.print(logo)
 
-    console.print(Panel(
-        Text.from_markup(panel_content),
-        border_style=c.dim_border,
-        padding=(1, 2),
-    ))
-    console.print()
+    short_cwd = cwd.replace(os.path.expanduser("~"), "~")
+    if len(short_cwd) > 35:
+        short_cwd = "..." + short_cwd[-32:]
 
+    # Compact right-aligned info (like Hermes)
+    lines = [
+        f"[bold {c.primary}]{model}[/]  [dim]\u00b7  {short_cwd}[/]",
+        f"[dim]session  {session_id[:8]}[/]  [dim]\u00b7  6 tools \u00b7 3 skills \u00b7 /help[/]",
+    ]
+    for line in lines:
+        console.print(Text.from_markup(f"  {line}"))
+    console.print(Rule(style=c.dim_border))
 
 # ── Runtime stats for status bar ──
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat", "last_response": None}
@@ -358,6 +349,7 @@ def run_repl() -> None:
         console.print(Panel(
             Markdown(response_text),
             title="ATAR", border_style=c.border, padding=(1, 2),
+            width=min(_TERM_WIDTH - 4, 100),
         ))
         console.print(Rule(style=c.dim_border))
 
