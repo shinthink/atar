@@ -43,10 +43,14 @@ MODELS = [
 ]
 
 BASE_PROMPT = (
-    "You are ATAR, a precise AI assistant. Respond naturally to questions. "
-    "Only propose bash commands when the user explicitly asks you to create files, "
-    "run programs, or make system changes. When you do, wrap the command in ```bash. "
-    "For normal conversation, just answer directly. Be helpful and concise."
+    "You are ATAR. You have tools: web_search, web_fetch, read_file, write_file, terminal.\n"
+    "RULES:\n"
+    "- For ANY research/reference/lookup request, you MUST call web_search first.\n"
+    "- Never say 'I will search' — just call the tool.\n"
+    "- Never fabricate URLs, citations, or facts without tool results.\n"
+    "- After search, use web_fetch to read top results.\n"
+    "- For simple greetings, respond directly without tools.\n"
+    "Be concise. Use Indonesian if the user speaks Indonesian."
 )
 
 
@@ -80,7 +84,7 @@ def _create_provider() -> tuple:
         return None, model, None
 
     provider = DeepSeekProvider(api_key=key, model=model)
-    agent = Agent(provider=provider, max_turns=1)
+    agent = Agent(provider=provider, max_turns=5, tools=[1])  # enable tool loop
     agent.system_prompt = BASE_PROMPT
     return provider, model, agent
 
@@ -130,6 +134,10 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
 
 
 def run_repl() -> None:
+    import atar_tools.tools.file  # noqa: F401
+    import atar_tools.tools.terminal  # noqa: F401
+    import atar_tools.tools.web  # noqa: F401
+    import atar_tools.tools.web_search  # noqa: F401
     from atar_core.agent import Agent, StreamCallbacks
     from atar_models.tools import ToolContext
     from atar_tools.registry import execute as tool_execute
