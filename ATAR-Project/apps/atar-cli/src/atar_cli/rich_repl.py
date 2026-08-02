@@ -111,10 +111,12 @@ MODELS = [
 
 BASE_PROMPT = (
     "You are ATAR, an autonomous agent with tools: web_search, web_fetch, read_file, write_file, terminal.\n"
+    "Platform: Linux. Shell: bash.\n"
     "CRITICAL:\n"
     "- For research — call web_search IMMEDIATELY. No explanations first.\n"
     "- For coding — call write_file IMMEDIATELY. Never say 'Saya akan buat' or 'let me'. Just act.\n"
     "- For simple chat/greetings — respond directly.\n"
+    "- Use Linux commands (xdg-open, rm, ls, grep, etc). Never suggest open/start.\n"
     "- Never prefix your response with 'I will' or 'Saya akan'. Just use the tool.\n"
     "- Be concise. One-sentence answers preferred.\n"
     "- Use Indonesian if the user speaks Indonesian."
@@ -145,7 +147,7 @@ def _create_provider():
         first = router.providers[0]
         model = getattr(first, "model", "deepseek-chat")
         agent = Agent(provider=router, max_turns=8, tools=[1])
-        agent.system_prompt = BASE_PROMPT
+        agent.system_prompt = BASE_PROMPT.replace("Platform: Linux", f"Platform: Linux. CWD: {os.getcwd()}")
         return router, model, agent
     except RuntimeError as e:
         console.print(f"[red]{e}[/]")
