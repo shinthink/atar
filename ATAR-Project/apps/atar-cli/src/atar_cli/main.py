@@ -24,20 +24,30 @@ def default() -> None:
     print("ATAR Agent — Clarity in Complexity.")
     print("Type /quit to exit, /clear to reset.\n")
 
-    try:
+    p = get_provider()
+    agent = Agent(provider=p, max_turns=1)
+
+    async def _run() -> None:
+        nonlocal agent
         while True:
-            user = input("> ")
+            try:
+                user = input("> ")
+            except (EOFError, KeyboardInterrupt):
+                print("\nAtaraxic.")
+                break
             if not user.strip():
                 continue
             if user.strip() in ("/quit", "/exit", "/q"):
                 print("Ataraxic.")
                 break
             if user.strip() in ("/clear", "/reset"):
+                agent = Agent(provider=p, max_turns=1)
                 print("[Cleared]")
                 continue
 
+            agent.state.force("idle")
+
             async def _chat(text: str = user) -> None:
-                a = Agent(provider=get_provider(), max_turns=1)
                 printed = False
 
                 async def delta(t: str) -> None:
@@ -45,16 +55,16 @@ def default() -> None:
                     printed = True
                     print(t, end="", flush=True)
 
-                result = await a.run(text, StreamCallbacks(on_delta=delta))
+                result = await agent.run(text, StreamCallbacks(on_delta=delta))
                 print()
                 if not printed and result and result.text:
                     print(result.text)
                 elif not printed:
                     print("[No response — check API key or connection]")
 
-            asyncio.run(_chat())
-    except (KeyboardInterrupt, EOFError):
-        print("\nAtaraxic.")
+            await _chat()
+
+    asyncio.run(_run())
 sessions = SessionManager()
 memory = MemoryEngine()
 skills = SkillRegistry()
