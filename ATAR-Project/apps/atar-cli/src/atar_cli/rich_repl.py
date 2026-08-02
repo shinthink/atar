@@ -151,7 +151,7 @@ def _switch_model(idx: int) -> str:
     return f"{name} \u2014 {model}"
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Cosmike-style banner + compact info panel."""
+    """Hermes-style detailed startup banner."""
     from atar_core.theme import current_theme
     theme = current_theme()
     c = theme.colors
@@ -169,21 +169,36 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
     for i, line in enumerate(banner_lines):
         logo.append(line + "\n", style=f"bold {logo_colors[min(i, len(logo_colors)-1)]}")
-    logo.append("Clarity in Complexity.\n\n", style=f"italic {c.primary}")
+    logo.append("Clarity in Complexity.\n", style=f"italic {c.primary}")
     console.print(logo)
 
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
-    if len(short_cwd) > 35:
-        short_cwd = "..." + short_cwd[-32:]
+    if len(short_cwd) > 50:
+        short_cwd = "..." + short_cwd[-47:]
 
-    # Compact right-aligned info (like Hermes)
-    lines = [
-        f"[bold {c.primary}]{model}[/]  [dim]\u00b7  {short_cwd}[/]",
-        f"[dim]session  {session_id[:8]}[/]  [dim]\u00b7  6 tools \u00b7 3 skills \u00b7 /help[/]",
-    ]
-    for line in lines:
-        console.print(Text.from_markup(f"  {line}"))
-    console.print(Rule(style=c.dim_border))
+    # Build detailed info panel
+    info = []
+    info.append(f"[bold {c.primary}]{model}[/] · [dim]{short_cwd}[/]")
+    info.append(f"[dim]Session: {session_id[:12]}[/]")
+    info.append("")
+    info.append(f"[bold {c.secondary}]Available Tools[/]")
+    info.append("  [dim]read_file  write_file  terminal  web_search  web_fetch  git  run_tests[/]")
+    info.append("  [dim]patch  search_files  browser  execute_code  cronjob  delegate_task[/]")
+    info.append("")
+    info.append(f"[bold {c.secondary}]Skills[/]")
+    info.append("  [dim]coding  research  file-ops  planning  multi-agent  memory  security[/]")
+    info.append("")
+    info.append("[dim]7 tools · 7 skills · /help for commands · ATAR v0.6.0[/]")
+    info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
+
+    panel_text = "\n".join(info)
+    console.print(Panel(
+        Text.from_markup(panel_text),
+        border_style=c.dim_border,
+        padding=(1, 2),
+        width=min(_TERM_WIDTH - 4, 90),
+    ))
+    console.print()
 
 # ── Runtime stats for status bar ──
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat", "last_response": None}
