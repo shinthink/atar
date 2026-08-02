@@ -6,10 +6,12 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import uuid
 from contextlib import suppress
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
@@ -19,20 +21,48 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.text import Text
 
-console = Console()
+# ── Terminal capabilities ──
+_HAS_COLOR = os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
+_TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
+
+console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH)
 
 # ── Keybindings ──
 bindings = KeyBindings()
+
 
 @bindings.add("escape", "enter")
 def _(event):
     """Alt+Enter: insert newline."""
     event.current_buffer.insert_text("\n")
 
+
 @bindings.add("c-c")
 def _(event):
-    """Ctrl+C: set flag for interrupt, don't kill process."""
-    event.app.current_buffer.text = ""
+    """Ctrl+C: clear buffer for interrupt."""
+    event.current_buffer.text = ""
+
+
+# ── Paste handler — preview large pastes ──
+_paste_buffer = ""
+
+
+@bindings.add("c-v")
+def _(event):
+    """Ctrl+V: bracketed paste with preview for large content."""
+    data = event.app.clipboard.get_data()
+    if isinstance(data, ClipboardData):
+        text = data.text
+    else:
+        text = str(data)
+    if len(text) > 500:
+        lines = text.count("\n") + 1
+        preview = text[:200].replace("\n", "↵")
+        event.app.current_buffer.text = (
+            f"[pasted: {lines} lines, {len(text)} chars — Enter to send]\n{preview}..."
+        )
+    else:
+        event.current_buffer.insert_text(text)
 
 # ── Slash completions ──
 SLASH_COMMANDS = [

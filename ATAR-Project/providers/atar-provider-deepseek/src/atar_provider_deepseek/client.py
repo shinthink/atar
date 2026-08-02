@@ -47,7 +47,8 @@ class DeepSeekProvider:
     async def complete(self, request: ModelRequest) -> ModelResponse:
         client = await self._get_client()
         body = self._build_body(request, stream=False)
-        resp = await client.post(f"{self.base_url}/chat/completions", json=body)
+        timeout = min(request.timeout if hasattr(request, 'timeout') and request.timeout else 120, 300)
+        resp = await client.post(f"{self.base_url}/chat/completions", json=body, timeout=timeout)
         resp.raise_for_status()
         data = resp.json()
         choice = data["choices"][0]
