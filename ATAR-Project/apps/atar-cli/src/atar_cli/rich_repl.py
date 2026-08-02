@@ -291,11 +291,19 @@ def run_repl() -> None:
 
         async def on_tool_result(name: str, result: str) -> None:
             elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
-            cleaner = {"write_file": "Wrote", "read_file": "Read", "web_search": "Found", "web_fetch": "Fetched"}
-            verb = cleaner.get(name, "Done")
             from atar_core.theme import current_theme
             c = current_theme().colors
-            console.print(f"\r  [bold {c.success}]┊ ✓ {verb}[/] [dim]({elapsed:.1f}s)[/]")
+
+            if name == "terminal":
+                # Show command output inline
+                output = result.strip() or "(no output)"
+                lines = output.split("\n")[:10]
+                shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
+                console.print(f"\r  [bold {c.success}]┊ ✓ terminal[/] [dim]({elapsed:.1f}s)[/]\n{shown}" if shown else "")
+            else:
+                cleaner = {"write_file": "Wrote", "read_file": "Read", "web_search": "Found", "web_fetch": "Fetched"}
+                verb = cleaner.get(name, "Done")
+                console.print(f"\r  [bold {c.success}]┊ ✓ {verb}[/] [dim]({elapsed:.1f}s)[/]")
 
         console.print(Rule(style="#394B59"))
         try:
