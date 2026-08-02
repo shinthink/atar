@@ -40,12 +40,12 @@ def default() -> None:
                 print("[Cleared]")
                 continue
 
-            async def _chat(text: str = user) -> None:
+            async def _chat(text: str = user, a: Agent = agent) -> None:
 
                 async def delta(t: str) -> None:
                     print(t, end="", flush=True)
 
-                await agent.run(text, StreamCallbacks(on_delta=delta))
+                await a.run(text, StreamCallbacks(on_delta=delta))
                 print()
 
             asyncio.run(_chat())
