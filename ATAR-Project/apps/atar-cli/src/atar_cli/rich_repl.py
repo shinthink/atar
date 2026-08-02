@@ -253,8 +253,6 @@ def run_repl() -> None:
 
             await _agent_turn(user, agent)
 
-            await _agent_turn(user, agent)
-
     asyncio.run(_run())
 
 
