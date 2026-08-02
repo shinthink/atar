@@ -179,7 +179,18 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
 
 
 # ── Runtime stats for status bar ──
-_stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat"}
+_stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat", "last_response": None}
+
+
+def _context_bar(tokens: int, max_tokens: int = 128000) -> str:
+    """Draw ASCII context usage bar."""
+    if not tokens:
+        return ""
+    pct = min(tokens / max_tokens, 1.0)
+    width = 10
+    filled = int(pct * width)
+    bar = "█" * filled + "░" * (width - filled)
+    return f" {tokens//1000}K/{max_tokens//1000}K [{bar}] {pct*100:.0f}%"
 
 
 def _status_bar() -> str:
@@ -188,15 +199,19 @@ def _status_bar() -> str:
     if _stats["start_time"] is None:
         _stats["start_time"] = _time.time()
     elapsed = int(_time.time() - _stats["start_time"])
-    m, s = divmod(elapsed, 60)
-    time_str = f"{m}m{s}s" if m else f"{s}s"
+    h, rem = divmod(elapsed, 3600)
+    m, s = divmod(rem, 60)
+    time_str = f"{h}h {m}m" if h else f"{m}m {s}s"
 
-    model = _stats["model"]
-    tokens = f"{_stats['tokens']/1000:.1f}K" if _stats["tokens"] else "—"
-    tools = _stats["tools"]
-    turns = _stats["turns"]
-
-    return f" {model} │ tokens {tokens} │ tools {tools} │ turns {turns} │ {time_str} "
+    parts = [f"◆ {_stats['model']}"]
+    if _stats["tokens"]:
+        parts.append(_context_bar(_stats["tokens"]))
+    parts.append(f"turns {_stats['turns']}")
+    parts.append(f"tools {_stats['tools']}")
+    if _stats["last_response"] is not None:
+        parts.append(f"⏲ {_stats['last_response']:.0f}s")
+    parts.append(f"✓{time_str}")
+    return " │ ".join(parts)
 
 
 def run_repl() -> None:
@@ -224,6 +239,8 @@ def run_repl() -> None:
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
         _stats["turns"] += 1
+        import time as _t2
+        _t_start = _t2.time()
         response_text = ""
 
         async def delta(t: str) -> None:
@@ -256,6 +273,7 @@ def run_repl() -> None:
         except asyncio.CancelledError:
             console.print("\n[dim]⏹ Interrupted[/]")
             return
+        _stats["last_response"] = _t2.time() - _t_start
 
         if not response_text.strip():
             console.print(Rule(style="#394B59"))
