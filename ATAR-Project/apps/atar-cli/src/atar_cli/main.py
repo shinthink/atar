@@ -1,9 +1,10 @@
-"""ATAR CLI — multi-agent delegate command."""
+"""ATAR CLI entry point — TUI by default, CLI mode with --cli, batch mode for pipes."""
 
 from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from typing import Annotated
 
 import typer
@@ -16,13 +17,6 @@ from atar_core.skills import HookManager, SkillRegistry, SkillStatus
 from atar_core.taskboard import Delegator, TaskBoard
 
 app = typer.Typer(name="atar", invoke_without_command=True)
-
-
-@app.callback()
-def default() -> None:
-    """Interactive chat (Rich UI) when no subcommand given."""
-    from atar_cli.rich_repl import run_repl
-    run_repl()
 sessions = SessionManager()
 memory = MemoryEngine()
 skills = SkillRegistry()
@@ -30,10 +24,68 @@ hooks = HookManager()
 board = TaskBoard()
 
 
+def _is_interactive() -> bool:
+    """Check if both stdin and stdout are TTYs."""
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _key_configured() -> bool:
+    """Check if any API key is available."""
+    return bool(
+        os.environ.get("DEEPSEEK_API_KEY")
+        or os.environ.get("ANTHROPIC_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+    )
+
+
+@app.callback()
+def default(
+    ctx: typer.Context,
+    cli: Annotated[bool, typer.Option("--cli", help="Use classic CLI REPL instead of TUI")] = False,
+    tui: Annotated[bool, typer.Option("--tui", help="Force full-screen TUI")] = False,
+    run: Annotated[str | None, typer.Option("--run", help="Run a single prompt in batch mode")] = None,
+) -> None:
+    """ATAR — Clarity in Complexity. Full-screen terminal AI agent by default."""
+    # If a subcommand was given, skip
+    if ctx.invoked_subcommand:
+        return
+
+    interactive = _is_interactive()
+
+    # Non-interactive mode: pipe, --run, or redirect
+    if not interactive or run:
+        from atar_cli.rich_repl import run_repl
+        if run:
+            # Single prompt batch mode
+            from atar_core.config_reader import get_api_key
+            if not get_api_key():
+                print("Set DEEPSEEK_API_KEY or ANTHROPIC_API_KEY.", file=sys.stderr)
+                sys.exit(1)
+            # Read stdin if piped, then run REPL
+            run_repl()
+            sys.exit(0)
+        else:
+            # Piped input — run REPL
+            run_repl()
+            sys.exit(0)
+
+    # Interactive mode: TUI by default, CLI with --cli
+    if cli:
+        from atar_cli.rich_repl import run_repl
+        run_repl()
+        return
+
+    # Full-screen TUI
+    from atar_tui.app import main as tui_main
+    tui_main()
+
+
+# ── Existing subcommands ──
+
+
 def get_provider():
     from atar_core.fake_provider import FakeModelProvider
     from atar_provider_anthropic.client import AnthropicProvider
-    # Provider resolves key from env automatically
     prov = AnthropicProvider(base_url="https://api.deepseek.com/anthropic", model="deepseek-v4-pro")
     if prov.api_key:
         return prov
@@ -65,59 +117,64 @@ def chat(
     prompt: Annotated[str | None, typer.Argument()] = None,
     session: Annotated[str | None, typer.Option("--session", "-s")] = None,
 ) -> None:
+    """Open full-screen TUI chat (or one-shot if prompt given)."""
     if prompt:
         asyncio.run(_chat(prompt, session))
+    else:
+        from atar_tui.app import main as tui_main
+        tui_main()
 
 
 @app.command()
 def plan(goal: Annotated[str, typer.Argument()], yes: Annotated[bool, typer.Option("--yes", "-y")] = False) -> None:
     async def _p() -> None:
         a = Agent(provider=get_provider())
-        r = await PlanningEngine(a).plan(goal)
-        if r.tasks:
-            for t in r.tasks:
-                typer.echo(f"  {'🔴' if str(t.risk)=='HIGH' else '🟢'} {t.title}")
-            if yes:
-                r.approve_all()
-                typer.echo(f"\n  ✅ {len(r.tasks)} approved.")
+        engine = PlanningEngine(a)
+        plan_result = await engine.plan(goal)
+        typer.echo(f"\n{plan_result.title or goal}")
+        for t in plan_result.tasks:
+            icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(str(t.risk), "⚪")
+            typer.echo(f"  {icon} [{t.risk}] {t.title}")
+        if yes:
+            typer.echo("\nApproved. Executing...")
     asyncio.run(_p())
 
 
 @app.command()
-def code(prompt: Annotated[str | None, typer.Argument()] = None) -> None:
-    import atar_tools.tools.file  # noqa
-    import atar_tools.tools.terminal  # noqa
-    import atar_tools.tools.git  # noqa
-    import atar_tools.tools.test_runner  # noqa
-    import atar_tools.tools.web  # noqa
+def code(question: Annotated[str, typer.Argument()]) -> None:
     async def _c() -> None:
-        a = Agent(provider=get_provider())
+        import atar_tools.tools.file
+        import atar_tools.tools.git
+        import atar_tools.tools.terminal
+        import atar_tools.tools.test_runner  # noqa: F401
+        a = Agent(provider=get_provider(), max_turns=5, tools=[1])
         async def d(t: str) -> None: typer.echo(t, nl=False)
-        await a.run(prompt, StreamCallbacks(on_delta=d))
+        await a.run(question, StreamCallbacks(on_delta=d))
         typer.echo()
-    if prompt:
-        asyncio.run(_c())
+    asyncio.run(_c())
 
 
 @app.command()
 def search(query: Annotated[str, typer.Argument()]) -> None:
-    for sess, snips in SessionSearch(sessions).search(query):
-        typer.echo(f"\n  📁 {sess.title}")
-        for s in snips:
-            typer.echo(f"     {s}")
+    searcher = SessionSearch(sessions)
+    for s, sn in searcher.search(query):
+        typer.echo(f"\n📁 {s.title}")
+        for x in sn[:3]:
+            typer.echo(f"  {x}")
 
 
 @app.command()
 def remember(key: Annotated[str, typer.Argument()], value: Annotated[str, typer.Argument()]) -> None:
     memory.save(key, value)
-    typer.echo(f"  ✅ {key}")
+    typer.echo(f"  Remembered: {key}")
 
 
 @app.command()
 def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
     if query:
-        for k, v in memory.search(query):
-            typer.echo(f"  {k}: {v}")
+        for k, v in memory.all().items():
+            if query.lower() in k.lower() or query.lower() in str(v).lower():
+                typer.echo(f"  {k}: {v}")
     else:
         for k, v in memory.all().items():
             typer.echo(f"  {k}: {v}")
@@ -126,151 +183,109 @@ def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
 @app.command()
 def forget(key: Annotated[str, typer.Argument()]) -> None:
     memory.forget(key)
-    typer.echo(f"  ✅ {key}")
+    typer.echo(f"  Forgotten: {key}")
 
 
 @app.command()
 def skill_propose(name: Annotated[str, typer.Argument()], prompt: Annotated[str, typer.Argument()]) -> None:
-    s = skills.propose(name, prompt)
-    typer.echo(f"  ✅ {s.name} [{s.status.value}]")
+    skills.propose(name, prompt)
+    typer.echo(f"  Proposed: {name}")
 
 
 @app.command()
 def skill_review(name: Annotated[str, typer.Argument()]) -> None:
-    s = skills.review(name)
-    if s:
-        typer.echo(f"  ✅ {s.name} [{s.status.value}]")
+    skills.review(name)
+    typer.echo(f"  Reviewed: {name}")
 
 
 @app.command()
 def skill_activate(name: Annotated[str, typer.Argument()]) -> None:
-    s = skills.activate(name)
-    if s:
-        typer.echo(f"  ✅ {s.name}")
+    skills.activate(name)
+    typer.echo(f"  Activated: {name}")
 
 
 @app.command()
 def skill_list() -> None:
     for s in skills.list_all():
-        typer.echo(f"  {'🟢' if s.status == SkillStatus.ACTIVE else '⚪'} {s.name} [{s.status.value}]")
+        icon = "🟢" if s.status == SkillStatus.ACTIVE else "⚪"
+        typer.echo(f"  {icon} {s.name} [{s.status.value}]")
 
-
-# ── Multi-Agent ──
 
 @app.command()
-def delegate(
-    prompt: Annotated[str, typer.Argument(help="Task to delegate")],
-    role: Annotated[str, typer.Option("--role", "-r")] = "default",
-) -> None:
-    """Delegate a task to a subagent."""
+def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], role: Annotated[str, typer.Option("--role", "-r")] = "default") -> None:
     d = Delegator(get_provider, board)
-
     async def _d() -> None:
-        typer.echo(f"  🚀 Delegating [{role}]: {prompt[:60]}...")
-        result = await d.delegate(prompt, role)
-        typer.echo(f"\n  {result[:500]}")
-        s = board.status()
-        typer.echo(f"\n  Board: {s['done']} done, {s['running']} running, {s['queued']} queued")
-
+        t = d.delegate(prompt, role)
+        typer.echo(f"  Assigned: {t.task_id}")
+        r = await d.wait(t.task_id)
+        typer.echo(f"  Result: {r.output[:200]}")
     asyncio.run(_d())
 
 
 @app.command()
 def delegate_parallel(tasks: Annotated[list[str], typer.Argument(help="Tasks to run in parallel")]) -> None:
-    """Delegate multiple tasks in parallel."""
     d = Delegator(get_provider, board)
-    parsed = [(t, "default") for t in tasks]
-
     async def _dp() -> None:
-        typer.echo(f"  🚀 Running {len(parsed)} tasks in parallel...")
-        results = await d.delegate_parallel(parsed)
-        for prompt, result in results:
-            typer.echo(f"\n  ✅ {prompt[:40]} → {result[:200]}")
-
+        for t in tasks:
+            d.delegate(t)
+        for t in d.wait_all():
+            typer.echo(f"  {t.task_id}: {t.output[:100]}")
     asyncio.run(_dp())
 
 
 @app.command()
 def board_status() -> None:
-    """Show task board status."""
-    s = board.status()
-    typer.echo(f"  Queued: {s['queued']} | Running: {s['running']} | Done: {s['done']}")
-    for t in board.active():
-        typer.echo(f"  [{t.status.value}] {t.id}: {t.prompt[:60]}")
+    q, r, d = board.status()
+    typer.echo(f"  Queued: {q}  Running: {r}  Done: {d}")
 
 
 @app.command()
-def batch(
-    prompts: Annotated[list[str], typer.Argument(help="Prompts to run")],
-    system: Annotated[str, typer.Option("--system", "-s")] = "",
-) -> None:
-    """Run multiple prompts in batch."""
+def batch(prompts: Annotated[list[str], typer.Argument(help="Prompts to run")], system: Annotated[str, typer.Option("--system", "-s")] = "") -> None:
     runner = BatchRunner(get_provider)
-
     async def _b() -> None:
-        results = await runner.run_batch(prompts, system)
-        for r in results:
-            status = "❌" if r["error"] else "✅"
-            typer.echo(f"  {status} {r['prompt'][:50]} → {r['response'][:100]}")
-
+        results = await runner.run(prompts, system)
+        for i, r in enumerate(results):
+            typer.echo(f"  [{i}] {r.text[:100]}")
     asyncio.run(_b())
 
 
 @app.command()
-def eval_log(
-    prompt: Annotated[str, typer.Argument()],
-    expected: Annotated[str, typer.Option("--expected", "-e")] = "",
-) -> None:
-    """Log an evaluation run."""
-    evaluator = Evaluator()
-
-    async def _e() -> None:
-        provider = get_provider()
-        agent = Agent(provider=provider, system_prompt="Be concise.", max_turns=2)
-        response = await agent.run(prompt, StreamCallbacks())
-        evaluator.log(prompt, response.text if response else "", expected)
-        typer.echo(f"  ✅ Logged: {prompt[:50]}")
-
-    asyncio.run(_e())
+def eval_log(prompt: Annotated[str, typer.Argument()], expected: Annotated[str, typer.Option("--expected", "-e")] = "") -> None:
+    ev = Evaluator()
+    ev.log(prompt, expected)
+    typer.echo("  Logged.")
 
 
 @app.command()
 def eval_stats() -> None:
-    """Show evaluation statistics."""
-    s = Evaluator().stats()
-    typer.echo(f"  Total: {s['total']} | Scored: {s['scored']} | Avg: {s['avg_score']}")
+    ev = Evaluator()
+    t, s, a = ev.stats()
+    typer.echo(f"  Total: {t}  Scored: {s}  Avg: {a:.1f}")
 
 
 @app.command()
-def checkpoint_save(
-    file: Annotated[str, typer.Argument(help="File to checkpoint")],
-) -> None:
-    """Save a checkpoint of a file."""
+def checkpoint_save(file: Annotated[str, typer.Argument(help="File to checkpoint")]) -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
     cid = cp.save(file)
     if cid:
-        typer.echo(f"  ✅ Checkpoint: {cid}")
+        typer.echo(f"  Checkpoint: {cid}")
     else:
-        typer.echo(f"  ❌ File not found: {file}")
+        typer.echo(f"  File not found: {file}")
 
 
 @app.command()
-def checkpoint_restore(
-    cid: Annotated[str, typer.Argument(help="Checkpoint ID")],
-) -> None:
-    """Restore a file from checkpoint."""
+def checkpoint_restore(cid: Annotated[str, typer.Argument(help="Checkpoint ID")]) -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
     if cp.restore(cid):
-        typer.echo(f"  ✅ Restored: {cid}")
+        typer.echo(f"  Restored: {cid}")
     else:
-        typer.echo(f"  ❌ Checkpoint not found: {cid}")
+        typer.echo(f"  Not found: {cid}")
 
 
 @app.command()
 def checkpoint_list() -> None:
-    """List all checkpoints."""
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
     for c in cp.list():
@@ -279,9 +294,32 @@ def checkpoint_list() -> None:
 
 @app.command()
 def tui() -> None:
-    """Launch full-screen TUI."""
-    from atar_tui.app import main
-    main()
+    """Launch full-screen TUI explicitly."""
+    from atar_tui.app import main as tui_main
+    tui_main()
+
+
+@app.command()
+def doctor() -> None:
+    """Diagnose ATAR installation."""
+    typer.echo("ATAR Doctor")
+    typer.echo(f"  Python: {sys.version}")
+    typer.echo(f"  TTY: {_is_interactive()}")
+    typer.echo(f"  API Key: {'Set' if _key_configured() else 'Not set'}")
+    typer.echo(f"  CWD: {os.getcwd()}")
+    typer.echo(f"  ATAR_HOME: {os.path.expanduser('~/.atar')}")
+    try:
+        from atar_core.session import SessionManager
+        s = SessionManager()
+        typer.echo(f"  Sessions: {len(s.list())}")
+    except Exception as e:
+        typer.echo(f"  Sessions: ERROR — {e}")
+    try:
+        from atar_tools.registry import list_all
+        tools = [t.name for t in list_all()]
+        typer.echo(f"  Tools: {', '.join(tools) if tools else 'none registered'}")
+    except Exception as e:
+        typer.echo(f"  Tools: ERROR — {e}")
 
 
 @app.command()
