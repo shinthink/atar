@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+import sys
 import time
 import uuid
 
@@ -79,10 +80,12 @@ def run_repl() -> None:
     agent = Agent(provider=provider, max_turns=1)
     agent.system_prompt = BASE_PROMPT
     session_id = uuid.uuid4().hex[:12]
+    last_elapsed = 0
 
     show_banner("deepseek-v4-pro", os.getcwd(), session_id)
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
+        nonlocal last_elapsed
         ag.state.force("idle")
         response_text = ""
         start_time = time.time()
@@ -95,6 +98,7 @@ def run_repl() -> None:
             await ag.run(prompt, StreamCallbacks(on_delta=delta))
 
         elapsed = time.time() - start_time
+        last_elapsed = int(elapsed)  # update outer scope
         console.print(Rule(style="#0288D1"))
 
         if not response_text:
@@ -136,10 +140,7 @@ def run_repl() -> None:
             else:
                 console.print("[dim][Rejected][/]")
 
-        # Footer with timing + token info
-        console.print(
-            Text(f" deepseek-v4-pro · {elapsed:.0f}s", style="dim #4FC3F7"),
-        )
+        # Footer — just rule, status bar handles timing
         console.print(Rule(style="#0288D1"))
 
 
@@ -171,7 +172,19 @@ def run_repl() -> None:
 
     async def _run() -> None:
         nonlocal agent
+        session_start = time.time()
+        last_elapsed = 0
+
         while True:
+            # Status bar before prompt
+            elapsed = int(time.time() - session_start)
+            mins = elapsed // 60
+            secs = elapsed % 60
+            status = f"deepseek-v4-pro · {mins}m {secs}s · last {last_elapsed}s"
+            # Write status at bottom using ANSI
+            sys.stderr.write(f"\033]0;ATAR | {status}\007")
+            console.print(Text(status, style="dim #4FC3F7"), end="")
+
             try:
                 user = await session_pt.prompt_async(
                     HTML("<prompt>· </prompt>"), style=PT_STYLE,
