@@ -128,7 +128,7 @@ def _create_provider():
         router = create_router()
         first = router.providers[0]
         model = getattr(first, "model", "deepseek-chat")
-        agent = Agent(provider=router, max_turns=5, tools=[1])
+        agent = Agent(provider=router, max_turns=8, tools=[1])
         agent.system_prompt = BASE_PROMPT
         return router, model, agent
     except RuntimeError as e:

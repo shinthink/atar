@@ -90,6 +90,20 @@ class Agent:
                         ))
                     continue  # next turn with tool results
 
+                # No tool calls — but if final_text is empty after tool results, prompt model to synthesize
+                if not final_text.strip() and len(self._messages) > 2:
+                    # Model returned empty after tool results — push a follow-up
+                    tool_names = [m.content for m in self._messages[-5:] if "Tool " in (m.content or "")]
+                    self._messages.append(Message(
+                        role="user",
+                        content=(
+                            "You have tool results above. "
+                            "If web_search returned results, use web_fetch on the top 2 URLs to extract content. "
+                            "Then synthesize a concise answer with sources. Do NOT say you will search — just act."
+                        )
+                    ))
+                    continue  # retry with follow-up prompt
+
                 # No tool calls — response is final
                 self._messages.append(Message(role="assistant", content=final_text))
                 response = ModelResponse(text=final_text, model="")
