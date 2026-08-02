@@ -20,89 +20,9 @@ app = typer.Typer(name="atar", invoke_without_command=True)
 
 @app.callback()
 def default() -> None:
-    """Interactive chat (REPL mode) when no subcommand given."""
-    print("ATAR Agent — Clarity in Complexity.")
-    print("Type /quit to exit, /clear to reset.\n")
-
-    p = get_provider()
-    agent = Agent(provider=p, max_turns=1)
-
-    async def _run() -> None:
-        nonlocal agent
-        while True:
-            try:
-                user = input("> ")
-            except (EOFError, KeyboardInterrupt):
-                print("\nAtaraxic.")
-                break
-            if not user.strip():
-                continue
-            if user.strip() in ("/quit", "/exit", "/q"):
-                print("Ataraxic.")
-                break
-            if user.strip() in ("/clear", "/reset"):
-                agent = Agent(provider=p, max_turns=1)
-                print("[Cleared]")
-                continue
-
-            agent.state.force("idle")
-
-            async def _chat(text: str = user, ag: Agent = agent) -> None:
-                response_text = ""
-
-                async def delta(t: str) -> None:
-                    nonlocal response_text
-                    response_text += t
-                    print(t, end="", flush=True)
-
-                await ag.run(text, StreamCallbacks(on_delta=delta))
-                print()
-
-                if not response_text:
-                    print("[No response]")
-                    return
-
-                # Check for bash commands in response
-                import re
-                cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
-                cmds = [c.strip() for c in cmds if c.strip()]
-
-                if cmds:
-                    print("\n  Run command? (y/n/e) [edit]")
-                    for c in cmds:
-                        print(f"  {c}")
-                    try:
-                        answer = input("  > ").strip().lower()
-                    except (EOFError, KeyboardInterrupt):
-                        answer = "n"
-
-                    if answer in ("y", "yes"):
-                        import atar_tools.tools.terminal  # noqa: F401
-                        from atar_models.tools import ToolContext
-                        from atar_tools.registry import execute as tool_execute
-                        for c in cmds:
-                            tr = await tool_execute(
-                                "terminal", {"command": c},
-                                ToolContext(metadata={"approved": True}),
-                            )
-                            print(f"  [{c[:50]}]\n  {tr.output[:300] if tr.success else tr.error}")
-                    elif answer in ("e", "edit"):
-                        new_cmd = input("  Command: ").strip()
-                        if new_cmd:
-                            import atar_tools.tools.terminal  # noqa: F401
-                            from atar_models.tools import ToolContext
-                            from atar_tools.registry import execute as tool_execute
-                            tr = await tool_execute(
-                                "terminal", {"command": new_cmd},
-                                ToolContext(metadata={"approved": True}),
-                            )
-                            print(f"  {tr.output[:300] if tr.success else tr.error}")
-                    else:
-                        print("  [Rejected]")
-
-            await _chat()
-
-    asyncio.run(_run())
+    """Interactive chat (Rich UI) when no subcommand given."""
+    from atar_cli.rich_repl import run_repl
+    run_repl()
 sessions = SessionManager()
 memory = MemoryEngine()
 skills = SkillRegistry()
