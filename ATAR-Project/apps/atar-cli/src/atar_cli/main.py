@@ -15,7 +15,14 @@ from atar_core.session import SessionManager
 from atar_core.skills import HookManager, SkillRegistry, SkillStatus
 from atar_core.taskboard import Delegator, TaskBoard
 
-app = typer.Typer(name="atar")
+app = typer.Typer(name="atar", invoke_without_command=True)
+
+
+@app.callback()
+def default() -> None:
+    """Launch ATAR TUI by default (no subcommand)."""
+    from atar_tui.app import main as tui_main
+    tui_main()
 sessions = SessionManager()
 memory = MemoryEngine()
 skills = SkillRegistry()
