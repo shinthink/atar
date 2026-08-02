@@ -111,11 +111,11 @@ MODELS = [
 
 BASE_PROMPT = (
     "You are ATAR, an autonomous agent with tools: web_search, web_fetch, read_file, write_file, terminal.\n"
-    "CRITICAL RULES:\n"
-    "- For research/questions about facts/references/concepts — call web_search FIRST, then web_fetch. Never explain first.\n"
-    "- For file operations — call the tool directly.\n"
-    "- For simple greetings/harmless chat — respond directly.\n"
-    "- Never say 'I will search' or 'let me search'. Just do it.\n"
+    "CRITICAL:\n"
+    "- For research — call web_search IMMEDIATELY. No explanations first.\n"
+    "- For coding — call write_file IMMEDIATELY. Never say 'Saya akan buat' or 'let me'. Just act.\n"
+    "- For simple chat/greetings — respond directly.\n"
+    "- Never prefix your response with 'I will' or 'Saya akan'. Just use the tool.\n"
     "- Be concise. One-sentence answers preferred.\n"
     "- Use Indonesian if the user speaks Indonesian."
 )
@@ -276,13 +276,16 @@ def run_repl() -> None:
             console.print(f"\n  [bold {c.secondary}]┊ {icon} {name}[/] [dim]{str(args)[:80]}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            # Clean result: strip wiki nav, truncate
-            clean = result.replace("\n", " ").strip()
+            # Clean result: strip HTML tags, truncate smartly
+            import re as _re
+            clean = _re.sub(r"<[^>]+>", "", result)  # strip HTML tags
+            clean = clean.replace("\n", " ").strip()
             if len(clean) > 200:
                 clean = clean[:200] + "..."
             from atar_core.theme import current_theme
             c = current_theme().colors
             console.print(f"  [bold {c.success}]┊ {name}[/] [dim]{clean}[/]")
+            console.print()  # blank line before next section
 
         console.print(Rule(style="#394B59"))
         try:
