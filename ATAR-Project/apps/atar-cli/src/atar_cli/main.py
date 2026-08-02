@@ -13,7 +13,6 @@ from atar_core.memory import MemoryEngine, SessionSearch
 from atar_core.planning import PlanningEngine
 from atar_core.session import SessionManager
 from atar_core.skills import HookManager, SkillRegistry, SkillStatus
-from atar_core.state_machine import AgentState
 from atar_core.taskboard import Delegator, TaskBoard
 
 app = typer.Typer(name="atar", invoke_without_command=True)
@@ -22,11 +21,9 @@ app = typer.Typer(name="atar", invoke_without_command=True)
 @app.callback()
 def default() -> None:
     """Interactive chat (REPL mode) when no subcommand given."""
-    p = get_provider()
-    agent = Agent(provider=p, max_turns=1)  # single response per input
-
     print("ATAR Agent — Clarity in Complexity.")
     print("Type /quit to exit, /clear to reset.\n")
+    history: list = []
 
     try:
         while True:
@@ -37,20 +34,27 @@ def default() -> None:
                 print("Ataraxic.")
                 break
             if user.strip() in ("/clear", "/reset"):
-                agent = Agent(provider=p)
+                history = []
                 print("[Cleared]")
                 continue
 
-            async def _chat(text: str = user, a: Agent = agent) -> None:
+            async def _chat(text: str = user) -> None:
+                a = Agent(provider=get_provider(), max_turns=1)
+                printed = False
 
                 async def delta(t: str) -> None:
+                    nonlocal printed
+                    printed = True
                     print(t, end="", flush=True)
 
-                await a.run(text, StreamCallbacks(on_delta=delta))
+                result = await a.run(text, StreamCallbacks(on_delta=delta))
                 print()
+                if not printed and result and result.text:
+                    print(result.text)
+                elif not printed:
+                    print("[No response — check API key or connection]")
 
             asyncio.run(_chat())
-            agent.state.force(AgentState.IDLE)  # reset for next turn
     except (KeyboardInterrupt, EOFError):
         print("\nAtaraxic.")
 sessions = SessionManager()
