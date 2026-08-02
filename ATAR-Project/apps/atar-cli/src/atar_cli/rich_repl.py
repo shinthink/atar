@@ -111,7 +111,7 @@ def run_repl() -> None:
         with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
             await ag.run(prompt, StreamCallbacks(on_delta=delta))
 
-        elapsed = time.time() - start_time
+        time.time() - start_time
         console.print(Rule(style="#0288D1"))
 
         if not response_text:
