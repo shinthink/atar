@@ -223,6 +223,7 @@ def run_repl() -> None:
     _interrupt = False
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
+        _stats["turns"] += 1
         response_text = ""
 
         async def delta(t: str) -> None:
@@ -343,6 +344,7 @@ def run_repl() -> None:
                     idx = int(c)
                     if 0 <= idx < len(MODELS):
                         display = _switch_model(idx)
+                        _stats["model"] = display.split(" — ")[1] if " — " in display else display
                         prov, model, ag = _create_provider()
                         provider, agent = prov, ag
                         console.print(f"[green]✓ {display}[/]")
