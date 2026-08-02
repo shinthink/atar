@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 from atar_core.config_reader import get_api_key, save_api_key
 from textual.app import App, ComposeResult
@@ -21,10 +22,13 @@ class ChatScreen(Screen):
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
         ("ctrl+enter", "send", "Send"),
+        ("ctrl+p", "app.quick_file", "Quick File"),
+        ("ctrl+l", "app.audit", "Audit"),
     ]
 
     _task: asyncio.Task | None = None
     _running: bool = False
+    _tool_cards: list[dict] = []  # live tool execution tracking
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -109,13 +113,22 @@ class ChatScreen(Screen):
             out.write(t)
 
         async def on_tool(name: str, args: dict) -> None:
+            ts = str(int(time.time() * 1000))
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎"}
             icon = icons.get(name, "🔧")
-            out.write(f"\n[bold #7C3AED]{icon} {name}[/] [dim]{str(args)[:100]}[/]")
+            card = {"name": name, "icon": icon, "args": str(args)[:80], "state": "running", "id": ts}
+            self._tool_cards.append(card)
+            out.write(f"\n[bold #7C3AED]{icon} {name}[/] [dim]{card['args']}[/] [yellow](running)[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
+            # Update matching tool card state
+            for c in self._tool_cards:
+                if c["name"] == name and c["state"] == "running":
+                    c["state"] = "completed"
+                    break
             preview = result[:200].replace("\n", " ")
-            out.write(f"\n[bold #4CAF50]  ✓ {name}[/] [dim]{preview}[/]")
+            emoji = "✓" if result else "✗"
+            out.write(f"\n[bold #4CAF50]  {emoji} {name}[/] [dim]{preview}[/]")
 
         try:
             self._task = asyncio.create_task(
@@ -138,9 +151,26 @@ class ChatScreen(Screen):
     async def _handle_command(self, cmd: str, out: RichLog) -> None:
         cmd = cmd.strip()
         if cmd == "/help":
-            out.write("[bold]Commands:[/]\n  /help /clear /model /sessions /code /quit")
+            out.write("[bold]Slash Commands:[/]")
+            out.write("  /help     /clear    /model    /sessions")
+            out.write("  /code     /quit     /tools    /status")
+        elif cmd == "/tools":
+            tools = getattr(self, "_tool_cards", [])
+            if not tools:
+                out.write("[dim]No tools used yet.[/]")
+            else:
+                out.write(f"[bold]Tool Activity ({len(tools)} calls):[/]")
+                for c in tools:
+                    state_icon = "✓" if c["state"] == "completed" else "▶"
+                    out.write(f"  {state_icon} {c['icon']} {c['name']} [{c['state']}]")
+        elif cmd == "/status":
+            out.write("[bold]Agent Status:[/]")
+            out.write("  Provider: deepseek-chat")
+            out.write(f"  Running: {'yes' if self._running else 'idle'}")
+            out.write(f"  Tool calls: {len(self._tool_cards)}")
         elif cmd == "/clear":
             out.clear()
+            self._tool_cards = []
         elif cmd == "/quit":
             self.app.exit()
         elif cmd == "/model":
@@ -903,6 +933,8 @@ class ATARApp(App):
     BINDINGS = [
         ("ctrl+q", "quit", "Quit"),
         ("ctrl+k", "command_palette", "Commands"),
+        ("ctrl+p", "quick_file", "Quick File"),
+        ("ctrl+l", "audit", "Audit"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -928,6 +960,14 @@ class ATARApp(App):
             screen_id = bid[4:]
             if screen_id in SCREENS:
                 self.switch_screen(screen_id)
+
+    def action_quick_file(self) -> None:
+        """Jump to Files screen."""
+        self.switch_screen("files")
+
+    def action_audit(self) -> None:
+        """Jump to Audit screen."""
+        self.switch_screen("audit")
 
 
 def main() -> None:
