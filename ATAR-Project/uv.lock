@@ -16,6 +16,7 @@ members = [
     "atar-projects",
     "atar-protocols",
     "atar-provider-anthropic",
+    "atar-provider-deepseek",
     "atar-provider-openai",
     "atar-security",
     "atar-storage",
@@ -264,6 +265,7 @@ dependencies = [
     { name = "atar-models" },
     { name = "atar-protocols" },
     { name = "atar-provider-anthropic" },
+    { name = "atar-provider-deepseek" },
     { name = "atar-security" },
     { name = "atar-storage" },
     { name = "atar-tools" },
@@ -317,6 +319,7 @@ requires-dist = [
     { name = "atar-models", editable = "packages/atar-models" },
     { name = "atar-protocols", editable = "packages/atar-protocols" },
     { name = "atar-provider-anthropic", editable = "providers/atar-provider-anthropic" },
+    { name = "atar-provider-deepseek", editable = "providers/atar-provider-deepseek" },
     { name = "atar-security", editable = "packages/atar-security" },
     { name = "atar-storage", editable = "packages/atar-storage" },
     { name = "atar-tools", editable = "packages/atar-tools" },
@@ -407,6 +410,21 @@ dependencies = [
 requires-dist = [
     { name = "atar-models", editable = "packages/atar-models" },
     { name = "httpx", specifier = ">=0.27" },
+]
+
+[[package]]
+name = "atar-provider-deepseek"
+version = "0.1.0"
+source = { editable = "providers/atar-provider-deepseek" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "httpx" },
 ]
 
 [[package]]

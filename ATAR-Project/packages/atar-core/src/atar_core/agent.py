@@ -67,17 +67,27 @@ class Agent:
 
                 final_text = "".join(text_parts)
 
-                # Execute tool calls if any
+                # Execute tool calls if any — skip partial, dedup by id
                 if tool_calls:
+                    seen = set()
                     for tc in tool_calls:
+                        tid = tc.get("id", "")
+                        name = tc.get("name", "")
+                        inp = tc.get("input") or {}
+                        if not name or not inp:
+                            continue  # skip partial tool calls
+                        if tid and tid in seen:
+                            continue
+                        if tid:
+                            seen.add(tid)
                         if cb.on_tool_call:
-                            await cb.on_tool_call(tc.get("name", ""), tc.get("input", {}))
-                        result = await self._execute_tool(tc.get("name", ""), tc.get("input", {}))
+                            await cb.on_tool_call(name, inp)
+                        ctx = {"approved": True}
+                        result = await self._execute_tool(name, inp)
                         if cb.on_tool_result:
-                            await cb.on_tool_result(tc.get("name", ""), result.output)
-                        # Feed tool result back as user message
+                            await cb.on_tool_result(name, result.output)
                         self._messages.append(Message(
-                            role="user", content=f"Tool {tc.get('name')} result: {result.output}"
+                            role="user", content=f"Tool {name} result: {result.output}"
                         ))
                     continue  # next turn with tool results
 
@@ -101,12 +111,14 @@ class Agent:
         return ModelResponse(text="Max turns reached.")
 
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
+        from atar_models.tools import ToolContext
         from atar_tools.registry import execute as tool_execute
-        return await tool_execute(name, args)
+        ctx = ToolContext(metadata={"approved": True})
+        return await tool_execute(name, args, ctx)
 
     def _tool_schemas(self) -> list[Any]:
-        from atar_tools.registry import list_all, to_schema
-        return [to_schema(t) for t in list_all()]
+        from atar_tools.registry import list_all
+        return list_all()  # return Tool objects, not dicts
 
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)

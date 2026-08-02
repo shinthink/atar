@@ -35,6 +35,7 @@ dependencies = [
     "atar-tui",
     "atar-security",
     "atar-provider-anthropic",
+    "atar-provider-deepseek",
     "atar-tools",
     "prompt-toolkit>=3.0.53",
 ]
@@ -49,6 +50,7 @@ atar-tui = { workspace = true }
 atar-tools = { workspace = true }
 atar-security = { workspace = true }
 atar-provider-anthropic = { workspace = true }
+atar-provider-deepseek = { workspace = true }
 
 [project.optional-dependencies]
 dev = [
