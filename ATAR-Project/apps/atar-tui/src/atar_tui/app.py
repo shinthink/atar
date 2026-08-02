@@ -339,7 +339,7 @@ class PlanScreen(Screen):
             agent.system_prompt = f"Execute this task: {task.title}. {task.description or ''}"
             # Re-use session messages for continuity
             try:
-                result = await agent.run(
+                _result = await agent.run(
                     f"Execute: {task.title}",
                     StreamCallbacks(on_delta=lambda t: out.write(f"[dim]{t}[/]")),
                 )
