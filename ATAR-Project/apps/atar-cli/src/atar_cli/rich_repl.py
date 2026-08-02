@@ -181,12 +181,16 @@ def run_repl() -> None:
         for line in lines:
             s = line.strip()
             if s.startswith("```") and not in_code:
-                if buf: console.print(Markdown("\n".join(buf))); buf = []
-                in_code, lang = True, s[3:].strip() or "code"
+                if buf:
+                    console.print(Markdown("\n".join(buf)))
+                    buf = []
+                in_code = True
+                lang = s[3:].strip() or "code"
                 continue
             if s.startswith("```") and in_code:
                 in_code = False
-                code = "\n".join(buf); buf = []
+                code = "\n".join(buf)
+                buf = []
                 console.print(Panel(
                     code, title=f"  {lang}",
                     border_style="#7C3AED" if lang in ("bash","sh","shell") else "#4FC3F7",
@@ -201,8 +205,6 @@ def run_repl() -> None:
 
     async def _run() -> None:
         nonlocal agent
-        session_start = time.time()
-        last_elapsed = 0
 
         while True:
             try:
@@ -214,32 +216,43 @@ def run_repl() -> None:
                 break
 
             user = user.strip()
-            if not user: continue
+            if not user:
+                continue
             if user in ("/quit", "/exit", "/q"):
-                console.print("[dim]Ataraxic.[/]"); break
+                console.print("[dim]Ataraxic.[/]")
+                break
             if user in ("/clear", "/reset"):
                 agent = Agent(provider=provider, max_turns=1)
                 agent.system_prompt = BASE_PROMPT
                 console.print("[dim][Cleared][/]")
-                console.print(Rule(style="#0288D1")); continue
+                console.print(Rule(style="#0288D1"))
+                continue
             if user == "/help":
                 console.print(Panel(
                     "/code  coding mode · /chat  chat mode\n/clear  reset · /quit  exit",
                     title="Commands", border_style="#4FC3F7",
-                )); continue
+                ))
+                continue
             if user == "/code":
                 import atar_tools.tools.file
                 import atar_tools.tools.git
                 import atar_tools.tools.test_runner  # noqa: F401
                 agent = Agent(provider=provider, max_turns=3, tools=[1])
-                agent.system_prompt = "You are ATAR in CODE mode. Use terminal, read_file, write_file, git, run_tests. Always propose bash commands."
+                agent.system_prompt = (
+                    "You are ATAR in CODE mode. Use terminal, read_file, "
+                    "write_file, git, run_tests. Always propose bash commands."
+                )
                 console.print(Panel("[bold]Code mode[/] · /chat to exit", border_style="#4CAF50"))
-                console.print(Rule(style="#0288D1")); continue
+                console.print(Rule(style="#0288D1"))
+                continue
             if user == "/chat":
                 agent = Agent(provider=provider, max_turns=1)
                 agent.system_prompt = BASE_PROMPT
                 console.print("[dim]Chat mode[/]")
-                console.print(Rule(style="#0288D1")); continue
+                console.print(Rule(style="#0288D1"))
+                continue
+
+            await _agent_turn(user, agent)
 
             await _agent_turn(user, agent)
 

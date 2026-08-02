@@ -82,7 +82,6 @@ class Agent:
                             seen.add(tid)
                         if cb.on_tool_call:
                             await cb.on_tool_call(name, inp)
-                        ctx = {"approved": True}
                         result = await self._execute_tool(name, inp)
                         if cb.on_tool_result:
                             await cb.on_tool_result(name, result.output)

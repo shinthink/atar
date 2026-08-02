@@ -71,7 +71,9 @@ class DeepSeekProvider:
     async def stream(self, request: ModelRequest) -> AsyncIterator[ModelEvent]:
         client = await self._get_client()
         body = self._build_body(request, stream=True)
-        tool_id = ""; tool_name = ""; tool_args = ""
+        tool_id = ""
+        tool_name = ""
+        tool_args = ""
         async with client.stream("POST", f"{self.base_url}/chat/completions", json=body) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
