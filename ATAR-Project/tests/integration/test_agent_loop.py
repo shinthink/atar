@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 from typing import Any
 
 import pytest
@@ -152,10 +153,8 @@ class TestCancellation:
             task = asyncio.create_task(agent.run("hi"))
             await asyncio.sleep(0.01)
             task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass  # expected
 
         await run_with_cancel()
         # Should not crash
