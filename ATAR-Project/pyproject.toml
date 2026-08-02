@@ -36,6 +36,10 @@ dependencies = [
     "atar-security",
     "atar-provider-anthropic",
     "atar-provider-deepseek",
+    "atar-provider-openai",
+    "atar-provider-openrouter",
+    "atar-provider-zai",
+    "atar-provider-custom",
     "atar-tools",
     "prompt-toolkit>=3.0.53",
     "keyring>=25.7.0",
@@ -52,6 +56,10 @@ atar-tools = { workspace = true }
 atar-security = { workspace = true }
 atar-provider-anthropic = { workspace = true }
 atar-provider-deepseek = { workspace = true }
+atar-provider-openai = { workspace = true }
+atar-provider-openrouter = { workspace = true }
+atar-provider-zai = { workspace = true }
+atar-provider-custom = { workspace = true }
 
 [project.optional-dependencies]
 dev = [

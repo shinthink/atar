@@ -16,8 +16,11 @@ members = [
     "atar-projects",
     "atar-protocols",
     "atar-provider-anthropic",
+    "atar-provider-custom",
     "atar-provider-deepseek",
     "atar-provider-openai",
+    "atar-provider-openrouter",
+    "atar-provider-zai",
     "atar-security",
     "atar-storage",
     "atar-tools",
@@ -265,7 +268,11 @@ dependencies = [
     { name = "atar-models" },
     { name = "atar-protocols" },
     { name = "atar-provider-anthropic" },
+    { name = "atar-provider-custom" },
     { name = "atar-provider-deepseek" },
+    { name = "atar-provider-openai" },
+    { name = "atar-provider-openrouter" },
+    { name = "atar-provider-zai" },
     { name = "atar-security" },
     { name = "atar-storage" },
     { name = "atar-tools" },
@@ -320,7 +327,11 @@ requires-dist = [
     { name = "atar-models", editable = "packages/atar-models" },
     { name = "atar-protocols", editable = "packages/atar-protocols" },
     { name = "atar-provider-anthropic", editable = "providers/atar-provider-anthropic" },
+    { name = "atar-provider-custom", editable = "providers/atar-provider-custom" },
     { name = "atar-provider-deepseek", editable = "providers/atar-provider-deepseek" },
+    { name = "atar-provider-openai", editable = "providers/atar-provider-openai" },
+    { name = "atar-provider-openrouter", editable = "providers/atar-provider-openrouter" },
+    { name = "atar-provider-zai", editable = "providers/atar-provider-zai" },
     { name = "atar-security", editable = "packages/atar-security" },
     { name = "atar-storage", editable = "packages/atar-storage" },
     { name = "atar-tools", editable = "packages/atar-tools" },
@@ -415,6 +426,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "atar-provider-custom"
+version = "0.1.0"
+source = { editable = "providers/atar-provider-custom" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "httpx" },
+]
+
+[[package]]
 name = "atar-provider-deepseek"
 version = "0.1.0"
 source = { editable = "providers/atar-provider-deepseek" }
@@ -433,6 +459,46 @@ requires-dist = [
 name = "atar-provider-openai"
 version = "0.1.0"
 source = { editable = "providers/atar-provider-openai" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "httpx" },
+]
+
+[[package]]
+name = "atar-provider-openrouter"
+version = "0.1.0"
+source = { editable = "providers/atar-provider-openrouter" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "httpx" },
+]
+
+[[package]]
+name = "atar-provider-zai"
+version = "0.1.0"
+source = { editable = "providers/atar-provider-zai" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "httpx" },
+]
 
 [[package]]
 name = "atar-security"
