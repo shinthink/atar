@@ -51,10 +51,7 @@ _paste_buffer = ""
 def _(event):
     """Ctrl+V: bracketed paste with preview for large content."""
     data = event.app.clipboard.get_data()
-    if isinstance(data, ClipboardData):
-        text = data.text
-    else:
-        text = str(data)
+    text = data.text if isinstance(data, ClipboardData) else str(data)
     if len(text) > 500:
         lines = text.count("\n") + 1
         preview = text[:200].replace("\n", "↵")
