@@ -430,12 +430,14 @@ class ATARApp(App):
     SUB_TITLE = "Clarity in Complexity -- 23 screens"
     CSS = """
     Screen { align: center middle; }
-    .t { text-style: bold; color: $accent; padding: 1 0; }
-    .cosmike { color: $accent; text-style: bold; }
-    #sidebar { width: 16; border: solid $panel; padding: 1 0; background: $surface-darken-1; }
-    #sidebar Button { width: 100%; margin: 0; text-align: left; }
-    #sidebar .active { background: $accent-darken-2; }
+    .t { text-style: bold; color: #4FC3F7; padding: 1 0; }
+    .cosmike { color: #29B6F6; text-style: bold; }
+    #sidebar { width: 16; border: solid #0288D1; padding: 1 0; background: #0D47A1; }
+    #sidebar Button { width: 100%; margin: 0; text-align: left; color: #B3E5FC; }
+    #sidebar Button:hover { background: #1565C0; color: #E1F5FE; }
+    #sidebar .active { background: #0277BD; }
     #main { width: 1fr; padding: 1; }
+    #welcome { color: #E1F5FE; background: #01579B; }
     """
 
     BINDINGS = [
