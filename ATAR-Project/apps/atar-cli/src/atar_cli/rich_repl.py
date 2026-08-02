@@ -1,4 +1,4 @@
-"""ATAR interactive CLI — Hermes-style with Rich UI."""
+"""ATAR CLI — Hermes-style interface with prompt_toolkit + Rich."""
 
 from __future__ import annotations
 
@@ -6,54 +6,71 @@ import asyncio
 import os
 import re
 
+from prompt_toolkit import PromptSession
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.rule import Rule
 from rich.text import Text
 
 console = Console()
+session_pt = PromptSession()
 
-BANNER = (
-    ":::.,::::::::::::::::.    :::::::..\n"
-    "  ;;`;;;;;;;;;;'''';;`;;   ;;;;``;;;;\n"
-    " ,[[ '[[,   [[    ,[[ '[[,  [[[,/[[['\n"
-    "c$$$cc$$$c  $$   c$$$cc$$$c $$$$$$c\n"
-    " 888   888, 88,   888   888,888b \"88bo,\n"
-    " YMM   \"\"`  MMM   YMM   \"\"` MMMM   \"W\"\n"
-    "  :::.      .,-:::::/ .,:::::::::.    :::.::::::::::::\n"
-    "  ;;`;;   ,;;-'````'  ;;;;''''`;;;;,  `;;;;;;;;;;;''''\n"
-    " ,[[ '[[, [[[   [[[[[[/[[cccc   [[[[[. '[[     [[\n"
-    "c$$$cc$$$c\"$$c.    \"$$ $$\"\"\"\"   $$$ \"Y$c$$     $$\n"
-    " 888   888,`Y8bo,,,o88o888oo,__ 888    Y88     88,\n"
-    " YMM   \"\"`   `'YMUP\"YMM\"\"\"\"YUMMMMMM     YM     MMM"
-)
+# Hermes-style ATAR logo using box-drawing chars
+ATAR_LOGO = """\
+[bold #4FC3F7] █████╗ ████████╗ █████╗ ██████╗        █████╗  ██████╗ ███████╗███╗  ██╗████████╗[/]
+[bold #29B6F6]██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗      ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝[/]
+[#0288D1]███████║   ██║   ███████║██████╔╝█████╗███████║██║  ███╗█████╗  ██╔██╗██║   ██║[/]
+[#0277BD]██╔══██║   ██║   ██╔══██║██╔══██╗╚════╝██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║[/]
+[#01579B]██║  ██║   ██║   ██║  ██║██║  ██║      ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║[/]
+[#01579B]╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝[/]
+
+[bold #4FC3F7]  CLARITY IN COMPLEXITY  —  Ataraxia[/]
+"""
+
+PT_STYLE = Style.from_dict({
+    "prompt": "#4FC3F7 bold",
+    "separator": "#0288D1",
+})
 
 
 def show_banner() -> None:
-    console.print(Panel(
-        Text(BANNER, style="bold cyan", justify="center"),
-        border_style="cyan",
-        padding=(1, 2),
-    ))
-    console.print(Text("  CLARITY IN COMPLEXITY", style="bold bright_cyan", justify="center"))
-    console.print(Text("  Type /quit to exit  /clear to reset", style="dim", justify="center"))
-    console.print(Rule(style="cyan"))
+    """Render the ATAR startup banner."""
+    console.print()
+    console.print(Markdown(ATAR_LOGO))
+    console.print()
+    console.print(Rule(style="#0288D1"))
+    console.print(
+        Text("  /quit   exit    /clear   reset    /help   commands",
+             style="dim #4FC3F7"),
+    )
+    console.print(Rule(style="#0288D1"))
+    console.print()
+
+
+def build_prompt(session_id: str = "") -> HTML:
+    """Build the Hermes-style input prompt."""
+    sid = session_id[:8] if session_id else "new"
+    return HTML(
+        f'<prompt>{sid} ▸ </prompt>'
+    )
 
 
 def run_repl() -> None:
+    """Main REPL with Hermes-style interface."""
     import atar_tools.tools.terminal  # noqa: F401
     from atar_core.agent import Agent, StreamCallbacks
     from atar_models.tools import ToolContext
-
-    # Get provider
     from atar_provider_anthropic.client import AnthropicProvider
     from atar_tools.registry import execute as tool_execute
+
     key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or ""
     if not key:
         console.print("[red]Set DEEPSEEK_API_KEY or ANTHROPIC_API_KEY.[/]")
         return
+
     provider = AnthropicProvider(
         api_key=key, base_url="https://api.deepseek.com/anthropic",
         model="deepseek-v4-pro",
@@ -66,27 +83,39 @@ def run_repl() -> None:
         nonlocal agent
         while True:
             try:
-                user = Prompt.ask(Text("▸", style="bold cyan"))
+                user = await session_pt.prompt_async(
+                    build_prompt(),
+                    style=PT_STYLE,
+                )
             except (EOFError, KeyboardInterrupt):
-                console.print("\n[dim]Ataraxic.[/]")
+                console.print("\n[dim #4FC3F7]Ataraxic.[/]")
                 break
 
-            if not user.strip():
+            user = user.strip()
+            if not user:
                 continue
-            if user.strip() in ("/quit", "/exit", "/q"):
-                console.print("[dim]Ataraxic.[/]")
+            if user in ("/quit", "/exit", "/q"):
+                console.print("[dim #4FC3F7]Ataraxic.[/]")
                 break
-            if user.strip() in ("/clear", "/reset"):
+            if user in ("/clear", "/reset"):
                 agent = Agent(provider=provider, max_turns=1)
                 console.print("[dim][Cleared][/]")
-                console.print(Rule(style="cyan"))
+                console.print(Rule(style="#0288D1"))
+                continue
+            if user == "/help":
+                console.print(Panel(
+                    "[/]chat, /plan, /code — launch commands\n"
+                    "/clear — reset conversation\n"
+                    "/quit — exit\n"
+                    "When agent suggests commands, approve (y/n/e).",
+                    title="Commands",
+                    border_style="#4FC3F7",
+                ))
                 continue
 
             agent.state.force("idle")
 
-            # Show thinking indicator
-            status = console.status("[cyan]Thinking...[/]", spinner="dots")
-            status.start()
+            console.print(Text("", style=""))
 
             response_text = ""
 
@@ -94,33 +123,43 @@ def run_repl() -> None:
                 nonlocal response_text
                 response_text += t
 
-            await agent.run(user, StreamCallbacks(on_delta=delta))
-            status.stop()
+            # Show spinner
+            with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
+                await agent.run(user, StreamCallbacks(on_delta=delta))
 
             if not response_text:
-                console.print(Rule(style="red"))
+                console.print(Rule(style="#0288D1"))
                 continue
 
-            # Render as markdown
-            console.print(Markdown(response_text.strip()), style="")
-            console.print()
+            # Render response
+            console.print(Markdown(response_text.strip()))
 
-            # Detect bash commands
+            # Detect and offer to run bash commands
             cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
             cmds = [c.strip() for c in cmds if c.strip()]
 
             if cmds:
-                console.print(Panel(
-                    "\n".join(f"  ${c}" for c in cmds),
-                    title="Proposed commands",
-                    border_style="yellow",
-                ))
-                answer = Prompt.ask(
-                    Text("Run? (y/n/e)", style="bold yellow"),
-                    choices=["y", "n", "e"], default="n",
+                console.print()
+                panel_content = "\n".join(
+                    f"[dim]$[/] [bold #4FC3F7]{c}[/]" for c in cmds
                 )
+                console.print(Panel(
+                    panel_content,
+                    title="Proposed Commands",
+                    border_style="#FFD700",
+                ))
 
-                if answer == "y":
+                try:
+                    answer = await session_pt.prompt_async(
+                        HTML("<yellow>Run? (y/n/e)</yellow> <dim>[n]</dim> "),
+                        style=PT_STYLE,
+                    )
+                except (EOFError, KeyboardInterrupt):
+                    answer = "n"
+
+                answer = answer.strip().lower()
+
+                if answer in ("y", "yes"):
                     for c in cmds:
                         tr = await tool_execute(
                             "terminal", {"command": c},
@@ -129,23 +168,30 @@ def run_repl() -> None:
                         console.print(Panel(
                             tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
                             title=f"$ {c[:60]}",
-                            border_style="green" if tr.success else "red",
+                            border_style="#4CAF50" if tr.success else "#F44336",
                         ))
-                elif answer == "e":
-                    new_cmd = Prompt.ask("  $")
-                    if new_cmd.strip():
-                        tr = await tool_execute(
-                            "terminal", {"command": new_cmd.strip()},
-                            ToolContext(metadata={"approved": True}),
+                elif answer in ("e", "edit"):
+                    try:
+                        new_cmd = await session_pt.prompt_async(
+                            HTML("<dim>$ </dim>"),
+                            style=PT_STYLE,
                         )
-                        console.print(Panel(
-                            tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
-                            border_style="green" if tr.success else "red",
-                        ))
+                        if new_cmd.strip():
+                            tr = await tool_execute(
+                                "terminal", {"command": new_cmd.strip()},
+                                ToolContext(metadata={"approved": True}),
+                            )
+                            console.print(Panel(
+                                tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
+                                border_style="#4CAF50" if tr.success else "#F44336",
+                            ))
+                    except (EOFError, KeyboardInterrupt):
+                        pass
                 else:
                     console.print("[dim][Rejected][/]")
 
-            console.print(Rule(style="cyan"))
+            console.print()
+            console.print(Rule(style="#0288D1"))
 
     asyncio.run(_run())
 

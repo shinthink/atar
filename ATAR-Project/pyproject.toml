@@ -36,6 +36,7 @@ dependencies = [
     "atar-security",
     "atar-provider-anthropic",
     "atar-tools",
+    "prompt-toolkit>=3.0.53",
 ]
 
 [tool.uv.sources]
