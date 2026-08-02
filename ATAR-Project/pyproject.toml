@@ -75,7 +75,15 @@ build-backend = "hatchling.build"
 members = [
     ".",
     "apps/*",
-    "packages/*",
+    "packages/atar-models",
+    "packages/atar-protocols",
+    "packages/atar-core",
+    "packages/atar-storage",
+    "packages/atar-tools",
+    "packages/atar-security",
+    "packages/atar-projects",
+    "packages/atar-domain",
+    "packages/atar-planning",
     "providers/*",
 ]
 

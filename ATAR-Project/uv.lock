@@ -9,13 +9,11 @@ resolution-markers = [
 [manifest]
 members = [
     "atar",
-    "atar-application",
     "atar-cli",
     "atar-core",
     "atar-domain",
     "atar-models",
     "atar-projects",
-    "atar-prompts",
     "atar-protocols",
     "atar-provider-anthropic",
     "atar-provider-openai",
@@ -349,11 +347,6 @@ dev = [
 ]
 
 [[package]]
-name = "atar-application"
-version = "0.1.0"
-source = { editable = "packages/atar-application" }
-
-[[package]]
 name = "atar-cli"
 version = "0.1.0"
 source = { editable = "apps/atar-cli" }
@@ -393,11 +386,6 @@ source = { editable = "packages/atar-models" }
 name = "atar-projects"
 version = "0.1.0"
 source = { editable = "packages/atar-projects" }
-
-[[package]]
-name = "atar-prompts"
-version = "0.1.0"
-source = { editable = "packages/atar-prompts" }
 
 [[package]]
 name = "atar-protocols"

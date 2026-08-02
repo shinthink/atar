@@ -1,7 +1,4 @@
-"""ATAR Anthropic provider — Messages API + SSE streaming.
-
-Also works with DeepSeek Anthropic-compatible endpoint.
-"""
+"""ATAR Anthropic provider — Messages API + SSE streaming + tool calls."""
 
 from __future__ import annotations
 
@@ -18,12 +15,14 @@ from atar_models.responses import ModelResponse, ProviderCapabilities, ProviderH
 class AnthropicProvider:
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         base_url: str = "https://api.anthropic.com/v1",
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,
     ) -> None:
-        self.api_key = api_key
+        import os
+        resolved = api_key or os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or ""
+        self.api_key = resolved
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.max_tokens = max_tokens
@@ -85,11 +84,7 @@ class AnthropicProvider:
         return ProviderHealth(provider_id="anthropic", status="unknown")
 
 
-# ── helpers ──
-
-def _build_body(
-    request: ModelRequest, model: str, max_tokens: int, *, stream: bool
-) -> dict[str, Any]:
+def _build_body(request: ModelRequest, model: str, max_tokens: int, *, stream: bool) -> dict[str, Any]:
     system = ""
     messages: list[dict[str, Any]] = []
     for msg in request.messages:
@@ -97,7 +92,6 @@ def _build_body(
             system = msg.content
         else:
             messages.append({"role": msg.role, "content": msg.content})
-
     body: dict[str, Any] = {
         "model": request.model or model,
         "max_tokens": request.max_output_tokens or max_tokens,
@@ -119,19 +113,34 @@ def _build_body(
 
 def _parse_response(data: dict[str, Any]) -> ModelResponse:
     text = ""
+    tool_calls = []
     for block in data.get("content", []):
         if block.get("type") == "text":
             text += str(block.get("text", ""))
-        # skip thinking blocks
+        elif block.get("type") == "tool_use":
+            tool_calls.append({
+                "id": block.get("id", ""),
+                "name": block.get("name", ""),
+                "input": block.get("input", {}),
+            })
     return ModelResponse(
         request_id=str(data.get("id", "")),
         model=str(data.get("model", "")),
         text=text,
+        tool_calls=tool_calls,
     )
 
 
 def _parse_event(data: dict[str, Any]) -> ModelEvent:
     etype = data.get("type", "")
+    if etype == "content_block_start":
+        cblock = data.get("content_block", {})
+        if cblock.get("type") == "thinking":
+            return ModelEvent(event_type="thinking", text="")
+        if cblock.get("type") == "tool_use":
+            return ModelEvent(event_type="tool_call", provider_metadata={
+                "id": cblock.get("id", ""), "name": cblock.get("name", ""), "partial": True,
+            })
     if etype == "content_block_delta":
         delta = data.get("delta", {})
         dtype = delta.get("type", "")
@@ -139,12 +148,12 @@ def _parse_event(data: dict[str, Any]) -> ModelEvent:
             return ModelEvent(event_type="text_delta", text=str(delta.get("text", "")))
         if dtype == "thinking_delta":
             return ModelEvent(event_type="thinking", text="")
-    if etype == "content_block_start":
-        cblock = data.get("content_block", {})
-        if cblock.get("type") == "thinking":
-            return ModelEvent(event_type="thinking", text="")
+        if dtype == "input_json_delta":
+            return ModelEvent(event_type="tool_call", provider_metadata={
+                "partial_json": delta.get("partial_json", ""), "partial": True,
+            })
     if etype == "content_block_stop":
-        return ModelEvent(event_type="thinking", text="")
+        return ModelEvent(event_type="tool_call", provider_metadata={"partial": False})
     if etype == "message_start":
         return ModelEvent(event_type="message_start", provider_metadata=data.get("message", {}))
     if etype == "message_stop":
