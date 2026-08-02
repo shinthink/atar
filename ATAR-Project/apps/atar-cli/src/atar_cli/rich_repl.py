@@ -210,7 +210,7 @@ def _context_bar() -> str:
     width = 10
     filled = int(pct * width)
     bar = "█" * filled + "░" * (width - filled)
-    return f" {tokens//1000}K/{max_tokens//1000}K [{bar}] {pct*100:.0f}%"
+    return f" {tokens/1000:.1f}K/{max_tokens//1000}K [{bar}] {pct*100:.0f}%"
 
 
 def _status_bar() -> str:
