@@ -13,10 +13,48 @@ from atar_core.config_reader import get_api_key, save_api_key
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.events import Key as events_Key  # noqa: N811
-from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, RichLog, Static
+from textual.screen import ModalScreen, Screen
+from textual.widgets import Button, Footer, Header, Input, RichLog, Static, TextArea
 
 # ── Functional Screens (7) ──
+
+class ApprovalModal(ModalScreen[bool]):
+    """Modal: approve or reject a tool execution."""
+    tool_name: str = ""
+    tool_args: str = ""
+    risk: str = "MEDIUM"
+    reason: str = ""
+
+    def compose(self) -> ComposeResult:
+        yield Static("⚠ Approve Tool Execution?", classes="t")
+        yield Static(f"Tool: [bold]{self.tool_name}[/]")
+        yield Static(f"Args: [dim]{self.tool_args[:120]}[/]")
+        yield Static(f"Risk: [{self._risk_color()}]{self.risk}[/]")
+        if self.reason:
+            yield Static(f"Reason: {self.reason}")
+        yield Static("")
+        with Horizontal():
+            yield Button("Approve (A)", variant="primary", id="approve-yes")
+            yield Button("Reject (R)", variant="error", id="approve-no")
+            yield Button("Cancel", id="approve-cancel")
+
+    def _risk_color(self) -> str:
+        return {"HIGH": "red", "MEDIUM": "yellow", "LOW": "green"}.get(self.risk, "dim")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "approve-yes":
+            self.dismiss(True)
+        elif event.button.id == "approve-no":
+            self.dismiss(False)
+        else:
+            self.dismiss(False)
+
+    def on_key(self, event: events_Key) -> None:
+        if event.key == "a":
+            self.dismiss(True)
+        elif event.key == "r" or event.key == "escape":
+            self.dismiss(False)
+
 
 class ChatScreen(Screen):
     BINDINGS = [
@@ -28,14 +66,16 @@ class ChatScreen(Screen):
 
     _task: asyncio.Task | None = None
     _running: bool = False
-    _tool_cards: list[dict] = []  # live tool execution tracking
+    _tool_cards: list[dict] = []
+    _total_tokens: int = 0
+    _total_cost: float = 0.0
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
             yield RichLog(id="chat-output", highlight=True, markup=True, max_lines=1000)
             with Horizontal(id="chat-input-area"):
-                yield Input(id="chat-input", placeholder="Ask ATAR...  /help | Shift+Enter=newline | Esc=cancel")
+                yield TextArea(id="chat-input", text="")
                 yield Button("Send", id="chat-send")
         yield Footer()
 
@@ -43,8 +83,8 @@ class ChatScreen(Screen):
         out = self.query_one("#chat-output", RichLog)
         key = get_api_key()
         status = "[green]✓ online[/]" if key else "[red]✗ no key[/]"
-        out.write(f"[bold cyan]ATAR Chat[/] — streaming conversation · {status}")
-        out.write("[dim]/help /clear /model /sessions · Shift+Enter for newline[/]")
+        out.write(f"[bold cyan]ATAR Chat[/] · {status} · tokens: 0 · $0.000")
+        out.write("[dim]/help /clear /model /sessions /status · Ctrl+Enter=send · Shift+Enter=newline[/]")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "chat-send":
@@ -62,25 +102,25 @@ class ChatScreen(Screen):
             out.write("[bold yellow]⏹ Cancelled[/]")
 
     def action_send(self) -> None:
-        """Send from multiline textarea."""
-        inp = self.query_one("#chat-input", Input)
-        if inp.value.strip():
+        """Send from TextArea (Ctrl+Enter)."""
+        ta = self.query_one("#chat-input", TextArea)
+        if ta.text.strip():
             asyncio.create_task(self._send())
 
     async def _send(self) -> None:
-        inp = self.query_one("#chat-input", Input)
+        ta = self.query_one("#chat-input", TextArea)
         out = self.query_one("#chat-output", RichLog)
-        text = inp.value.strip()
+        text = ta.text.strip()
         if not text or self._running:
             return
-        inp.value = ""
+        ta.text = ""
         self._running = True
 
         # Slash commands
         if text.startswith("/"):
             await self._handle_command(text, out)
             self._running = False
-            self.query_one("#chat-input", Input).focus()
+            self.query_one("#chat-input", TextArea).focus()
             return
 
         out.write(f"\n[bold #4FC3F7]▸[/] {text}")
@@ -89,7 +129,7 @@ class ChatScreen(Screen):
         if not key:
             out.write("[bold red]No API key. Run Setup first.[/]")
             self._running = False
-            self.query_one("#chat-input", Input).focus()
+            self.query_one("#chat-input", TextArea).focus()
             return
 
         import atar_tools.tools.file  # noqa: F401
@@ -145,8 +185,9 @@ class ChatScreen(Screen):
             out.write(f"\n[red]Error: {e}[/]")
 
         out.write("\n")
+        self._total_tokens += len(text) + len("".join(buf))  # rough estimate
         self._running = False
-        self.query_one("#chat-input", Input).focus()
+        self.query_one("#chat-input", TextArea).focus()
 
     async def _handle_command(self, cmd: str, out: RichLog) -> None:
         cmd = cmd.strip()
