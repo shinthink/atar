@@ -23,6 +23,27 @@ PT_STYLE = Style.from_dict({
     "separator": "#0288D1",
 })
 
+BASE_PROMPT = (
+    "You are ATAR, a terminal AI agent. When asked to create files, "
+    "run commands, or modify the system, you MUST propose a bash command "
+    "in a ```bash code block. Never just describe — always offer to execute. "
+    "For file creation use: echo 'content' > path. Keep responses short."
+)
+
+CODE_PROMPT = (
+    "You are ATAR in CODE mode. You can read, write, and analyze code. "
+    "Use terminal for all operations. When making changes, always propose "
+    "a ```bash command. Read relevant files before editing. Be precise."
+)
+
+HELP_TEXT = (
+    "/chat   normal chat mode\n"
+    "/code   coding mode (file read/write, git, tests)\n"
+    "/clear  reset conversation\n"
+    "/quit   exit\n"
+    "When agent suggests commands, approve (y/n/e)."
+)
+
 
 def show_banner() -> None:
     """Render the ATAR startup banner — Hermes style."""
@@ -90,6 +111,129 @@ def run_repl() -> None:
 
     show_banner()
 
+    async def _agent_turn(prompt: str, ag: Agent, prov) -> None:
+        """Multi-turn agent interaction with tool approval loop."""
+        ag.state.force("idle")
+        response_text = ""
+
+        async def delta(t: str) -> None:
+            nonlocal response_text
+            response_text += t
+
+        with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
+            await ag.run(prompt, StreamCallbacks(on_delta=delta))
+
+        if not response_text:
+            console.print(Rule(style="#0288D1"))
+            return
+
+        # Render: split into code blocks (panels) and text (markdown)
+        _render_response(response_text)
+
+        # Extract bash commands
+        cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
+        cmds = [c.strip() for c in cmds if c.strip()]
+
+        if not cmds:
+            console.print(Rule(style="#0288D1"))
+            return
+
+        # Show proposed commands
+        console.print(Panel(
+            "\n".join(f"[dim]$[/] [bold #4FC3F7]{c[:120]}[/]" for c in cmds),
+            title="Proposed Commands",
+            border_style="#FFD700",
+        ))
+
+        try:
+            answer = await session_pt.prompt_async(
+                HTML("<yellow>Run? (y/n/e)</yellow> <dim>[n]</dim> "),
+                style=PT_STYLE,
+            )
+        except (EOFError, KeyboardInterrupt):
+            answer = "n"
+
+        answer = answer.strip().lower()
+
+        if answer in ("y", "yes"):
+            for c in cmds:
+                tr = await tool_execute(
+                    "terminal", {"command": c},
+                    ToolContext(metadata={"approved": True}),
+                )
+                result_text = tr.output[:500] if tr.success else f"[red]{tr.error}[/]"
+                console.print(Panel(
+                    result_text,
+                    title=f"$ {c[:60]}",
+                    border_style="#4CAF50" if tr.success else "#F44336",
+                ))
+                # Feed result back to agent for follow-up
+                ag.state.force("idle")
+                follow_up = f"Command result: {result_text[:200]}\nWhat next? Reply short."
+                fu_text = ""
+
+                async def fu_delta(t: str) -> None:
+                    nonlocal fu_text
+                    fu_text += t
+
+                with console.status("[#4FC3F7]Agent continues...[/]", spinner="dots"):
+                    await ag.run(follow_up, StreamCallbacks(on_delta=fu_delta))
+                if fu_text:
+                    _render_response(fu_text)
+        elif answer in ("e", "edit"):
+            try:
+                new_cmd = await session_pt.prompt_async(
+                    HTML("<dim>$ </dim>"), style=PT_STYLE,
+                )
+                if new_cmd.strip():
+                    tr = await tool_execute(
+                        "terminal", {"command": new_cmd.strip()},
+                        ToolContext(metadata={"approved": True}),
+                    )
+                    console.print(Panel(
+                        tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
+                        border_style="#4CAF50" if tr.success else "#F44336",
+                    ))
+            except (EOFError, KeyboardInterrupt):
+                pass
+        else:
+            console.print("[dim][Rejected][/]")
+
+        console.print(Rule(style="#0288D1"))
+
+
+    def _render_response(text: str) -> None:
+        """Render text — code blocks as panels, rest as markdown."""
+        lines = text.strip().split("\n")
+        in_code = False
+        lang = ""
+        buf: list[str] = []
+
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("```") and not in_code:
+                # End current text buffer
+                if buf:
+                    console.print(Markdown("\n".join(buf)))
+                    buf = []
+                in_code = True
+                lang = stripped[3:].strip() or "code"
+                continue
+            if stripped.startswith("```") and in_code:
+                in_code = False
+                code_content = "\n".join(buf)
+                buf = []
+                if lang in ("bash", "sh", "shell"):
+                    console.print(Panel(code_content, title="  bash", border_style="#7C3AED", padding=(1, 2)))
+                else:
+                    console.print(Panel(code_content, title=f"  {lang}", border_style="#4FC3F7", padding=(1, 2)))
+                continue
+            buf.append(line)
+
+        if buf:
+            console.print(Markdown("\n".join(buf)))
+
+
     async def _run() -> None:
         nonlocal agent
         while True:
@@ -110,31 +254,19 @@ def run_repl() -> None:
                 break
             if user in ("/clear", "/reset"):
                 agent = Agent(provider=provider, max_turns=1)
+                agent.system_prompt = BASE_PROMPT
                 console.print("[dim][Cleared][/]")
                 console.print(Rule(style="#0288D1"))
                 continue
             if user == "/help":
-                console.print(Panel(
-                    "/chat   normal chat mode\n"
-                    "/code   coding mode (file read/write, git, tests)\n"
-                    "/clear  reset conversation\n"
-                    "/quit   exit\n"
-                    "When agent suggests commands, approve (y/n/e).",
-                    title="Commands",
-                    border_style="#4FC3F7",
-                ))
+                console.print(Panel(HELP_TEXT, title="Commands", border_style="#4FC3F7"))
                 continue
             if user == "/code":
                 import atar_tools.tools.file  # noqa: F401
                 import atar_tools.tools.git  # noqa: F401
                 import atar_tools.tools.test_runner  # noqa: F401
                 agent = Agent(provider=provider, max_turns=3, tools=[1])
-                agent.system_prompt = (
-                    "You are ATAR in CODE mode. You can read, write, and analyze code. "
-                    "Use tools: terminal (run cmds), read_file, write_file, git, run_tests. "
-                    "When making changes, always propose a ```bash command. "
-                    "Read relevant files before editing. Be precise."
-                )
+                agent.system_prompt = CODE_PROMPT
                 cwd = os.getcwd()
                 console.print(Panel(
                     f"[bold]Code mode active[/]\nWorking dir: {cwd}\n"
@@ -146,137 +278,13 @@ def run_repl() -> None:
                 continue
             if user == "/chat":
                 agent = Agent(provider=provider, max_turns=1)
-                agent.system_prompt = (
-                    "You are ATAR, a terminal AI agent. When asked to create files, "
-                    "run commands, or modify the system, you MUST propose a bash command "
-                    "in a ```bash code block. Never just describe — always offer to execute. "
-                    "For file creation use: echo 'content' > path. Keep responses short."
-                )
+                agent.system_prompt = BASE_PROMPT
                 console.print("[dim]Chat mode[/]")
                 console.print(Rule(style="#0288D1"))
                 continue
 
-            agent.state.force("idle")
-
-            console.print(Text("", style=""))
-
-            response_text = ""
-
-            async def delta(t: str) -> None:
-                nonlocal response_text
-                response_text += t
-
-            # Show spinner
-            with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
-                await agent.run(user, StreamCallbacks(on_delta=delta))
-
-            if not response_text:
-                console.print(Rule(style="#0288D1"))
-                continue
-
-            # Render response with Obsidian-style panels for tools
-            lines = response_text.strip().split("\n")
-            in_code = False
-            lang = ""
-            code_buf: list[str] = []
-
-            for line in lines:
-                stripped = line.strip()
-                # Detect bash code block start
-                if stripped.startswith("```") and not in_code:
-                    in_code = True
-                    lang = stripped[3:].strip() or "tool"
-                    if code_buf:
-                        console.print(Markdown("\n".join(code_buf)))
-                        code_buf = []
-                    continue
-                if stripped.startswith("```") and in_code:
-                    in_code = False
-                    if lang in ("bash", "sh", "shell"):
-                        console.print(Panel(
-                            "\n".join(code_buf),
-                            title=f"  {lang}",
-                            border_style="#7C3AED",
-                            padding=(1, 2),
-                        ))
-                    else:
-                        console.print(Panel(
-                            "\n".join(code_buf),
-                            title=f"  {lang}",
-                            border_style="#4FC3F7",
-                            padding=(1, 2),
-                        ))
-                    continue
-                if in_code:
-                    code_buf.append(line)
-                else:
-                    # Check for inline tool mentions like "🔧" or "📖"
-                    if any(kw in stripped for kw in ("read_file", "write_file", "git ", "terminal")):
-                        code_buf.append(line)
-                    else:
-                        code_buf.append(line)
-
-            if code_buf:
-                console.print(Markdown("\n".join(code_buf)))
-
-            # Detect and offer to run bash commands
-            cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
-            cmds = [c.strip() for c in cmds if c.strip()]
-
-            if cmds:
-                console.print()
-                panel_content = "\n".join(
-                    f"[dim]$[/] [bold #4FC3F7]{c}[/]" for c in cmds
-                )
-                console.print(Panel(
-                    panel_content,
-                    title="Proposed Commands",
-                    border_style="#FFD700",
-                ))
-
-                try:
-                    answer = await session_pt.prompt_async(
-                        HTML("<yellow>Run? (y/n/e)</yellow> <dim>[n]</dim> "),
-                        style=PT_STYLE,
-                    )
-                except (EOFError, KeyboardInterrupt):
-                    answer = "n"
-
-                answer = answer.strip().lower()
-
-                if answer in ("y", "yes"):
-                    for c in cmds:
-                        tr = await tool_execute(
-                            "terminal", {"command": c},
-                            ToolContext(metadata={"approved": True}),
-                        )
-                        console.print(Panel(
-                            tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
-                            title=f"$ {c[:60]}",
-                            border_style="#4CAF50" if tr.success else "#F44336",
-                        ))
-                elif answer in ("e", "edit"):
-                    try:
-                        new_cmd = await session_pt.prompt_async(
-                            HTML("<dim>$ </dim>"),
-                            style=PT_STYLE,
-                        )
-                        if new_cmd.strip():
-                            tr = await tool_execute(
-                                "terminal", {"command": new_cmd.strip()},
-                                ToolContext(metadata={"approved": True}),
-                            )
-                            console.print(Panel(
-                                tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
-                                border_style="#4CAF50" if tr.success else "#F44336",
-                            ))
-                    except (EOFError, KeyboardInterrupt):
-                        pass
-                else:
-                    console.print("[dim][Rejected][/]")
-
-            console.print()
-            console.print(Rule(style="#0288D1"))
+            # Multi-turn: agent may need multiple rounds
+            await _agent_turn(user, agent, provider)
 
     asyncio.run(_run())
 
