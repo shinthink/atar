@@ -9,6 +9,7 @@ import time
 import uuid
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.styles import Style
 from rich.console import Console
@@ -19,7 +20,29 @@ from rich.table import Table
 from rich.text import Text
 
 console = Console()
-session_pt = PromptSession()
+session_pt = PromptSession(
+    completer=WordCompleter(
+        [
+            "/help", "/model", "/sessions", "/code", "/chat",
+            "/clear", "/quit", "/exit", "/q", "/status", "/tools", "/reset",
+        ],
+        sentence=True,
+        meta_dict={
+            "/help": "Show available commands",
+            "/model": "Switch AI model/provider",
+            "/sessions": "Manage conversation sessions",
+            "/code": "Enter coding mode with tools",
+            "/chat": "Enter normal chat mode",
+            "/clear": "Reset the conversation",
+            "/quit": "Exit ATAR",
+            "/exit": "Exit ATAR",
+            "/q": "Quick quit",
+            "/status": "Show agent status",
+            "/tools": "Show tool execution history",
+            "/reset": "Reset conversation",
+        },
+    ),
+)
 
 PT_STYLE = Style.from_dict({
     "prompt": "#4FC3F7 bold",
