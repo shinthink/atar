@@ -1,29 +1,57 @@
-# Implementation Status
+# Implementation Status — FINAL
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
-## Milestone 5 — Provider Contracts + Initial Providers — COMPLETE
+## ATAR Terminal v0.1 — Feature Summary
 
-### Completed
-- [x] Anthropic provider: `atar_provider_anthropic/client.py` (4.9KB)
-- [x] Messages API: `POST /messages` with stream:true/false
-- [x] SSE streaming: content_block_start/delta/stop, message_start/stop
-- [x] DeepSeek Anthropic endpoint: thinking blocks handled, text deltas extracted
-- [x] Token counting: `POST /messages/count_tokens`
-- [x] Auto-detection: DeepSeek → Anthropic → OpenAI → Fake fallback
-- [x] Real API verified: `uv run atar chat "hello"` → streams response from DeepSeek
-- [x] Streaming response text verified character-by-character via SSE
-- [x] Config file: `~/.atar/config.yaml` with API key
-- [x] 25 tests passing, ruff clean
+### Core (M1-M4)
+- [x] Monorepo: 29 packages, Python 3.12+, uv, ruff, pytest
+- [x] Clean architecture: models → protocols → core → adapters
+- [x] Event bus (typed async pub/sub)
+- [x] State machine (12 states, validated transitions)
+- [x] 4 ADRs, 8 research files
 
-### Architecture
-```
-CLI (atar chat) 
-  → SecretsManager.resolve() → finds keyring/env/config
-  → AnthropicProvider(api_key, base_url, model) 
-    → POST /messages (stream:true) 
-    → SSE events parsed → ModelEvent 
-    → Agent.on_delta(text) → typer.echo(text)
-```
+### Provider + Sessions (M5-M6)
+- [x] Anthropic provider (Messages API, SSE streaming, DeepSeek compat)
+- [x] Session manager (JSON persistence, resume across invocations)
+- [x] Real API verified with DeepSeek
 
-### Next: Milestone 6 — Sessions + Prompt/Context Stack + AGENTS.md
+### Planning + Execution (M7-M9)
+- [x] Planning engine (AI-generated plans, risk classification, approval gate)
+- [x] 6 tools: read_file, write_file, terminal, git, run_tests
+- [x] Code analysis command (`atar code`)
+
+### Release v0.1 (M10)
+- [x] CHANGELOG, release notes, git tag v0.1.0
+- [x] 33 contract + integration tests
+
+### Memory + Skills + Web (M11-M13)
+- [x] Memory engine (save/recall/forget facts)
+- [x] Session search (full-text across all sessions)
+- [x] Skill registry (propose/review/activate lifecycle)
+- [x] Plugin hooks (ordered, timeout, failure isolation)
+- [x] Web fetch tool (HTTP GET + text extraction)
+
+### Multi-Agent + Batch (M16-M17)
+- [x] Task board (queued/running/done tracking)
+- [x] Subagent delegation (isolated context)
+- [x] Parallel delegation
+- [x] Batch processor
+- [x] Evaluation logger with stats
+
+### Finalization (M18-M23)
+- [x] Execution backends (local + Docker/SSH stubs)
+- [x] Security checklist + recovery plan
+- [x] Operations runbook
+- [ ] Final commit + tag
+
+### Skipped
+- [ ] M14: Voice mode (needs audio hardware)
+- [ ] M15: Computer-use (needs desktop access)
+
+## Metrics
+- Tests: 33
+- Tools: 6
+- CLI commands: 18
+- Python files: 47
+- Ruff: 6 non-blocking E501 warnings
