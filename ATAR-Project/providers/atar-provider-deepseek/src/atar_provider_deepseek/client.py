@@ -7,7 +7,6 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
-
 from atar_models.model_events import ModelEvent
 from atar_models.requests import ModelRequest, TokenCountRequest
 from atar_models.responses import ModelResponse, ProviderCapabilities, ProviderHealth

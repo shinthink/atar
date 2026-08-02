@@ -65,7 +65,7 @@ def run_repl() -> None:
     import atar_tools.tools.terminal  # noqa: F401
     from atar_core.agent import Agent, StreamCallbacks
     from atar_models.tools import ToolContext
-    from atar_provider_anthropic.client import AnthropicProvider
+    from atar_provider_deepseek.client import DeepSeekProvider
     from atar_tools.registry import execute as tool_execute
 
     key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or ""
@@ -73,29 +73,58 @@ def run_repl() -> None:
         console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
 
-    provider = AnthropicProvider(
-        api_key=key, base_url="https://api.deepseek.com/anthropic",
-        model="deepseek-v4-pro",
+    provider = DeepSeekProvider(api_key=key, model="deepseek-chat")
+    agent = Agent(provider=provider, max_turns=5, tools=[1])
+    agent.system_prompt = (
+        "You are ATAR, a precise terminal agent. Use tools to read files, "
+        "write code, run commands, and search. Always verify before acting. "
+        "Use read_file before editing. Use write_file to create files. "
+        "Use terminal to run commands. Respond in Indonesian."
     )
-    agent = Agent(provider=provider, max_turns=1)
-    agent.system_prompt = BASE_PROMPT
+
+    # Register tools for the agent to discover
+    import atar_tools.tools.file as _f  # noqa: F401
+    import atar_tools.tools.terminal as _t  # noqa: F401
+    import atar_tools.tools.web as _w  # noqa: F401
     session_id = uuid.uuid4().hex[:12]
     last_elapsed = 0
 
-    show_banner("deepseek-v4-pro", os.getcwd(), session_id)
+    show_banner("deepseek-chat", os.getcwd(), session_id)
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
         nonlocal last_elapsed
         ag.state.force("idle")
         response_text = ""
         start_time = time.time()
+        tool_count = 0
 
         async def delta(t: str) -> None:
             nonlocal response_text
             response_text += t
 
-        with console.status("[#4FC3F7]Initializing agent...[/]", spinner="dots"):
-            await ag.run(prompt, StreamCallbacks(on_delta=delta))
+        async def on_tool(name: str, args: dict) -> None:
+            nonlocal tool_count
+            tool_count += 1
+            icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "run_tests": "🧪"}
+            icon = icons.get(name, "🔧")
+            short_args = str(args)[:80]
+            console.print(Panel(
+                f"[dim]{short_args}[/]",
+                title=f"  {icon} {name}",
+                border_style="#7C3AED",
+                padding=(0, 1),
+            ))
+
+        async def on_tool_result(name: str, result: str) -> None:
+            console.print(Panel(
+                Text(result[:300] if result else "(empty)", style="dim"),
+                title=f"  {name} result",
+                border_style="#4CAF50",
+                padding=(0, 1),
+            ))
+
+        console.print(Rule(style="#0288D1"))
+        await ag.run(prompt, StreamCallbacks(on_delta=delta, on_tool_call=on_tool, on_tool_result=on_tool_result))
 
         elapsed = time.time() - start_time
         last_elapsed = int(elapsed)  # update outer scope
