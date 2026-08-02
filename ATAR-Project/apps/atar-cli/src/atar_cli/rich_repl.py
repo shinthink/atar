@@ -174,8 +174,50 @@ def run_repl() -> None:
                 console.print(Rule(style="#0288D1"))
                 continue
 
-            # Render response
-            console.print(Markdown(response_text.strip()))
+            # Render response with Obsidian-style panels for tools
+            lines = response_text.strip().split("\n")
+            in_code = False
+            lang = ""
+            code_buf: list[str] = []
+
+            for line in lines:
+                stripped = line.strip()
+                # Detect bash code block start
+                if stripped.startswith("```") and not in_code:
+                    in_code = True
+                    lang = stripped[3:].strip() or "tool"
+                    if code_buf:
+                        console.print(Markdown("\n".join(code_buf)))
+                        code_buf = []
+                    continue
+                if stripped.startswith("```") and in_code:
+                    in_code = False
+                    if lang in ("bash", "sh", "shell"):
+                        console.print(Panel(
+                            "\n".join(code_buf),
+                            title=f"  {lang}",
+                            border_style="#7C3AED",
+                            padding=(1, 2),
+                        ))
+                    else:
+                        console.print(Panel(
+                            "\n".join(code_buf),
+                            title=f"  {lang}",
+                            border_style="#4FC3F7",
+                            padding=(1, 2),
+                        ))
+                    continue
+                if in_code:
+                    code_buf.append(line)
+                else:
+                    # Check for inline tool mentions like "🔧" or "📖"
+                    if any(kw in stripped for kw in ("read_file", "write_file", "git ", "terminal")):
+                        code_buf.append(line)
+                    else:
+                        code_buf.append(line)
+
+            if code_buf:
+                console.print(Markdown("\n".join(code_buf)))
 
             # Detect and offer to run bash commands
             cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
