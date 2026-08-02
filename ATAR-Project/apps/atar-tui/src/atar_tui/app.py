@@ -860,7 +860,9 @@ class ProcessScreen(Screen):
                 log.write(f"[bold]Active Task:[/] {task.get_name()}")
             import threading
             for t in threading.enumerate():
-                log.write(f"  {'[bold]' if t is threading.current_thread() else ''}{t.name}{'[/]' if t is threading.current_thread() else ''} (daemon={t.daemon})")
+                bold = "bold" if t is threading.current_thread() else ""
+                end = "/" if t is threading.current_thread() else ""
+                log.write(f"  [{bold}]{t.name}[{end}] (daemon={t.daemon})")
         except Exception as e:
             log.write(f"[red]Cannot enumerate threads: {e}[/]")
 
