@@ -9,7 +9,7 @@ import re
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.styles import Style
-from rich.console import Console
+from rich.console import Console, Group
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
@@ -18,18 +18,6 @@ from rich.text import Text
 console = Console()
 session_pt = PromptSession()
 
-# Hermes-style ATAR logo using box-drawing chars
-ATAR_LOGO = """\
-[bold #4FC3F7] █████╗ ████████╗ █████╗ ██████╗        █████╗  ██████╗ ███████╗███╗  ██╗████████╗[/]
-[bold #29B6F6]██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗      ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝[/]
-[#0288D1]███████║   ██║   ███████║██████╔╝█████╗███████║██║  ███╗█████╗  ██╔██╗██║   ██║[/]
-[#0277BD]██╔══██║   ██║   ██╔══██║██╔══██╗╚════╝██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║[/]
-[#01579B]██║  ██║   ██║   ██║  ██║██║  ██║      ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║[/]
-[#01579B]╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝[/]
-
-[bold #4FC3F7]  CLARITY IN COMPLEXITY  —  Ataraxia[/]
-"""
-
 PT_STYLE = Style.from_dict({
     "prompt": "#4FC3F7 bold",
     "separator": "#0288D1",
@@ -37,17 +25,34 @@ PT_STYLE = Style.from_dict({
 
 
 def show_banner() -> None:
-    """Render the ATAR startup banner."""
-    console.print()
-    console.print(Markdown(ATAR_LOGO))
-    console.print()
-    console.print(Rule(style="#0288D1"))
-    console.print(
-        Text("  /quit   exit    /clear   reset    /help   commands",
-             style="dim #4FC3F7"),
+    """Render the ATAR startup banner — Hermes style."""
+    logo_lines = [
+        " █████╗ ████████╗ █████╗ ██████╗        █████╗  ██████╗ ███████╗███╗  ██╗████████╗",
+        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗      ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝",
+        "███████║   ██║   ███████║██████╔╝█████╗███████║██║  ███╗█████╗  ██╔██╗██║   ██║",
+        "██╔══██║   ██║   ██╔══██║██╔══██╗╚════╝██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║",
+        "██║  ██║   ██║   ██║  ██║██║  ██║      ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║",
+        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝",
+    ]
+    colors = ["#4FC3F7", "#29B6F6", "#0288D1", "#0277BD", "#01579B", "#01579B"]
+    logo_text = []
+    for i, line in enumerate(logo_lines):
+        logo_text.append(Text(line, style=f"bold {colors[i]}"))
+
+    subtitle = Text("CLARITY IN COMPLEXITY  ", style="bold #4FC3F7")
+    ataraxia = Text("Ataraxia", style="italic #4FC3F7")
+    subtitle.append(Text(" — ", style="dim"))
+    subtitle.append(ataraxia)
+
+    inner = Group(
+        Text(""),
+        *logo_text,
+        Text(""),
+        subtitle,
     )
+    console.print(Panel(inner, border_style="#0288D1", padding=(1, 4)))
+    console.print(Text("  /quit   exit    /clear   reset    /help   commands", style="dim #4FC3F7"))
     console.print(Rule(style="#0288D1"))
-    console.print()
 
 
 def build_prompt(session_id: str = "") -> HTML:
