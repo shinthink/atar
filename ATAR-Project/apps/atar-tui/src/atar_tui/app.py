@@ -866,12 +866,12 @@ class AuditScreen(Screen):
         if os.path.exists(audit_path):
             with open(audit_path) as f:
                 lines = f.readlines()[-50:]
-            for l in lines:
+            for line in lines:
                 try:
-                    entry = json.loads(l)
+                    entry = json.loads(line)
                     log.write(f"[dim]{entry.get('time','')[:19]}[/] {entry.get('action','')} {entry.get('detail','')[:80]}")
                 except (json.JSONDecodeError, Exception):
-                    log.write(f"[dim]{l[:100]}[/]")
+                    log.write(f"[dim]{line[:100]}[/]")
         else:
             log.write("[dim]No audit log yet. Enable auditing in settings.[/]")
 
@@ -896,6 +896,19 @@ class SettingsScreen(Screen):
             yield Static("[bold]Permission Mode:[/]")
             for m in modes:
                 yield Static(f"  {m}")
+        yield Footer()
+
+
+class DiagnosticsScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical():
+            yield Static("🔬 Diagnostics", classes="t")
+            yield Static(f"Python: {sys.version}")
+            yield Static(f"CWD: {os.getcwd()}")
+            yield Static(f"ATAR home: {os.path.expanduser('~/.atar')}")
+            yield Static(f"TTY: {sys.stdin.isatty()}")
+            yield Static(f"API Key: {'set' if get_api_key() else 'missing'}")
         yield Footer()
 
 
