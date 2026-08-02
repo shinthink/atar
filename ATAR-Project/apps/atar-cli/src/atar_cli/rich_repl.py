@@ -12,7 +12,7 @@ from contextlib import suppress
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.clipboard import ClipboardData
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
@@ -44,6 +44,7 @@ SLASH_META = {
 bindings = KeyBindings()
 
 @bindings.add("tab")
+@bindings.add("c-i")  # fallback: some terminals send c-i for Tab
 def _(event):
     """Tab: trigger slash-command completion."""
     b = event.current_buffer
@@ -78,7 +79,7 @@ def _(event):
 PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F8C98"})
 
 session_pt = PromptSession(
-    completer=WordCompleter(SLASH_COMMANDS, ignore_case=True, sentence=False, meta_dict=SLASH_META),
+    completer=NestedCompleter.from_nested_dict(dict.fromkeys(SLASH_COMMANDS)),
     key_bindings=bindings,
     multiline=False,
     enable_history_search=True,
