@@ -1,4 +1,4 @@
-"""ATAR file tools — safe file read/write operations."""
+"""ATAR file tools — safe file read/write operations with path hardening."""
 
 from __future__ import annotations
 
@@ -10,21 +10,49 @@ from atar_models.tools import ToolContext, ToolResult
 from atar_tools.registry import register
 
 
+def _resolve_safe_path(path: str, ctx: ToolContext, must_exist: bool = False) -> tuple[str | None, str | None]:
+    """Resolve path within workspace. Returns (safe_abs_path, error) or (None, error)."""
+    workspace = os.path.abspath(ctx.working_directory or os.getcwd())
+
+    if os.path.isabs(path):
+        candidate = os.path.abspath(path)
+    else:
+        candidate = os.path.abspath(os.path.join(workspace, path))
+
+    try:
+        real = os.path.realpath(candidate)
+    except OSError:
+        return None, f"Path resolution failed: {candidate}"
+
+    if not real.startswith(workspace + os.sep) and real != workspace:
+        return None, f"Path outside workspace: {path}"
+
+    if ".." in os.path.relpath(real, workspace).split(os.sep):
+        return None, f"Path traversal detected: {path}"
+
+    if must_exist and not os.path.exists(real):
+        return None, f"Not found: {real}"
+
+    return real, None
+
+
 async def _read_file(_name: str, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
     path = args.get("path", "")
     if not path:
         return ToolResult(success=False, error="path required")
-    full = os.path.join(ctx.working_directory, path) if not os.path.isabs(path) else path
-    if not os.path.isfile(full):
-        return ToolResult(success=False, error=f"Not found: {full}")
+
+    safe, err = _resolve_safe_path(path, ctx, must_exist=True)
+    if err:
+        return ToolResult(success=False, error=err)
+
     try:
-        with open(full, errors="replace") as f:
+        with open(safe, errors="replace") as f:
             content = f.read()
         return ToolResult(
-            success=True, output=content, metadata={"path": full, "bytes": len(content)}
+            success=True, output=content, metadata={"path": safe, "bytes": len(content)}
         )
     except PermissionError:
-        return ToolResult(success=False, error=f"Permission denied: {full}")
+        return ToolResult(success=False, error=f"Permission denied: {safe}")
 
 
 async def _write_file(_name: str, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
@@ -32,18 +60,22 @@ async def _write_file(_name: str, args: dict[str, Any], ctx: ToolContext) -> Too
     content = args.get("content", "")
     if not path:
         return ToolResult(success=False, error="path required")
-    full = os.path.join(ctx.working_directory, path) if not os.path.isabs(path) else path
-    os.makedirs(os.path.dirname(full) or ".", exist_ok=True)
+
+    safe, err = _resolve_safe_path(path, ctx)
+    if err:
+        return ToolResult(success=False, error=err)
+
+    os.makedirs(os.path.dirname(safe) or ".", exist_ok=True)
     try:
-        with open(full, "w") as f:
+        with open(safe, "w") as f:
             f.write(content)
         return ToolResult(
             success=True,
-            output=f"Wrote {len(content)} bytes to {full}",
-            metadata={"path": full},
+            output=f"Wrote {len(content)} bytes to {safe}",
+            metadata={"path": safe},
         )
     except PermissionError:
-        return ToolResult(success=False, error=f"Permission denied: {full}")
+        return ToolResult(success=False, error=f"Permission denied: {safe}")
 
 
 register("read_file", "Read a file from disk", _read_file, parameters={

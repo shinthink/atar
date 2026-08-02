@@ -16,15 +16,24 @@ APPROVED = ToolContext(metadata={"approved": True})
 
 @pytest.mark.asyncio
 async def test_read_file_tool() -> None:
-    result = await execute("read_file", {"path": "/etc/hostname"})
-    assert result.success
+    ctx = ToolContext(metadata={}, working_directory=tempfile.gettempdir())
+    path = os.path.join(tempfile.gettempdir(), "atar_test_read.txt")
+    with open(path, "w") as f:
+        f.write("test content")
+    try:
+        result = await execute("read_file", {"path": "atar_test_read.txt"}, ctx)
+        assert result.success
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
 
 
 @pytest.mark.asyncio
 async def test_write_file_tool() -> None:
+    ctx = ToolContext(metadata={"approved": True}, working_directory=tempfile.gettempdir())
     path = os.path.join(tempfile.gettempdir(), "atar_test_write.txt")
     try:
-        result = await execute("write_file", {"path": path, "content": "test"}, APPROVED)
+        result = await execute("write_file", {"path": "atar_test_write.txt", "content": "test"}, ctx)
         assert result.success
     finally:
         if os.path.exists(path):
