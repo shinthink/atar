@@ -9,6 +9,7 @@ import sys
 from atar_core.config_reader import get_api_key, save_api_key
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.events import Key as events_Key  # noqa: N811
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, RichLog, Static
 
@@ -214,30 +215,138 @@ class WelcomeScreen(Screen):
 
 
 class SetupScreen(Screen):
+    """First-run setup wizard: provider → key → model → test → done."""
+    providers = [
+        ("DeepSeek", "deepseek", "https://api.deepseek.com/v1", "deepseek-chat"),
+        ("OpenAI", "openai", "https://api.openai.com/v1", "gpt-4o"),
+        ("Anthropic", "anthropic", "https://api.anthropic.com", "claude-sonnet-4-20250514"),
+        ("OpenRouter", "openrouter", "https://openrouter.ai/api/v1", "deepseek/deepseek-chat"),
+        ("Z.AI", "zai", "https://api.z.ai", "glm-4"),
+        ("Custom", "custom", "", ""),
+    ]
+    step: int = 1
+    selected: int = 0
+
     def compose(self) -> ComposeResult:
-        key_status = "Configured" if get_api_key() else "Not configured"
         yield Header()
-        with Vertical():
-            yield Static("Setup", classes="t")
-            yield Static(f"Status: [bold]{key_status}[/]")
+        with Vertical(id="setup-body"):
+            yield Static("⚡ ATAR First-Run Setup", classes="t")
             yield Static("")
-            yield Static("Provider: DeepSeek (Anthropic format)")
-            yield Static("Model: deepseek-v4-pro")
+            yield Static("Clarity in Complexity — Ataraxia", classes="dim")
             yield Static("")
-            yield Input(id="setup-key-input", placeholder="Paste API key (sk-...) and press Enter")
+            yield Static("Select your AI provider:", id="setup-prompt")
+            yield Static("", id="provider-list")
+            yield Input(id="setup-input", placeholder="Enter API key (sk-...)")
             yield Static("", id="setup-status")
         yield Footer()
 
+    def on_mount(self) -> None:
+        self._render_providers()
+        self.query_one("#setup-input").display = False
+
+    def _render_providers(self) -> None:
+        lines = []
+        for i, (name, _key_id, url, model) in enumerate(self.providers):
+            marker = "▸" if i == self.selected else " "
+            lines.append(f" {marker} {name} — {url}/{model}")
+        self.query_one("#provider-list", Static).update("\n".join(lines))
+
+    def on_key(self, event: events_Key) -> None:
+        if self.step == 1:
+            if event.key == "up" and self.selected > 0:
+                self.selected -= 1
+                self._render_providers()
+            elif event.key == "down" and self.selected < len(self.providers) - 1:
+                self.selected += 1
+                self._render_providers()
+            elif event.key == "enter":
+                self.step = 2
+                name, self._prov_id, _, _ = self.providers[self.selected]
+                self.query_one("#provider-list").display = False
+                self.query_one("#setup-prompt", Static).update(f"Enter API key for [bold]{name}[/]:")
+                inp = self.query_one("#setup-input")
+                inp.display = True
+                inp.focus()
+        elif self.step == 2 and event.key == "escape":
+            self.step = 1
+            self.query_one("#setup-input").display = False
+            self._render_providers()
+            self.query_one("#provider-list").display = True
+            self.query_one("#setup-prompt", Static).update("Select your AI provider:")
+
     async def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id != "setup-key-input":
+        if event.input.id != "setup-input" or self.step != 2:
             return
         key = event.value.strip()
-        if not key or not key.startswith("sk-"):
-            self.query_one("#setup-status", Static).update("[red]Invalid key format[/]")
+        if not key:
+            self.query_one("#setup-status", Static).update("[red]Empty key.[/]")
             return
         event.input.value = ""
-        save_api_key(key)
-        self.query_one("#setup-status", Static).update("[bold green]Key saved. Restart or switch to Chat.[/]")
+        status = self.query_one("#setup-status", Static)
+
+        status.update("[yellow]Testing auth...[/]")
+        name, prov_id, base_url, model = self.providers[self.selected]
+        save_api_key(prov_id, key)
+        status.update("[bold green]✓ Key saved securely.[/]")
+
+        # Test auth
+        try:
+            ok, msg = await self._test_auth(prov_id, key, base_url, model)
+            if ok:
+                status.update(f"[bold green]✓ Auth OK — {msg}[/]")
+                # Save provider preference
+                import json
+                import os
+                cfg_path = os.path.expanduser("~/.atar/config.json")
+                cfg = {}
+                try:
+                    with open(cfg_path) as f:
+                        cfg = json.load(f)
+                except Exception:
+                    pass
+                cfg["provider"] = prov_id
+                cfg["model"] = model
+                cfg["base_url"] = base_url
+                os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
+                with open(cfg_path, "w") as f:
+                    json.dump(cfg, f)
+                self.query_one("#setup-body").query(Input).first().display = False
+                self.query_one("#setup-prompt", Static).update("[bold green]Setup complete![/]")
+                self.query_one("#setup-status", Static).update("Press [bold]Ctrl+W[/] to go to Welcome screen.")
+            else:
+                status.update(f"[red]✗ Auth failed: {msg}[/]")
+        except Exception as e:
+            status.update(f"[red]Error: {e}[/]")
+
+    async def _test_auth(self, provider_id: str, key: str, base_url: str, model: str) -> tuple[bool, str]:
+        import httpx
+        if provider_id in ("deepseek", "openai", "openrouter", "zai", "custom"):
+            url = f"{base_url}/models" if base_url else "https://api.deepseek.com/v1/models"
+            headers = {"Authorization": f"Bearer {key}"}
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    return True, f"{model}"
+                return False, f"HTTP {resp.status_code}"
+            except Exception as e:
+                return False, str(e)
+        elif provider_id == "anthropic":
+            url = f"{base_url}/v1/messages" if base_url else "https://api.anthropic.com/v1/messages"
+            headers = {"x-api-key": key, "anthropic-version": "2023-06-01"}
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.post(
+                        url,
+                        json={"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "hi"}]},
+                        headers=headers,
+                    )
+                if resp.status_code in (200, 400, 429):
+                    return True, f"{model}"
+                return False, f"HTTP {resp.status_code}"
+            except Exception as e:
+                return False, str(e)
+        return False, "Unknown provider"
 
 
 class ProviderScreen(Screen):
@@ -473,7 +582,9 @@ class ATARApp(App):
     def on_mount(self) -> None:
         for screen_id, screen_cls in SCREENS.items():
             self.install_screen(screen_cls(), screen_id)
-        self.push_screen("welcome")
+        from atar_core.config_reader import is_first_run
+        start = "setup" if is_first_run() else "welcome"
+        self.push_screen(start)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id or ""
