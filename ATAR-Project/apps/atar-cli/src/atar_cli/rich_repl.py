@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-import time
 import uuid
 
 from prompt_toolkit import PromptSession
@@ -105,16 +104,16 @@ def run_repl() -> None:
     async def _agent_turn(prompt: str, ag: Agent) -> None:
         ag.state.force("idle")
         response_text = ""
-        start_time = time.time()
+        first_token = False
 
         async def delta(t: str) -> None:
-            nonlocal response_text
+            nonlocal response_text, first_token
             response_text += t
+            console.print(t, end="", markup=False)
 
-        with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
-            await ag.run(prompt, StreamCallbacks(on_delta=delta))
-
-        time.time() - start_time
+        console.print(Rule(style="#0288D1"))
+        await ag.run(prompt, StreamCallbacks(on_delta=delta))
+        console.print()  # newline after stream ends
         console.print(Rule(style="#0288D1"))
 
         if not response_text:
