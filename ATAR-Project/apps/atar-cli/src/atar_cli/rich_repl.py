@@ -262,6 +262,8 @@ def run_repl() -> None:
         _t_start = _t2.time()
         response_text = ""
         _had_tools = False
+        _tool_start_time: dict[str, float] = {}  # per-tool timing
+        _last_tool_id: set[str] = set()  # dedup
 
         async def delta(t: str) -> None:
             nonlocal response_text
@@ -272,24 +274,28 @@ def run_repl() -> None:
             nonlocal response_text, _had_tools
             _had_tools = True
             response_text = ""  # discard chatter from tool turns
+
+            # Dedup: skip identical tool calls
+            tool_sig = f"{name}:{str(args)}"
+            if tool_sig in _last_tool_id:
+                return
+            _last_tool_id.add(tool_sig)
+
             _stats["tools"] += 1
+            _tool_start_time[name] = _t2.time()
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
             icon = icons.get(name, "🔧")
             from atar_core.theme import current_theme
             c = current_theme().colors
-            console.print(f"\n  [bold {c.secondary}]┊ {icon} {name}[/] [dim]{str(args)[:80]}[/]")
+            console.print(f"\n  [bold {c.secondary}]┊ ◌ {icon} {name}[/] [dim]{str(args)[:60]}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            # Clean result: strip HTML tags, truncate smartly
-            import re as _re
-            clean = _re.sub(r"<[^>]+>", "", result)  # strip HTML tags
-            clean = clean.replace("\n", " ").strip()
-            if len(clean) > 200:
-                clean = clean[:200] + "..."
+            elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
+            cleaner = {"write_file": "Wrote", "read_file": "Read", "web_search": "Found", "web_fetch": "Fetched"}
+            verb = cleaner.get(name, "Done")
             from atar_core.theme import current_theme
             c = current_theme().colors
-            console.print(f"  [bold {c.success}]┊ {name}[/] [dim]{clean}[/]")
-            console.print()  # blank line before next section
+            console.print(f"\r  [bold {c.success}]┊ ✓ {verb}[/] [dim]({elapsed:.1f}s)[/]")
 
         console.print(Rule(style="#394B59"))
         try:
