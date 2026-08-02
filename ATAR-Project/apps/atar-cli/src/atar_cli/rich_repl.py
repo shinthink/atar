@@ -178,7 +178,26 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     if len(short_cwd) > 50:
         short_cwd = "..." + short_cwd[-47:]
 
-    # Build detailed info panel
+    # Globe ASCII logo (left column)
+    globe = [
+        "          ##### ######       ",
+        "      ###   ##   ##   ###    ",
+        "    ##     ##     ##     ###  ",
+        "  ##       #       #       ##",
+        " ##       ##        #       #",
+        "##       ##         ##      #",
+        "##      ##     ###   ##     #",
+        "##  ########    #   #####  ##",
+        "####   ############*#### ####",
+        " ##   ##       ##         # #",
+        "  ## ##                   ###",
+        "   ###                    ###",
+        "    ###                  ### ",
+        "      ####            ####   ",
+        "          #############       ",
+    ]
+
+    # Build detailed info panel (right column)
     info = []
     info.append(f"[bold {c.primary}]{model}[/] · [dim]{short_cwd}[/]")
     info.append(f"[dim]Session: {session_id[:12]}[/]")
@@ -193,13 +212,15 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     info.append("[dim]7 tools · 7 skills · /help for commands · ATAR v0.6.0[/]")
     info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
 
-    panel_text = "\n".join(info)
-    console.print(Panel(
-        Text.from_markup(panel_text),
-        border_style=c.dim_border,
-        padding=(1, 2),
-        width=min(_TERM_WIDTH - 4, 90),
-    ))
+    panel_content = "\n".join(info)
+    panel = Panel(Text.from_markup(panel_content), border_style=c.dim_border, padding=(1, 2), width=min(_TERM_WIDTH - 40, 80))
+
+    # Render globe + panel side by side
+    from rich.columns import Columns
+    globe_text = Text()
+    for line in globe:
+        globe_text.append(line + "\n", style=f"bold {c.primary}")
+    console.print(Columns([globe_text, panel], equal=False, expand=False))
     console.print()
 
 # ── Runtime stats for status bar ──
