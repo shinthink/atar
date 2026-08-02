@@ -7,8 +7,7 @@ from atar_core.session import Session, SessionManager
 
 class SessionSearch:
     def __init__(self, manager: SessionManager | None = None) -> None:
-        from atar_core.session import SessionManager as SM
-        self.sessions = manager or SM()
+        self.sessions = manager or SessionManager()
 
     def search(self, query: str, limit: int = 10) -> list[tuple[Session, list[str]]]:
         """Search sessions for query. Returns matching sessions with snippet lines."""

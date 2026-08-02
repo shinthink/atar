@@ -54,7 +54,10 @@ async def _chat(prompt: str, sid: str | None = None) -> None:
 
 
 @app.command()
-def chat(prompt: Annotated[str | None, typer.Argument()] = None, session: Annotated[str | None, typer.Option("--session", "-s")] = None) -> None:
+def chat(
+    prompt: Annotated[str | None, typer.Argument()] = None,
+    session: Annotated[str | None, typer.Option("--session", "-s")] = None,
+) -> None:
     if prompt:
         asyncio.run(_chat(prompt, session))
 
@@ -148,7 +151,10 @@ def skill_list() -> None:
 # ── Multi-Agent ──
 
 @app.command()
-def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], role: Annotated[str, typer.Option("--role", "-r")] = "default") -> None:
+def delegate(
+    prompt: Annotated[str, typer.Argument(help="Task to delegate")],
+    role: Annotated[str, typer.Option("--role", "-r")] = "default",
+) -> None:
     """Delegate a task to a subagent."""
     d = Delegator(get_provider, board)
 

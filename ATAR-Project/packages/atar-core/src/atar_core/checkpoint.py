@@ -55,7 +55,6 @@ class Checkpoint:
 
     def cleanup(self, cid: str) -> None:
         """Remove a checkpoint."""
-        meta_file = os.path.join(self.path, f"{cid}.meta")
         for fname in os.listdir(self.path):
             if fname.startswith(cid):
                 os.unlink(os.path.join(self.path, fname))

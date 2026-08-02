@@ -137,6 +137,7 @@ class ATARApp(App):
             buf.append(text)
 
         response = await agent.run(user_text, StreamCallbacks(on_delta=on_delta))
+        _ = response  # consumed via streaming callbacks
         thinking.update("")
 
         full_text = "".join(buf)
