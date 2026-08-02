@@ -111,7 +111,7 @@ def run_repl() -> None:
 
     show_banner()
 
-    async def _agent_turn(prompt: str, ag: Agent, prov) -> None:
+    async def _agent_turn(prompt: str, ag: Agent) -> None:
         """Multi-turn agent interaction with tool approval loop."""
         ag.state.force("idle")
         response_text = ""
@@ -167,19 +167,6 @@ def run_repl() -> None:
                     title=f"$ {c[:60]}",
                     border_style="#4CAF50" if tr.success else "#F44336",
                 ))
-                # Feed result back to agent for follow-up
-                ag.state.force("idle")
-                follow_up = f"Command result: {result_text[:200]}\nWhat next? Reply short."
-                fu_text = ""
-
-                async def fu_delta(t: str) -> None:
-                    nonlocal fu_text
-                    fu_text += t
-
-                with console.status("[#4FC3F7]Agent continues...[/]", spinner="dots"):
-                    await ag.run(follow_up, StreamCallbacks(on_delta=fu_delta))
-                if fu_text:
-                    _render_response(fu_text)
         elif answer in ("e", "edit"):
             try:
                 new_cmd = await session_pt.prompt_async(
@@ -284,7 +271,7 @@ def run_repl() -> None:
                 continue
 
             # Multi-turn: agent may need multiple rounds
-            await _agent_turn(user, agent, provider)
+            await _agent_turn(user, agent)
 
     asyncio.run(_run())
 
