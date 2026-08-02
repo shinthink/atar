@@ -263,10 +263,17 @@ class SessionSwitcher(Screen):
 
 
 class PlanScreen(Screen):
+    BINDINGS = [
+        ("a", "approve", "Approve"),
+        ("r", "reject", "Reject"),
+        ("escape", "cancel", "Cancel"),
+    ]
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
-            yield Input(id="plan-input", placeholder="Goal to plan for...")
+            yield Input(id="plan-input", placeholder="Goal to plan — e.g., 'build REST API for blog'")
+            yield Static("", id="plan-status")
             yield RichLog(id="plan-output")
         yield Footer()
 
@@ -276,23 +283,70 @@ class PlanScreen(Screen):
             return
         event.input.value = ""
         out = self.query_one("#plan-output", RichLog)
+        status = self.query_one("#plan-status", Static)
+        status.update("[yellow]Planning...[/]")
+
         key = get_api_key()
-        if key:
-            from atar_core.agent import Agent
-            from atar_core.planning import PlanningEngine
-            from atar_provider_anthropic.client import AnthropicProvider
-            provider = AnthropicProvider(
-                api_key=key, base_url="https://api.deepseek.com/anthropic",
-                model="deepseek-v4-pro",
-            )
-            engine = PlanningEngine(Agent(provider=provider))
+        if not key:
+            out.write("[red]No API key. Run Setup.[/]")
+            return
+
+        from atar_core.agent import Agent
+        from atar_core.planning import PlanningEngine
+        from atar_provider_deepseek.client import DeepSeekProvider
+        provider = DeepSeekProvider(api_key=key, model="deepseek-chat")
+        engine = PlanningEngine(Agent(provider=provider))
+
+        try:
             plan = await engine.plan(goal)
-            out.write(f"\n[bold]{plan.title or goal}[/]")
-            for task in plan.tasks:
-                icon = "🔴" if str(task.risk) == "HIGH" else "🟢"
-                out.write(f"  {icon} {task.title}")
-        else:
-            out.write("[bold red]No API key configured.[/]")
+            out.write(f"\n[bold cyan]Plan: {plan.title or goal}[/]")
+            out.write("─" * 40)
+            for i, task in enumerate(plan.tasks):
+                icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢", "INFO": "🔵"}.get(str(task.risk), "⚪")
+                deps = f" ← {task.depends_on}" if hasattr(task, 'depends_on') and task.depends_on else ""
+                out.write(f"  {i+1}. {icon} [{task.risk}] {task.title}{deps}")
+                if task.description:
+                    out.write(f"       [dim]{task.description[:100]}[/]")
+            out.write("─" * 40)
+            out.write("[dim]A=Approve  R=Reject  Esc=Cancel[/]")
+            self._plan = plan
+            status.update("[green]✓ Plan generated. Review and approve (A) or reject (R).[/]")
+        except Exception as e:
+            status.update(f"[red]Error: {e}[/]")
+
+    def action_approve(self) -> None:
+        if not hasattr(self, "_plan"):
+            return
+        out = self.query_one("#plan-output", RichLog)
+        out.write("[bold green]✓ Plan approved. Executing...[/]")
+        asyncio.create_task(self._execute_plan())
+
+    def action_reject(self) -> None:
+        out = self.query_one("#plan-output", RichLog)
+        out.write("[yellow]✗ Plan rejected. Revise and try again.[/]")
+
+    async def _execute_plan(self) -> None:
+        out = self.query_one("#plan-output", RichLog)
+        key = get_api_key()
+        if not key:
+            return
+        from atar_core.agent import Agent, StreamCallbacks
+        from atar_provider_deepseek.client import DeepSeekProvider
+        provider = DeepSeekProvider(api_key=key, model="deepseek-chat")
+        for i, task in enumerate(self._plan.tasks):
+            out.write(f"\n[bold]▶ Task {i+1}/{len(self._plan.tasks)}: {task.title}[/]")
+            agent = Agent(provider=provider, max_turns=3, tools=[1])
+            agent.system_prompt = f"Execute this task: {task.title}. {task.description or ''}"
+            # Re-use session messages for continuity
+            try:
+                result = await agent.run(
+                    f"Execute: {task.title}",
+                    StreamCallbacks(on_delta=lambda t: out.write(f"[dim]{t}[/]")),
+                )
+                out.write("\n[green]  ✓ Done[/]")
+            except Exception as e:
+                out.write(f"\n[red]  ✗ Failed: {e}[/]")
+        out.write("\n[bold green]Plan execution complete.[/]")
 
 
 class TasksScreen(Screen):
@@ -300,9 +354,25 @@ class TasksScreen(Screen):
         yield Header()
         with Vertical():
             yield Static("📝 Tasks", classes="t")
-            yield Static("Task board: delegated tasks and status")
             yield RichLog(id="task-log")
         yield Footer()
+
+    def on_mount(self) -> None:
+        log = self.query_one("#task-log", RichLog)
+        try:
+            from atar_core.taskboard import TaskBoard
+            board = TaskBoard()
+            q, r, d = board.status()
+            log.write("[bold]Task Board Status[/]")
+            log.write(f"  Queued: {q}  Running: {r}  Done: {d}")
+            ts = board.list_all()
+            if not ts:
+                log.write("[dim]  No tasks. Use /delegate in chat.[/]")
+            for t in ts:
+                icon = {"done": "✓", "running": "▶", "queued": "○"}.get(t.status, "?")
+                log.write(f"  {icon} {t.title[:80]}")
+        except Exception as e:
+            log.write(f"[red]Task board unavailable: {e}[/]")
 
 
 class FilesScreen(Screen):
@@ -315,8 +385,95 @@ class FilesScreen(Screen):
 
     def on_mount(self) -> None:
         log = self.query_one("#files-log", RichLog)
-        for f in sorted(os.listdir("."))[:20]:
-            log.write(f"  {f}")
+        import os
+        for f in sorted(os.listdir("."))[:30]:
+            path = os.path.join(os.getcwd(), f)
+            typ = "/" if os.path.isdir(path) else ""
+            size = os.path.getsize(path) if os.path.isfile(path) else 0
+            log.write(f"  {f}{typ}  [dim]{size}B[/]")
+
+
+class MemoryScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical():
+            yield Input(id="mem-query", placeholder="Search memory (or press Enter for all)...")
+            yield RichLog(id="mem-output")
+        yield Footer()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        q = event.value.strip()
+        out = self.query_one("#mem-output", RichLog)
+        from atar_core.memory import MemoryEngine
+        mem = MemoryEngine()
+        if q:
+            for k, v in mem.all().items():
+                if q.lower() in k.lower() or q.lower() in str(v).lower():
+                    out.write(f"  [bold]{k}[/]: {v}")
+        else:
+            for k, v in mem.all().items():
+                out.write(f"  [bold]{k}[/]: {v}")
+
+
+class MCPScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical():
+            yield Static("🔌 MCP Servers", classes="t")
+            yield RichLog(id="mcp-output")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        out = self.query_one("#mcp-output", RichLog)
+        try:
+            from atar_core.mcp import MCPManager
+            mgr = MCPManager()
+            servers = mgr.list()
+            if not servers:
+                out.write("[dim]No MCP servers configured.[/]")
+                out.write("Configure in ~/.atar/mcp.json or use ATAR_MCP env var.")
+            for s in servers:
+                out.write(f"  {'✓' if s.get('connected') else '✗'} {s.get('name', 'unnamed')}")
+        except Exception as e:
+            out.write(f"[yellow]MCP: {e}[/]")
+
+
+class SearchScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical():
+            yield Input(id="search-input", placeholder="Search sessions, memory, tools...")
+            yield RichLog(id="search-output")
+        yield Footer()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        q = event.value.strip()
+        if not q:
+            return
+        out = self.query_one("#search-output", RichLog)
+        out.clear()
+        out.write(f"[bold]Search: {q}[/]")
+
+        # Search sessions
+        from atar_core.memory import MemoryEngine, SessionSearch
+        from atar_core.session import SessionManager
+        sm = SessionManager()
+        ss = SessionSearch(sm)
+        result_count = 0
+        for s, snippets in ss.search(q):
+            out.write(f"[bold cyan]Session: {s.title or s.session_id[:12]}[/]")
+            for sn in snippets[:3]:
+                out.write(f"  [dim]{sn[:100]}[/]")
+            result_count += 1
+
+        # Search memory
+        mem = MemoryEngine()
+        for k, v in mem.all().items():
+            if q.lower() in k.lower() or q.lower() in str(v).lower():
+                out.write(f"[bold cyan]Memory: {k}[/] = {v}")
+
+        if result_count == 0:
+            out.write("[dim]No results. Try different keywords.[/]")
 
 
 class TerminalScreen(Screen):
@@ -360,21 +517,6 @@ class SessionsScreen(Screen):
         from atar_core.session import SessionManager
         for s in SessionManager().list()[:10]:
             log.write(f"  {s.session_id} — {s.title} ({len(s.messages)} msgs)")
-
-
-class MemoryScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical():
-            yield Static("🧠 Memory", classes="t")
-            yield RichLog(id="memory-log")
-        yield Footer()
-
-    def on_mount(self) -> None:
-        log = self.query_one("#memory-log", RichLog)
-        from atar_core.memory import MemoryEngine
-        for k, v in MemoryEngine().all().items():
-            log.write(f"  {k}: {v}")
 
 
 # ── Informational Screens (16) ──
@@ -587,28 +729,6 @@ class AgentsScreen(Screen):
             yield Static("Use [bold]atar delegate[/] or [bold]/delegate[/] in chat.")
         yield Footer()
 
-
-class SearchScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical():
-            yield Static("🔍 Search", classes="t")
-            yield Input(id="search-input", placeholder="Search sessions...")
-            yield RichLog(id="search-results")
-        yield Footer()
-
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
-        query = event.value.strip()
-        if not query:
-            return
-        event.input.value = ""
-        out = self.query_one("#search-results", RichLog)
-        from atar_core.memory import SessionSearch
-        from atar_core.session import SessionManager
-        for sess, snippets in SessionSearch(SessionManager()).search(query):
-            out.write(f"\n📁 {sess.title}")
-            for s in snippets:
-                out.write(f"  {s}")
 
 
 class DiffScreen(Screen):
