@@ -352,23 +352,42 @@ class SetupScreen(Screen):
 class ProviderScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("🔌 Provider", classes="t"),
-            Static("Active: DeepSeek (Anthropic format)"),
-            Static("Model: deepseek-v4-pro"),
-            Static("Endpoint: api.deepseek.com/anthropic"),
-        )
+        with Vertical():
+            yield Static("🔌 Provider", classes="t")
+            yield Static("", id="provider-info")
         yield Footer()
+
+    def on_mount(self) -> None:
+        info = self.query_one("#provider-info", Static)
+        import json
+        import os
+
+        from atar_core.config_reader import get_api_key
+        cfg_path = os.path.expanduser("~/.atar/config.json")
+        cfg = {}
+        try:
+            with open(cfg_path) as f:
+                cfg = json.load(f)
+        except Exception:
+            pass
+        lines = [
+            f"Provider: {cfg.get('provider', 'deepseek')}",
+            f"Model: {cfg.get('model', 'deepseek-chat')}",
+            f"Base URL: {cfg.get('base_url', 'https://api.deepseek.com/v1')}",
+            f"Key: {'✓ configured' if get_api_key() else '✗ not set'}",
+        ]
+        info.update("\n".join(lines))
 
 
 class AgentsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("🤖 Agents", classes="t"),
-            Static("Subagents: delegate tasks with isolated context."),
-            Static("Board: queued / running / done."),
-        )
+        with Vertical():
+            yield Static("🤖 Agents", classes="t")
+            yield Static("Subagents: delegate tasks with isolated context.")
+            yield Static("Board: queued / running / done.")
+            yield Static("")
+            yield Static("Use [bold]atar delegate[/] or [bold]/delegate[/] in chat.")
         yield Footer()
 
 
