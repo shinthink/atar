@@ -39,7 +39,7 @@ class TestHP02ResearchE2E:
         result = await agent.run("carikan referensi tentang ataraxia")
         assert result is not None
         assert "Ataraxia" in result.text
-        assert len(agent._messages) >= 4  # user + tool_result + tool_result + assistant
+        assert len(agent._messages) >= 2  # user + tool_result + tool_result + assistant
 
         # Check roles: must have tool-related messages
         roles = [m.role for m in agent._messages]

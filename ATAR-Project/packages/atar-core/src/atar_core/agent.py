@@ -69,24 +69,37 @@ class Agent:
 
                 # Execute tool calls if any — skip partial, dedup by id
                 if tool_calls:
+                    # Store assistant tool_call message first
+                    normalized_calls = []
                     seen = set()
                     for tc in tool_calls:
                         tid = tc.get("id", "")
                         name = tc.get("name", "")
                         inp = tc.get("input") or {}
                         if not name or not inp:
-                            continue  # skip partial tool calls
+                            continue
                         if tid and tid in seen:
                             continue
                         if tid:
                             seen.add(tid)
+                        normalized_calls.append({"id": tid, "name": name, "arguments": inp})
+
+                    self._messages.append(Message(
+                        role="assistant",
+                        content=final_text or None,
+                        tool_calls=[{"id": c["id"], "name": c["name"], "input": c["arguments"]} for c in normalized_calls],
+                    ))
+
+                    for nc in normalized_calls:
                         if cb.on_tool_call:
-                            await cb.on_tool_call(name, inp)
-                        result = await self._execute_tool(name, inp)
+                            await cb.on_tool_call(nc["name"], nc["arguments"])
+                        result = await self._execute_tool(nc["name"], nc["arguments"])
                         if cb.on_tool_result:
-                            await cb.on_tool_result(name, result.output)
+                            await cb.on_tool_result(nc["name"], result.output)
                         self._messages.append(Message(
-                            role="user", content=f"Tool {name} result: {result.output}"
+                            role="tool",
+                            tool_call_id=nc["id"],
+                            content=f"Tool {nc['name']} result: {result.output}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {result.output}",
                         ))
                     continue  # next turn with tool results
 
@@ -124,7 +137,8 @@ class Agent:
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
         from atar_tools.registry import execute as tool_execute
-        ctx = ToolContext(metadata={"approved": True})
+        # Approval delegated to registry handler — no hardcoded bypass
+        ctx = ToolContext(metadata={"session_id": self.session_id})
         return await tool_execute(name, args, ctx)
 
     def _tool_schemas(self) -> list[Any]:
