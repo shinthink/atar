@@ -216,11 +216,15 @@ def run_repl() -> None:
         async def on_tool(name: str, args: dict) -> None:
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
             icon = icons.get(name, "🔧")
-            console.print(f"\n  [bold #7C3AED]┊ {icon} {name}[/] [dim]{str(args)[:60]}[/]")
+            from atar_core.theme import current_theme
+            c = current_theme().colors
+            console.print(f"\n  [bold {c.secondary}]┊ {icon} {name}[/] [dim]{str(args)[:60]}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
             preview = result[:150].replace("\n", " ")
-            console.print(f"\n  [bold #4CAF50]┊ {name}[/] [dim]{preview}[/]")
+            from atar_core.theme import current_theme
+            c = current_theme().colors
+            console.print(f"\n  [bold {c.success}]┊ {name}[/] [dim]{preview}[/]")
 
         console.print(Rule(style="#394B59"))
         try:

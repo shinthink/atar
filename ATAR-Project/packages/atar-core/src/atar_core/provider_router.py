@@ -35,16 +35,38 @@ class ProviderRouter:
         raise RuntimeError(f"All providers failed. Last: {last_error}")
 
     async def stream(self, request: ModelRequest):
-        """Stream from first available provider — no fallback for streaming yet."""
-        if not self.providers:
-            raise RuntimeError("No providers available")
-        provider = self.providers[0]
-        async for event in provider.stream(request):
-            yield event
+        """Stream from providers with fallback on failure."""
+        last_error = None
+        for i, provider in enumerate(self.providers):
+            try:
+                async for event in provider.stream(request):
+                    yield event
+                if i > 0:
+                    self._fallback_count += 1
+                return
+            except Exception as e:
+                last_error = e
+        raise RuntimeError(f"All providers failed streaming. Last: {last_error}")
 
     @property
     def fallback_count(self) -> int:
         return self._fallback_count
+
+    @property
+    def model(self) -> str:
+        return getattr(self.providers[0], "model", "router") if self.providers else "none"
+
+    async def capabilities(self):
+        return (await self.providers[0].capabilities()) if self.providers else type("C", (), {"text": True, "streaming": True, "tools": True})()
+
+    async def list_models(self) -> list[str]:
+        return [await p.list_models() for p in self.providers][0] if self.providers else []
+
+    async def count_tokens(self, request):
+        return await self.providers[0].count_tokens(request) if self.providers else 0
+
+    async def health_check(self):
+        return await self.providers[0].health_check() if self.providers else type("H", (), {"provider_id": "router", "status": "unknown"})()
 
 
 def create_router() -> ProviderRouter:
