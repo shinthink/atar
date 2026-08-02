@@ -119,7 +119,7 @@ BASE_PROMPT = (
     "- Use Linux commands (xdg-open, rm, ls, grep, etc). Never suggest open/start.\n"
     "- Never prefix your response with 'I will' or 'Saya akan'. Just use the tool.\n"
     "- Be concise. One-sentence answers preferred.\n"
-    "- Use Indonesian if the user speaks Indonesian."
+    "- Match the user's language — if they speak Indonesian, reply in Indonesian. If English, reply in English. Same for any language."
 )
 
 
@@ -163,22 +163,27 @@ def _switch_model(idx: int) -> str:
 
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Compact banner using theme colors."""
+    """Compact Cosmike-style ASCII banner."""
     from atar_core.theme import current_theme
     theme = current_theme()
     c = theme.colors
 
     logo = Text()
     logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
-    for i, line in enumerate([
-        " █████╗ ████████╗ █████╗ ██████╗",
-        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗",
-        "███████║   ██║   ███████║██████╔╝",
-        "██╔══██║   ██║   ██╔══██║██╔══██╗",
-        "██║  ██║   ██║   ██║  ██║██║  ██║",
-        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝",
-    ]):
-        logo.append(line + "\n", style=f"bold {logo_colors[i]}")
+    # Cosmike-style smooth banner
+    banner_lines = [
+        "    ╭─── ∘ ∘ ∘ ∘ ───╮",
+        "   ∘   █████╗ ████████╗   ∘",
+        "   ∘  ██╔══██╗╚══██╔══╝  ∘",
+        "   ·  ███████║   ██║     ·",
+        "   ·  ██╔══██║   ██║     ·",
+        "   ∘  ██║  ██║   ██║    ∘",
+        "   ∘  ╚═╝  ╚═╝   ╚═╝    ∘",
+        "    ╰─── · · · · ───╯",
+    ]
+    for i, line in enumerate(banner_lines):
+        style = logo_colors[min(i, len(logo_colors)-1)]
+        logo.append(line + "\n", style=f"bold {style}")
     logo.append("Clarity in Complexity.\n\n", style=f"bold {c.primary}")
 
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
