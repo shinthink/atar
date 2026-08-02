@@ -11,7 +11,7 @@ import uuid
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.styles import Style
-from rich.console import Console, Group
+from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
@@ -35,28 +35,41 @@ BASE_PROMPT = (
 
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Hermes-style info banner with model, session, tools."""
-    logo = [
-        " █████╗ ████████╗ █████╗ ██████╗ ·  █████╗  ██████╗ ███████╗███╗  ██╗████████╗",
-        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝",
-        "███████║   ██║   ███████║██████╔╝   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║",
-        "██╔══██║   ██║   ██╔══██║██╔══██╗   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║",
-        "██║  ██║   ██║   ██║  ██║██║  ██║   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║",
-        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝",
+    """Hermes-style two-column banner: logo left, info right."""
+    # Right column — session info
+    info = Table.grid(padding=(0, 1))
+    info.add_column(style="bold #4FC3F7", justify="left")
+    info.add_column(style="dim", justify="left")
+    info.add_row(model, "DeepSeek")
+    info.add_row("", "")
+    info.add_row("Session:", session_id)
+    info.add_row("CWD:", cwd)
+    info.add_row("", "")
+    info.add_row("Tools:", "read_file write_file terminal web_fetch git run_tests")
+    info.add_row("", "/help for commands")
+
+    # Two-column layout
+    layout = Table.grid(padding=(0, 2))
+    layout.add_column(justify="left", width=50)
+    layout.add_column(justify="left")
+
+    logo_lines = [
+        " █████╗ ████████╗ █████╗ ██████╗",
+        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗",
+        "███████║   ██║   ███████║██████╔╝",
+        "██╔══██║   ██║   ██╔══██║██╔══██╗",
+        "██║  ██║   ██║   ██║  ██║██║  ██║",
+        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝",
     ]
     colors = ["#4FC3F7", "#29B6F6", "#0288D1", "#0277BD", "#01579B", "#01579B"]
-    logo_text = Text()
-    for i, line in enumerate(logo):
-        logo_text.append(Text(line + "\n", style=f"bold {colors[i]}"))
+    left = Text()
+    for i, line in enumerate(logo_lines):
+        left.append(Text(line + "\n", style=f"bold {colors[i]}"))
+    left.append(Text("\nCLARITY IN COMPLEXITY", style="bold #4FC3F7"))
 
-    info = Table.grid(padding=(0, 2))
-    info.add_column(justify="left")
-    info.add_column(justify="left")
-    info.add_row(Text(f"{model} · DeepSeek", style="bold #4FC3F7"), Text(f"Session: {session_id}", style="dim"))
-    info.add_row(Text(cwd, style="dim"), Text("/help for commands", style="dim"))
+    layout.add_row(left, Panel(info, border_style="#0288D1", padding=(1, 2)))
 
-    banner_content = Group(logo_text, Text(""), info, Text(""))
-    console.print(Panel(banner_content, border_style="#0288D1", padding=(1, 3)))
+    console.print(Panel(layout, border_style="#0288D1", padding=(1, 2)))
     console.print(Text("  /quit · /clear · /code · /chat · /help", style="dim #4FC3F7"))
     console.print(Rule(style="#0288D1"))
 
@@ -118,7 +131,7 @@ def run_repl() -> None:
         async def on_tool_result(name: str, result: str) -> None:
             console.print(Panel(
                 Text(result[:300] if result else "(empty)", style="dim"),
-                title=f"  {name} result",
+                title=f"  {name} · done",
                 border_style="#4CAF50",
                 padding=(0, 1),
             ))
