@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-import sys
 import time
 import uuid
 
@@ -28,9 +27,10 @@ PT_STYLE = Style.from_dict({
 })
 
 BASE_PROMPT = (
-    "You are ATAR, a terminal AI agent. When asked to create files, run commands, "
-    "or modify the system, you MUST propose a single bash command in a ```bash block. "
-    "Never describe — always offer to execute. Keep responses short."
+    "You are ATAR, a precise AI assistant. Respond naturally to questions. "
+    "Only propose bash commands when the user explicitly asks you to create files, "
+    "run programs, or make system changes. When you do, wrap the command in ```bash. "
+    "For normal conversation, just answer directly. Be helpful and concise."
 )
 
 
@@ -176,15 +176,6 @@ def run_repl() -> None:
         last_elapsed = 0
 
         while True:
-            # Status bar before prompt
-            elapsed = int(time.time() - session_start)
-            mins = elapsed // 60
-            secs = elapsed % 60
-            status = f"deepseek-v4-pro · {mins}m {secs}s · last {last_elapsed}s"
-            # Write status at bottom using ANSI
-            sys.stderr.write(f"\033]0;ATAR | {status}\007")
-            console.print(Text(status, style="dim #4FC3F7"), end="")
-
             try:
                 user = await session_pt.prompt_async(
                     HTML("<prompt>· </prompt>"), style=PT_STYLE,
