@@ -178,25 +178,28 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     if len(short_cwd) > 50:
         short_cwd = "..." + short_cwd[-47:]
 
-    # Circular ATAR logo — proper 2:1 aspect ratio
+    # Brain-style ATAR logo — all 42 chars wide
     globe = [
-        "           ▄████████▄           ",
-        "        ▄███▀▀▀▀▀▀▀███▄        ",
-        "      ▄██▀▀   ██   ▀▀██▄      ",
-        "     ██▀▀    ████    ▀▀██     ",
-        "    ██▀     ██████     ▀██    ",
-        "   ██▀      ██████      ▀██   ",
-        "  ██▀      ████████      ▀█▌  ",
-        "  ██      ██████████      ██  ",
-        " ▐█▌     ████████████     ▐█▌ ",
-        " ▐█▌     ████████████     ▐█▌ ",
-        "  ██      ██████████      ██  ",
-        "  ██▄      ████████      ▄██  ",
-        "   ██▄      ██████      ▄██   ",
-        "    ██▄     ██████     ▄██    ",
-        "     ██▄▄    ████    ▄▄██     ",
-        "      ▀███▄▄ ██ ▄▄███▀       ",
-        "        ▀▀████████▀▀          ",
+        "                                          ",
+        "                ####  ####                ",
+        "           ####   ##   ##  ####           ",
+        "        ###      ##    ###     ###        ",
+        "      ###       ##      ##        ##      ",
+        "     ##        ##        ##        ###    ",
+        "   ###        ##          ##         ##   ",
+        "   ##         #            ##         ##  ",
+        "  ##         ##             ##        ##  ",
+        "  ##        ##      ##       ##        ## ",
+        "  #        ##      ####      ##        ## ",
+        "  #######    ######    ###### #######*### ",
+        "  ##     ##  ######    #####   ##     *#  ",
+        "   #*    #                      ##    ##  ",
+        "   ##   ##                       ##  ##   ",
+        "    #####                         ####    ",
+        "      ##                          ##      ",
+        "        ###                    ####       ",
+        "          ####              ####          ",
+        "              ##############              ",
     ]
 
     # Build detailed info panel (right column)
@@ -215,7 +218,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
 
     panel_content = "\n".join(info)
-    panel = Panel(Text.from_markup(panel_content), border_style=c.dim_border, padding=(1, 2), width=min(_TERM_WIDTH - 40, 80))
+    panel = Panel(Text.from_markup(panel_content), border_style=c.dim_border, padding=(1, 2), width=min(_TERM_WIDTH - 48, 85))
 
     # Render globe + panel side by side
     from rich.columns import Columns
