@@ -261,6 +261,7 @@ def run_repl() -> None:
         import time as _t2
         _t_start = _t2.time()
         response_text = ""
+        _had_tools = False
 
         async def delta(t: str) -> None:
             nonlocal response_text
@@ -268,6 +269,9 @@ def run_repl() -> None:
             _stats["text_chars"] = (_stats.get("text_chars") or 0) + len(t)
 
         async def on_tool(name: str, args: dict) -> None:
+            nonlocal response_text, _had_tools
+            _had_tools = True
+            response_text = ""  # discard chatter from tool turns
             _stats["tools"] += 1
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
             icon = icons.get(name, "🔧")
