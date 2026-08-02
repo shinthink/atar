@@ -31,14 +31,16 @@ class ChatScreen(Screen):
         with Vertical():
             yield RichLog(id="chat-output", highlight=True, markup=True, max_lines=1000)
             with Horizontal(id="chat-input-area"):
-                yield Input(id="chat-input", placeholder="Ask ATAR...  /help for commands")
+                yield Input(id="chat-input", placeholder="Ask ATAR...  /help | Shift+Enter=newline | Esc=cancel")
                 yield Button("Send", id="chat-send")
         yield Footer()
 
     def on_mount(self) -> None:
         out = self.query_one("#chat-output", RichLog)
-        out.write("[bold cyan]ATAR Chat[/] — streaming conversation with tools")
-        out.write("[dim]Type /help for commands, Ctrl+Enter to send[/]")
+        key = get_api_key()
+        status = "[green]✓ online[/]" if key else "[red]✗ no key[/]"
+        out.write(f"[bold cyan]ATAR Chat[/] — streaming conversation · {status}")
+        out.write("[dim]/help /clear /model /sessions · Shift+Enter for newline[/]")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "chat-send":
@@ -136,15 +138,124 @@ class ChatScreen(Screen):
     async def _handle_command(self, cmd: str, out: RichLog) -> None:
         cmd = cmd.strip()
         if cmd == "/help":
-            out.write("[bold]Commands:[/]\n  /help /clear /model /code /quit")
+            out.write("[bold]Commands:[/]\n  /help /clear /model /sessions /code /quit")
         elif cmd == "/clear":
             out.clear()
         elif cmd == "/quit":
             self.app.exit()
+        elif cmd == "/model":
+            self.app.push_screen(ModelPicker())
+        elif cmd == "/sessions":
+            self.app.push_screen(SessionSwitcher())
         elif cmd.startswith("/model"):
             out.write("[yellow]Use Setup screen to change provider/model.[/]")
         else:
             out.write(f"[yellow]Unknown: {cmd}[/]")
+
+
+class ModelPicker(Screen):
+    """Modal: select provider + model with keyboard nav."""
+    providers = [
+        ("DeepSeek", "deepseek", "deepseek-chat"),
+        ("DeepSeek V4", "deepseek", "deepseek-v4-pro"),
+        ("OpenAI", "openai", "gpt-4o"),
+        ("Anthropic", "anthropic", "claude-sonnet-4-20250514"),
+        ("OpenRouter", "openrouter", "deepseek/deepseek-chat"),
+        ("Z.AI", "zai", "glm-4"),
+    ]
+    selected: int = 0
+
+    def compose(self) -> ComposeResult:
+        yield Static("📡 Select Model", classes="t")
+        yield Static("", id="model-list")
+        yield Static("↑↓ navigate · Enter select · Esc cancel", classes="dim")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self._render()
+
+    def _render(self) -> None:
+        lines = []
+        for i, (name, prov, model) in enumerate(self.providers):
+            m = "▸" if i == self.selected else " "
+            lines.append(f" {m} {name} — [dim]{model}[/] ({prov})")
+        self.query_one("#model-list", Static).update("\n".join(lines))
+
+    def on_key(self, event: events_Key) -> None:
+        if event.key == "up" and self.selected > 0:
+            self.selected -= 1; self._render()
+        elif event.key == "down" and self.selected < len(self.providers) - 1:
+            self.selected += 1; self._render()
+        elif event.key == "enter":
+            name, prov, model = self.providers[self.selected]
+            import json
+            import os
+            cfg_path = os.path.expanduser("~/.atar/config.json")
+            cfg = {}
+            try:
+                with open(cfg_path) as f:
+                    cfg = json.load(f)
+            except Exception:
+                pass
+            cfg["provider"] = prov
+            cfg["model"] = model
+            os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
+            with open(cfg_path, "w") as f:
+                json.dump(cfg, f)
+            self.app.pop_screen()
+            out = self.app.query(".chat-screen RichLog", RichLog) if self.app.query(".chat-screen RichLog") else None
+            if out:
+                out.first().write(f"[green]✓ Switched to {name} — {model}[/]")
+        elif event.key == "escape":
+            self.app.pop_screen()
+
+
+class SessionSwitcher(Screen):
+    """Modal: list, switch, resume sessions."""
+    selected: int = 0
+
+    def compose(self) -> ComposeResult:
+        yield Static("📂 Sessions", classes="t")
+        yield Static("", id="session-list")
+        yield Static("↑↓ navigate · Enter switch · N new · Esc cancel", classes="dim")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        from atar_core.session import SessionManager
+        self._mgr = SessionManager()
+        self._render()
+
+    def _render(self) -> None:
+        sessions = self._mgr.list()
+        lines = []
+        for i, s in enumerate(sessions):
+            m = "▸" if i == self.selected else " "
+            lines.append(f" {m} {s.title or s.session_id[:12]} — {s.meta.get('messages', 0)} msgs")
+        if not lines:
+            lines.append("[dim]No saved sessions.[/]")
+            lines.append("Press N to create new session.")
+        self.query_one("#session-list", Static).update("\n".join(lines))
+
+    def on_key(self, event: events_Key) -> None:
+        sessions = self._mgr.list()
+        if event.key == "up" and self.selected > 0:
+            self.selected -= 1; self._render()
+        elif event.key == "down" and self.selected < len(sessions) - 1:
+            self.selected += 1; self._render()
+        elif event.key == "n":
+            self._mgr.new()
+            self._render()
+        elif event.key == "enter" and sessions:
+            sess = sessions[self.selected]
+            self._mgr._active = sess.session_id
+            self.app.pop_screen()
+            out = self.app.query(".chat-screen RichLog", RichLog) if self.app.query(".chat-screen RichLog") else None
+            if out:
+                out.first().write(f"[green]✓ Switched to session: {sess.title or sess.session_id[:12]}[/]")
+                for m in getattr(sess, "messages", [])[-10:]:
+                    out.first().write(f"[dim]{m.role}: {m.content[:80]}[/]")
+        elif event.key == "escape":
+            self.app.pop_screen()
 
 
 class PlanScreen(Screen):
