@@ -22,9 +22,19 @@ Clarity in Complexity.
 
 ---
 
-**An autonomous terminal AI agent.** Named after *Ataraxia* — the ancient Greek concept of tranquility through clarity — ATAR operates your terminal with calm precision. Built with Python, prompt_toolkit, and Rich. Runs locally with your API keys. No cloud dependency. No telemetry.
+<p align="center">
+<strong><em>An autonomous AI agent that lives in your terminal.</em></strong>
+</p>
 
-Whether you're researching, coding, or managing files, ATAR autonomously selects and executes the right tools, streams real-time progress, and delivers evidence-backed answers — all from the comfort of your terminal.
+ATAR is a local-first, open-source terminal agent designed for developers, researchers, and builders who want AI assistance without sacrificing control. It runs entirely on your machine with your API keys, your files, and your explicit approval. No cloud middleware. No telemetry. No lock-in.
+
+The name derives from **Ataraxia** (ἀταραξία) — the ancient Greek philosophical ideal of a lucid state of robust tranquility, characterized by ongoing freedom from distress and worry. For the Stoics, ataraxia was the natural result of living virtuously in accordance with reason. For the Epicureans, it was the highest form of pleasure — the absence of mental disturbance. For the Pyrrhonian Skeptics, it was achieved by suspending judgment on all non-evident matters.
+
+ATAR embodies this philosophy in software: **calm precision over frantic reactivity. Evidence over assumption. Clarity over confusion.** When you ask it to research, it searches the web, extracts sources, compares claims, and synthesizes answers with citations — never fabricating references. When you ask it to code, it inspects the repository, creates a plan, makes targeted edits, runs your tests, and verifies the results — never claiming completion without proof.
+
+Built with Python 3.12+, prompt_toolkit, Rich, and a clean modular architecture, ATAR supports six AI providers including DeepSeek (with native tool calling), OpenAI, and Anthropic. Its REPL streams responses in real-time, shows live tool execution progress, and keeps a persistent status bar tracking tokens, context usage, and session time — everything you need, nothing you don't.
+
+<strong>ATAR is not a chatbot. It is an autonomous agent that thinks, acts, verifies, and reports — all from the comfort of your terminal.</strong>
 
 ---
 
