@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 import subprocess
 import sys
@@ -16,52 +18,133 @@ from textual.widgets import Button, Footer, Header, Input, RichLog, Static
 # ── Functional Screens (7) ──
 
 class ChatScreen(Screen):
-    BINDINGS = [("escape", "app.focus_input", "Focus")]
+    BINDINGS = [
+        ("escape", "cancel", "Cancel"),
+        ("ctrl+enter", "send", "Send"),
+    ]
+
+    _task: asyncio.Task | None = None
+    _running: bool = False
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
-            yield RichLog(id="chat-output", highlight=True, markup=True)
+            yield RichLog(id="chat-output", highlight=True, markup=True, max_lines=1000)
             with Horizontal(id="chat-input-area"):
-                yield Input(id="chat-input", placeholder="Ask ATAR...")
+                yield Input(id="chat-input", placeholder="Ask ATAR...  /help for commands")
                 yield Button("Send", id="chat-send")
         yield Footer()
+
+    def on_mount(self) -> None:
+        out = self.query_one("#chat-output", RichLog)
+        out.write("[bold cyan]ATAR Chat[/] — streaming conversation with tools")
+        out.write("[dim]Type /help for commands, Ctrl+Enter to send[/]")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "chat-send":
             await self._send()
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "chat-input":
+        if event.input.id == "chat-input" and not self._running:
             await self._send()
+
+    def action_cancel(self) -> None:
+        if self._task and not self._task.done():
+            self._task.cancel()
+            self._running = False
+            out = self.query_one("#chat-output", RichLog)
+            out.write("[bold yellow]⏹ Cancelled[/]")
+
+    def action_send(self) -> None:
+        """Send from multiline textarea."""
+        inp = self.query_one("#chat-input", Input)
+        if inp.value.strip():
+            asyncio.create_task(self._send())
 
     async def _send(self) -> None:
         inp = self.query_one("#chat-input", Input)
         out = self.query_one("#chat-output", RichLog)
         text = inp.value.strip()
-        if not text:
+        if not text or self._running:
             return
         inp.value = ""
-        out.write(f"[bold gold3]▸[/] {text}")
+        self._running = True
+
+        # Slash commands
+        if text.startswith("/"):
+            await self._handle_command(text, out)
+            self._running = False
+            self.query_one("#chat-input", Input).focus()
+            return
+
+        out.write(f"\n[bold #4FC3F7]▸[/] {text}")
+
         key = get_api_key()
-        if key:
-            from atar_core.agent import Agent, StreamCallbacks
-            from atar_provider_anthropic.client import AnthropicProvider
-            provider = AnthropicProvider(
-                api_key=key, base_url="https://api.deepseek.com/anthropic",
-                model="deepseek-v4-pro",
+        if not key:
+            out.write("[bold red]No API key. Run Setup first.[/]")
+            self._running = False
+            self.query_one("#chat-input", Input).focus()
+            return
+
+        import atar_tools.tools.file  # noqa: F401
+        from atar_core.agent import Agent, StreamCallbacks
+        from atar_provider_deepseek.client import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key=key, model="deepseek-chat")
+        agent = Agent(provider=provider, max_turns=5, tools=[1])
+        agent.system_prompt = (
+            "You are ATAR. Use tools: read_file, write_file, terminal, web_fetch. "
+            "Be concise. Verify before acting."
+        )
+
+        buf: list[str] = []
+
+        async def on_delta(t: str) -> None:
+            buf.append(t)
+            # Stream partial text to display
+            if len(buf) == 1:
+                out.write("\n[dim]")
+            out.write(t)
+
+        async def on_tool(name: str, args: dict) -> None:
+            icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎"}
+            icon = icons.get(name, "🔧")
+            out.write(f"\n[bold #7C3AED]{icon} {name}[/] [dim]{str(args)[:100]}[/]")
+
+        async def on_tool_result(name: str, result: str) -> None:
+            preview = result[:200].replace("\n", " ")
+            out.write(f"\n[bold #4CAF50]  ✓ {name}[/] [dim]{preview}[/]")
+
+        try:
+            self._task = asyncio.create_task(
+                agent.run(text, StreamCallbacks(
+                    on_delta=on_delta,
+                    on_tool_call=on_tool,
+                    on_tool_result=on_tool_result,
+                ))
             )
-            agent = Agent(provider=provider)
-            buf: list[str] = []
+            await self._task
+        except asyncio.CancelledError:
+            out.write("[dim][Cancelled][/]")
+        except Exception as e:
+            out.write(f"\n[red]Error: {e}[/]")
 
-            async def on_delta(text: str) -> None:
-                buf.append(text)
+        out.write("\n")
+        self._running = False
+        self.query_one("#chat-input", Input).focus()
 
-            await agent.run(text, StreamCallbacks(on_delta=on_delta))
-            out.write("[dim]" + "".join(buf) + "[/]")
+    async def _handle_command(self, cmd: str, out: RichLog) -> None:
+        cmd = cmd.strip()
+        if cmd == "/help":
+            out.write("[bold]Commands:[/]\n  /help /clear /model /code /quit")
+        elif cmd == "/clear":
+            out.clear()
+        elif cmd == "/quit":
+            self.app.exit()
+        elif cmd.startswith("/model"):
+            out.write("[yellow]Use Setup screen to change provider/model.[/]")
         else:
-            out.write("[bold red]No API key configured.[/]")
-            out.write("[dim]Run Setup screen or export DEEPSEEK_API_KEY[/]")
+            out.write(f"[yellow]Unknown: {cmd}[/]")
 
 
 class PlanScreen(Screen):
@@ -359,7 +442,6 @@ class ProviderScreen(Screen):
 
     def on_mount(self) -> None:
         info = self.query_one("#provider-info", Static)
-        import json
         import os
 
         from atar_core.config_reader import get_api_key
