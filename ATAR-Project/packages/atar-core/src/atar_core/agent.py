@@ -136,8 +136,12 @@ class Agent:
 
     def _format_messages(self) -> list[Message]:
         msgs = list(self._messages)
-        if msgs and msgs[0].role != "system" and self.system_prompt:
-            msgs.insert(0, Message(role="system", content=self.system_prompt))
+        # Always use fresh system prompt — replace old one if present
+        if self.system_prompt:
+            if msgs and msgs[0].role == "system":
+                msgs[0] = Message(role="system", content=self.system_prompt)
+            else:
+                msgs.insert(0, Message(role="system", content=self.system_prompt))
         return msgs
 
     def history(self) -> list[Message]:
