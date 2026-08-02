@@ -20,9 +20,39 @@ app = typer.Typer(name="atar", invoke_without_command=True)
 
 @app.callback()
 def default() -> None:
-    """Launch ATAR TUI by default (no subcommand)."""
-    from atar_tui.app import main as tui_main
-    tui_main()
+    """Interactive chat (REPL mode) when no subcommand given."""
+    p = get_provider()
+    agent = Agent(provider=p)
+
+    print("ATAR Agent — Clarity in Complexity.")
+    print("Type /quit to exit, /clear to reset.\n")
+
+    try:
+        while True:
+            user = input("> ")
+            if not user.strip():
+                continue
+            if user.strip() in ("/quit", "/exit", "/q"):
+                print("Ataraxic.")
+                break
+            if user.strip() in ("/clear", "/reset"):
+                agent = Agent(provider=p)
+                print("[Cleared]")
+                continue
+
+            async def _chat() -> None:
+                buf: list[str] = []
+
+                async def delta(t: str) -> None:
+                    buf.append(t)
+                    print(t, end="", flush=True)
+
+                await agent.run(user, StreamCallbacks(on_delta=delta))
+                print()
+
+            asyncio.run(_chat())
+    except (KeyboardInterrupt, EOFError):
+        print("\nAtaraxic.")
 sessions = SessionManager()
 memory = MemoryEngine()
 skills = SkillRegistry()
