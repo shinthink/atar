@@ -183,9 +183,11 @@ class ModelPicker(Screen):
 
     def on_key(self, event: events_Key) -> None:
         if event.key == "up" and self.selected > 0:
-            self.selected -= 1; self._render()
+            self.selected -= 1
+            self._render()
         elif event.key == "down" and self.selected < len(self.providers) - 1:
-            self.selected += 1; self._render()
+            self.selected += 1
+            self._render()
         elif event.key == "enter":
             name, prov, model = self.providers[self.selected]
             import json
@@ -239,9 +241,11 @@ class SessionSwitcher(Screen):
     def on_key(self, event: events_Key) -> None:
         sessions = self._mgr.list()
         if event.key == "up" and self.selected > 0:
-            self.selected -= 1; self._render()
+            self.selected -= 1
+            self._render()
         elif event.key == "down" and self.selected < len(sessions) - 1:
-            self.selected += 1; self._render()
+            self.selected += 1
+            self._render()
         elif event.key == "n":
             self._mgr.new()
             self._render()
