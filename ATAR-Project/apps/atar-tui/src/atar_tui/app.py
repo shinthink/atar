@@ -178,17 +178,32 @@ class MemoryScreen(Screen):
 
 # ── Informational Screens (16) ──
 
+COSMIKE_BANNER = """\
+:::. :::::::::::::::.    :::::::..
+  ;;`;;;;;;;;;;'''';;`;;   ;;;;``;;;;
+ ,[[ '[[,   [[    ,[[ '[[,  [[[,/[[['
+c$$$cc$$$c  $$   c$$$cc$$$c $$$$$$c
+ 888   888, 88,   888   888,888b \"88bo,
+ YMM   \"\"`  MMM   YMM   \"\"` MMMM   \"W\"
+  :::.      .,-:::::/ .,:::::::::.    :::.::::::::::::
+  ;;`;;   ,;;-'````'  ;;;;''''`;;;;,  `;;;;;;;;;;;''''
+ ,[[ '[[, [[[   [[[[[[/[[cccc   [[[[[. '[[     [[
+c$$$cc$$$c\"$$c.    \"$$ $$\"\"\"\"   $$$ \"Y$c$$     $$
+ 888   888,`Y8bo,,,o88o888oo,__ 888    Y88     88,
+ YMM   \"\"`   `'YMUP\"YMM\"\"\"\"YUMMMMMM     YM     MMM"""
+
+
 class WelcomeScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Vertical(
-            Static("👋 Welcome to ATAR Terminal", classes="t"),
-            Static("Clarity in Complexity."),
+            Static(COSMIKE_BANNER, classes="cosmike"),
             Static(""),
-            Static("• Ctrl+K → Command palette"),
-            Static("• Ctrl+1-7 → Switch screens"),
-            Static("• Ctrl+Q → Quit"),
-            Static("• Sidebar → Navigate"),
+            Static("Clarity in Complexity.", classes="t"),
+            Static(""),
+            Static("Ctrl+K  Command palette"),
+            Static("Ctrl+Q  Quit"),
+            Static("Sidebar  Navigate screens"),
             Static(""),
             Static("Set DEEPSEEK_API_KEY to enable AI."),
             id="welcome",
@@ -411,11 +426,12 @@ SIDEBAR: list[tuple[str, str]] = [
 
 
 class ATARApp(App):
-    TITLE = "ATAR Terminal"
-    SUB_TITLE = "Clarity in Complexity — 23 screens"
+    TITLE = "ATAR AGENT"
+    SUB_TITLE = "Clarity in Complexity -- 23 screens"
     CSS = """
     Screen { align: center middle; }
     .t { text-style: bold; color: $accent; padding: 1 0; }
+    .cosmike { color: $accent; text-style: bold; }
     #sidebar { width: 16; border: solid $panel; padding: 1 0; background: $surface-darken-1; }
     #sidebar Button { width: 100%; margin: 0; text-align: left; }
     #sidebar .active { background: $accent-darken-2; }
