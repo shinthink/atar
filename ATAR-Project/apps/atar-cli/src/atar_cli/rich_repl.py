@@ -43,16 +43,6 @@ SLASH_META = {
 # ── Keybindings ──
 bindings = KeyBindings()
 
-@bindings.add("tab")
-@bindings.add("c-i")  # fallback: some terminals send c-i for Tab
-def _(event):
-    """Tab: trigger slash-command completion."""
-    b = event.current_buffer
-    if b.complete_state:
-        b.complete_next()
-    else:
-        b.start_completion(select_first=False)
-
 
 @bindings.add("escape", "enter")
 def _(event):
@@ -81,7 +71,6 @@ PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F
 session_pt = PromptSession(
     completer=NestedCompleter.from_nested_dict(dict.fromkeys(SLASH_COMMANDS)),
     key_bindings=bindings,
-    multiline=False,
     enable_history_search=True,
 )
 
