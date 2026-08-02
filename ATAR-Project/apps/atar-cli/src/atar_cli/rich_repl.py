@@ -26,6 +26,55 @@ PT_STYLE = Style.from_dict({
     "separator": "#0288D1",
 })
 
+MODELS = [
+    ("DeepSeek V3", "deepseek", "deepseek-chat", "https://api.deepseek.com/v1"),
+    ("DeepSeek V4", "deepseek", "deepseek-v4-pro", "https://api.deepseek.com/anthropic"),
+    ("OpenAI", "openai", "gpt-4o", "https://api.openai.com/v1"),
+    ("Anthropic", "anthropic", "claude-sonnet-4-20250514", "https://api.anthropic.com"),
+    ("OpenRouter", "openrouter", "deepseek/deepseek-chat", "https://openrouter.ai/api/v1"),
+]
+
+
+def _show_model_picker() -> None:
+    """Inline model picker in REPL."""
+    lines = []
+    for i, (name, _prov, model, _url) in enumerate(MODELS):
+        marker = "▸" if i == 0 else " "
+        lines.append(f" {marker} [{i}] {name} — {model}")
+    console.print(Panel("\n".join(lines), title="📡 Switch Model", border_style="#FFD700"))
+    try:
+        choice = session_pt.prompt_sync("Pick a model number (Esc to cancel): ", style=PT_STYLE)
+        idx = int(choice)
+        if 0 <= idx < len(MODELS):
+            name, prov, model, url = MODELS[idx]
+            console.print(f"[green]✓ Switched to {name} — {model}[/]")
+    except (ValueError, EOFError, KeyboardInterrupt):
+        console.print("[dim]Cancelled.[/]")
+
+
+async def _show_session_switcher() -> None:
+    """Inline session switcher in REPL."""
+    from atar_core.session import SessionManager
+    mgr = SessionManager()
+    sessions = mgr.list()
+    if not sessions:
+        console.print("[dim]No saved sessions.[/]")
+        return
+    lines = []
+    for i, s in enumerate(sessions):
+        title = s.title or s.session_id[:12]
+        msgs = len(getattr(s, "messages", []))
+        lines.append(f" [{i}] {title} — {msgs} messages")
+    console.print(Panel("\n".join(lines), title="📂 Sessions", border_style="#FFD700"))
+    try:
+        choice_str = await session_pt.prompt_async("Pick session number (Enter for none): ", style=PT_STYLE)
+        choice = int(choice_str)
+        if 0 <= choice < len(sessions):
+            s = sessions[choice]
+            console.print(f"[green]✓ Session: {s.title or s.session_id[:12]}[/]")
+    except (ValueError, EOFError, KeyboardInterrupt):
+        console.print("[dim]Keeping current session.[/]")
+
 BASE_PROMPT = (
     "You are ATAR, a precise AI assistant. Respond naturally to questions. "
     "Only propose bash commands when the user explicitly asks you to create files, "
@@ -241,9 +290,20 @@ def run_repl() -> None:
                 continue
             if user == "/help":
                 console.print(Panel(
-                    "/code  coding mode · /chat  chat mode\n/clear  reset · /quit  exit",
+                    "/code  coding mode · /chat  chat mode\n"
+                    "/model  switch AI model\n"
+                    "/sessions  manage sessions\n"
+                    "/clear  reset · /quit  exit",
                     title="Commands", border_style="#4FC3F7",
                 ))
+                continue
+            if user == "/model":
+                _show_model_picker()
+                console.print(Rule(style="#0288D1"))
+                continue
+            if user == "/sessions":
+                await _show_session_switcher()
+                console.print(Rule(style="#0288D1"))
                 continue
             if user == "/code":
                 import atar_tools.tools.file
