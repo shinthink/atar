@@ -369,6 +369,18 @@ For significant changes, open an issue first to discuss.
 
 ---
 
+## Acknowledgments
+
+ATAR is built on the shoulders of giants:
+
+- **[DeepSeek](https://deepseek.com)** — primary AI provider with native tool-calling support
+- **[prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)** — the terminal interaction framework
+- **[Rich](https://rich.readthedocs.io/)** — beautiful terminal rendering
+- **[Hermes Agent](https://github.com/NousResearch/hermes-agent)** — design and interaction reference
+- **[Nous Research](https://nousresearch.com)** — pushing the boundaries of open-source AI agents
+
+---
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
