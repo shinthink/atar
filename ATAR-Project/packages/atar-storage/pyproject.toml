@@ -1,0 +1,15 @@
+[project]
+name = "atar-storage"
+version = "0.1.0"
+description = "ATAR — storage layer (SQLAlchemy async + SQLite)"
+requires-python = ">=3.12"
+dependencies = [
+    "atar-models",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.21",
+    "alembic>=1.15",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,9 @@
+[project]
+name = "atar-projects"
+version = "0.1.0"
+description = "ATAR — atar-projects"
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
