@@ -94,14 +94,14 @@ MODELS = [
 ]
 
 BASE_PROMPT = (
-    "You are ATAR. You have tools: web_search, web_fetch, read_file, write_file, terminal.\n"
-    "RULES:\n"
-    "- For ANY research/reference/lookup, call web_search first.\n"
-    "- Never say 'I will search' — just call the tool.\n"
-    "- Never fabricate URLs, citations, or facts.\n"
-    "- After search, use web_fetch to read top results.\n"
-    "- For simple greetings, respond directly.\n"
-    "Be concise. Use Indonesian if the user speaks Indonesian."
+    "You are ATAR, an autonomous agent with tools: web_search, web_fetch, read_file, write_file, terminal.\n"
+    "CRITICAL RULES:\n"
+    "- For research/questions about facts/references/concepts — call web_search FIRST, then web_fetch. Never explain first.\n"
+    "- For file operations — call the tool directly.\n"
+    "- For simple greetings/harmless chat — respond directly.\n"
+    "- Never say 'I will search' or 'let me search'. Just do it.\n"
+    "- Be concise. One-sentence answers preferred.\n"
+    "- Use Indonesian if the user speaks Indonesian."
 )
 
 
@@ -280,8 +280,21 @@ def run_repl() -> None:
                 console.print("\n[dim]Press Ctrl+D to exit.[/]")
                 continue
             except EOFError:
-                console.print("\n[dim]Ataraxic.[/]")
-                break
+                # Ctrl+D — confirm before exit
+                try:
+                    confirm = await session_pt.prompt_async(
+                        HTML("\n<dim>Exit ATAR? (y/N)</dim> "),
+                        style=PT_STYLE,
+                        bottom_toolbar=_status_bar,
+                    )
+                    if confirm.strip().lower() in ("y", "yes"):
+                        console.print("\n[dim]Ataraxic.[/]")
+                        break
+                    console.print(Rule(style="#394B59"))
+                    continue
+                except (EOFError, KeyboardInterrupt):
+                    console.print("\n[dim]Ataraxic.[/]")
+                    break
 
             user = user.strip()
             if not user:
