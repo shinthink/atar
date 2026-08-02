@@ -12,7 +12,6 @@ from contextlib import suppress
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.clipboard import ClipboardData
-from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
@@ -49,6 +48,26 @@ def _(event):
     event.current_buffer.insert_text("\n")
 
 
+@bindings.add("tab")
+def _(event):
+    """Tab: show slash completions via inline menu."""
+    b = event.current_buffer
+    text = b.text.lstrip()
+    matches = [c for c in SLASH_COMMANDS if c.startswith(text)]
+    if not matches:
+        matches = [c for c in SLASH_COMMANDS if text in c]
+    if matches:
+        b.text = ""
+        console.print()
+        lines = [f"  [bold #67D8FF]{m}[/]  [dim]{SLASH_META.get(m, '')}[/]" for m in matches[:12]]
+        console.print("\n".join(lines) if lines else "[dim]No commands[/]")
+        # Re-fill user's partial input
+        b.text = text
+    else:
+        # Insert literal tab character if no match
+        b.insert_text("\t")
+
+
 @bindings.add("c-c")
 def _(event):
     event.current_buffer.text = ""
@@ -69,10 +88,8 @@ def _(event):
 PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F8C98"})
 
 session_pt = PromptSession(
-    completer=NestedCompleter.from_nested_dict(dict.fromkeys(SLASH_COMMANDS)),
     key_bindings=bindings,
     multiline=False,
-    complete_while_typing=False,
 )
 
 MODELS = [
