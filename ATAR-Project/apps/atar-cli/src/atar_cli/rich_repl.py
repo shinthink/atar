@@ -127,10 +127,9 @@ def run_repl() -> None:
         await ag.run(prompt, StreamCallbacks(on_delta=delta, on_tool_call=on_tool, on_tool_result=on_tool_result))
 
         elapsed = time.time() - start_time
-        last_elapsed = int(elapsed)  # update outer scope
-        console.print(Rule(style="#0288D1"))
+        last_elapsed = int(elapsed)
 
-        if not response_text:
+        if not response_text and not tool_count:
             console.print(Rule(style="#0288D1"))
             return
 
