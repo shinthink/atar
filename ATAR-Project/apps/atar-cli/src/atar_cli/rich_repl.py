@@ -206,70 +206,69 @@ def run_repl() -> None:
     _interrupt = False
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
-        async def _agent_turn(prompt: str, ag: Agent) -> None:
-            response_text = ""
+        response_text = ""
 
-            async def delta(t: str) -> None:
-                nonlocal response_text
-                response_text += t
+        async def delta(t: str) -> None:
+            nonlocal response_text
+            response_text += t
 
-            async def on_tool(name: str, args: dict) -> None:
-                icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
-                icon = icons.get(name, "🔧")
-                from atar_core.theme import current_theme
-                c = current_theme().colors
-                console.print(f"\n  [bold {c.secondary}]┊ {icon} {name}[/] [dim]{str(args)[:80]}[/]")
+        async def on_tool(name: str, args: dict) -> None:
+            icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
+            icon = icons.get(name, "🔧")
+            from atar_core.theme import current_theme
+            c = current_theme().colors
+            console.print(f"\n  [bold {c.secondary}]┊ {icon} {name}[/] [dim]{str(args)[:80]}[/]")
 
-            async def on_tool_result(name: str, result: str) -> None:
-                # Clean result: strip wiki nav, truncate
-                clean = result.replace("\n", " ").strip()
-                if len(clean) > 200:
-                    clean = clean[:200] + "..."
-                from atar_core.theme import current_theme
-                c = current_theme().colors
-                console.print(f"  [bold {c.success}]┊ {name}[/] [dim]{clean}[/]")
+        async def on_tool_result(name: str, result: str) -> None:
+            # Clean result: strip wiki nav, truncate
+            clean = result.replace("\n", " ").strip()
+            if len(clean) > 200:
+                clean = clean[:200] + "..."
+            from atar_core.theme import current_theme
+            c = current_theme().colors
+            console.print(f"  [bold {c.success}]┊ {name}[/] [dim]{clean}[/]")
 
+        console.print(Rule(style="#394B59"))
+        try:
+            with console.status("[bold #67D8FF]Thinking...[/]", spinner="dots"):
+                await ag.run(prompt, StreamCallbacks(
+                    on_delta=delta, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                ))
+        except asyncio.CancelledError:
+            console.print("\n[dim]⏹ Interrupted[/]")
+            return
+
+        if not response_text.strip():
             console.print(Rule(style="#394B59"))
+            return
+
+        # Render final response as Markdown
+        console.print()
+        console.print(Markdown(response_text))
+        console.print(Rule(style="#394B59"))
+
+        # Bash command extraction from raw text
+        cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
+        cmds = [c.strip() for c in cmds if c.strip()]
+        if cmds:
+            console.print(Panel(
+                "\n".join(f"[dim]$[/] [bold #67D8FF]{c[:150]}[/]" for c in cmds),
+                title="Proposed Commands", border_style="#E8C07D"))
             try:
-                with console.status("[bold #67D8FF]Thinking...[/]", spinner="dots"):
-                    await ag.run(prompt, StreamCallbacks(
-                        on_delta=delta, on_tool_call=on_tool, on_tool_result=on_tool_result,
-                    ))
-            except asyncio.CancelledError:
-                console.print("\n[dim]⏹ Interrupted[/]")
-                return
-
-            if not response_text.strip():
-                console.print(Rule(style="#394B59"))
-                return
-
-            # Render final response as Markdown
-            console.print()
-            console.print(Markdown(response_text))
-            console.print(Rule(style="#394B59"))
-
-            # Bash command extraction from raw text
-            cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
-            cmds = [c.strip() for c in cmds if c.strip()]
-            if cmds:
-                console.print(Panel(
-                    "\n".join(f"[dim]$[/] [bold #67D8FF]{c[:150]}[/]" for c in cmds),
-                    title="Proposed Commands", border_style="#E8C07D"))
-                try:
-                    answer = await session_pt.prompt_async(
-                        HTML("<yellow>Run? (y/n)</yellow> <dim>[n]</dim> "), style=PT_STYLE,
-                        bottom_toolbar=_status_bar,
-                    )
-                except (EOFError, KeyboardInterrupt):
-                    answer = "n"
-                if answer.strip().lower() in ("y", "yes"):
-                    for c in cmds:
-                        tr = await tool_execute("terminal", {"command": c}, ToolContext(metadata={"approved": True}))
-                        console.print(Panel(
-                            tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
-                            title=f"$ {c[:80]}", border_style="#78D6A5" if tr.success else "#F08C8C"))
-                else:
-                    console.print("[dim][Rejected][/]")
+                answer = await session_pt.prompt_async(
+                    HTML("<yellow>Run? (y/n)</yellow> <dim>[n]</dim> "), style=PT_STYLE,
+                    bottom_toolbar=_status_bar,
+                )
+            except (EOFError, KeyboardInterrupt):
+                answer = "n"
+            if answer.strip().lower() in ("y", "yes"):
+                for c in cmds:
+                    tr = await tool_execute("terminal", {"command": c}, ToolContext(metadata={"approved": True}))
+                    console.print(Panel(
+                        tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
+                        title=f"$ {c[:80]}", border_style="#78D6A5" if tr.success else "#F08C8C"))
+            else:
+                console.print("[dim][Rejected][/]")
 
     async def _run() -> None:
         nonlocal provider, model, agent, _current_task, _interrupt
