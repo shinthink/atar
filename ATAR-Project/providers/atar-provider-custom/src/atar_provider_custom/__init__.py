@@ -1,0 +1,1 @@
+\"\"\"ATAR custom provider.\"\"\"
