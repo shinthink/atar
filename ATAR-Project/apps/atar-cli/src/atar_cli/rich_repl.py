@@ -43,6 +43,15 @@ SLASH_META = {
 # ── Keybindings ──
 bindings = KeyBindings()
 
+@bindings.add("tab")
+def _(event):
+    """Tab: trigger slash-command completion."""
+    b = event.current_buffer
+    if b.complete_state:
+        b.complete_next()
+    else:
+        b.start_completion(select_first=False)
+
 
 @bindings.add("escape", "enter")
 def _(event):
@@ -69,7 +78,7 @@ def _(event):
 PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F8C98"})
 
 session_pt = PromptSession(
-    completer=WordCompleter(SLASH_COMMANDS, ignore_case=True, sentence=True, meta_dict=SLASH_META),
+    completer=WordCompleter(SLASH_COMMANDS, ignore_case=True, sentence=False, meta_dict=SLASH_META),
     key_bindings=bindings,
     multiline=False,
     enable_history_search=True,
