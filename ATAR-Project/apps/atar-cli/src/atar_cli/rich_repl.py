@@ -295,14 +295,7 @@ def run_repl() -> None:
 
     session_id = uuid.uuid4().hex[:12]
 
-    # Try resume last session
-    last_session = _try_resume_session()
-    if last_session:
-        for m in getattr(last_session, "messages", [])[-20:]:
-            if hasattr(agent, "_messages"):
-                agent._messages.append(m)
-        session_id = getattr(last_session, "session_id", session_id)
-
+    # Fresh session — no auto-resume to avoid old context contamination
     show_banner(model, os.getcwd(), session_id)
     import time as _t
     _stats["model"] = model
