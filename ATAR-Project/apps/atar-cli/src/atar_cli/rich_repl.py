@@ -178,11 +178,25 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     console.print(Rule(style=c.dim_border))
 
 
+# ── Runtime stats for status bar ──
+_stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat"}
+
+
 def _status_bar() -> str:
-    """Return bottom toolbar text for prompt_toolkit."""
-    cfg = _read_config()
-    model = cfg.get("model", "deepseek-chat")
-    return f" {model} │ /help for commands │ Ctrl+C interrupt │ Ctrl+D exit "
+    """Return bottom toolbar with real stats like Hermes."""
+    import time as _time
+    if _stats["start_time"] is None:
+        _stats["start_time"] = _time.time()
+    elapsed = int(_time.time() - _stats["start_time"])
+    m, s = divmod(elapsed, 60)
+    time_str = f"{m}m{s}s" if m else f"{s}s"
+
+    model = _stats["model"]
+    tokens = f"{_stats['tokens']/1000:.1f}K" if _stats["tokens"] else "—"
+    tools = _stats["tools"]
+    turns = _stats["turns"]
+
+    return f" {model} │ tokens {tokens} │ tools {tools} │ turns {turns} │ {time_str} "
 
 
 def run_repl() -> None:
@@ -201,6 +215,9 @@ def run_repl() -> None:
 
     session_id = uuid.uuid4().hex[:12]
     show_banner(model, os.getcwd(), session_id)
+    import time as _t
+    _stats["model"] = model
+    _stats["start_time"] = _t.time()
 
     _current_task: asyncio.Task | None = None
     _interrupt = False
@@ -213,6 +230,7 @@ def run_repl() -> None:
             response_text += t
 
         async def on_tool(name: str, args: dict) -> None:
+            _stats["tools"] += 1
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎", "web_search": "🔍"}
             icon = icons.get(name, "🔧")
             from atar_core.theme import current_theme
