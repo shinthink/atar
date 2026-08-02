@@ -277,8 +277,8 @@ def run_repl() -> None:
             _had_tools = True
             response_text = ""  # discard chatter from tool turns
 
-            # Dedup: skip identical tool calls
-            tool_sig = f"{name}:{str(args)}"
+            # Dedup: by path for write/read, by content for others
+            tool_sig = f"{name}:{args.get('path', '')}" if name in ("write_file", "read_file") else f"{name}:{str(args)}"
             if tool_sig in _last_tool_id:
                 return
             _last_tool_id.add(tool_sig)
