@@ -855,36 +855,47 @@ class UsageScreen(Screen):
 class AuditScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("📋 Audit", classes="t"),
-            Static("All tool executions logged with correlation IDs."),
-        )
+        with Vertical():
+            yield Static("📋 Audit & Replay", classes="t")
+            yield RichLog(id="audit-log")
         yield Footer()
+
+    def on_mount(self) -> None:
+        log = self.query_one("#audit-log", RichLog)
+        audit_path = os.path.expanduser("~/.atar/audit.jsonl")
+        if os.path.exists(audit_path):
+            with open(audit_path) as f:
+                lines = f.readlines()[-50:]
+            for l in lines:
+                try:
+                    entry = json.loads(l)
+                    log.write(f"[dim]{entry.get('time','')[:19]}[/] {entry.get('action','')} {entry.get('detail','')[:80]}")
+                except (json.JSONDecodeError, Exception):
+                    log.write(f"[dim]{l[:100]}[/]")
+        else:
+            log.write("[dim]No audit log yet. Enable auditing in settings.[/]")
 
 
 class SettingsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("⚙️ Settings", classes="t"),
-            Static("Config: ~/.atar/config.yaml"),
-            Static("Data: ~/.atar/"),
-            Static("Sessions: .atar/sessions.json + .atar/sessions.db"),
-            Static("Memory: .atar/memory.json"),
-            Static("Skills: .atar/skills.json"),
-        )
-        yield Footer()
-
-
-class DiagnosticsScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Vertical(
-            Static("🔬 Diagnostics", classes="t"),
-            Static(f"Python: {sys.version}"),
-            Static(f"CWD: {os.getcwd()}"),
-            Static(f"ATAR home: {os.path.expanduser('~/.atar')}"),
-        )
+        with Vertical():
+            yield Static("⚙ Settings", classes="t")
+            yield Static(f"Python: {sys.version.split()[0]}")
+            yield Static(f"Working Dir: {os.getcwd()}")
+            yield Static("Config: ~/.atar/config.json")
+            yield Static("Sessions: ~/.atar/sessions/")
+            yield Static("Audit Log: ~/.atar/audit.jsonl")
+            yield Static("Secrets: keyring (primary), env (fallback)")
+            yield Static("")
+            modes = [
+                "safe: ask before destructive operations",
+                "normal: auto-approve read-only tools",
+                "paranoid: ask for everything",
+            ]
+            yield Static("[bold]Permission Mode:[/]")
+            for m in modes:
+                yield Static(f"  {m}")
         yield Footer()
 
 
