@@ -23,7 +23,6 @@ def default() -> None:
     """Interactive chat (REPL mode) when no subcommand given."""
     print("ATAR Agent — Clarity in Complexity.")
     print("Type /quit to exit, /clear to reset.\n")
-    history: list = []
 
     try:
         while True:
@@ -34,7 +33,6 @@ def default() -> None:
                 print("Ataraxic.")
                 break
             if user.strip() in ("/clear", "/reset"):
-                history = []
                 print("[Cleared]")
                 continue
 
