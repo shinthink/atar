@@ -182,10 +182,15 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat", "last_response": None}
 
 
-def _context_bar(tokens: int, max_tokens: int = 128000) -> str:
-    """Draw ASCII context usage bar."""
-    if not tokens:
-        return ""
+def _context_bar() -> str:
+    """Draw ASCII context usage bar. Estimate tokens from text if real count unavailable."""
+    tokens = _stats.get("tokens") or 0
+    max_tokens = 128000
+    if tokens == 0:
+        # Estimate from response text length if available
+        est = _stats.get("text_chars") or 0
+        tokens = max(tokens, est // 3)  # rough: 3 chars per token
+        tokens = max(tokens, _stats["turns"] * 200)  # minimum per turn
     pct = min(tokens / max_tokens, 1.0)
     width = 10
     filled = int(pct * width)
@@ -204,8 +209,7 @@ def _status_bar() -> str:
     time_str = f"{h}h {m}m" if h else f"{m}m {s}s"
 
     parts = [f"◆ {_stats['model']}"]
-    if _stats["tokens"]:
-        parts.append(_context_bar(_stats["tokens"]))
+    parts.append(_context_bar())
     parts.append(f"turns {_stats['turns']}")
     parts.append(f"tools {_stats['tools']}")
     if _stats["last_response"] is not None:
@@ -246,6 +250,7 @@ def run_repl() -> None:
         async def delta(t: str) -> None:
             nonlocal response_text
             response_text += t
+            _stats["text_chars"] = (_stats.get("text_chars") or 0) + len(t)
 
         async def on_tool(name: str, args: dict) -> None:
             _stats["tools"] += 1
