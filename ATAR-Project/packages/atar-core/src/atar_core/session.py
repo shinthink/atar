@@ -101,6 +101,14 @@ class SessionManager:
         with open(self._store_file, "w") as f:
             import json
             json.dump(data, f, default=str, indent=2)
+        # Also save to SQLite
+        from atar_storage.sqlite_store import SqliteSessionStore
+        try:
+            store = SqliteSessionStore()
+            for sid, s in self._registry.items():
+                store.save(sid, s.title, s.messages)
+        except Exception:
+            pass  # SQLite is best-effort for now
 
     def _load_store(self) -> None:
         import os as _os

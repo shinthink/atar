@@ -70,6 +70,17 @@ async def execute(name: str, args: dict[str, Any], ctx: ToolContext | None = Non
         return ToolResult(success=False, error=f"Tool '{name}' not found")
     if not tool.handler:
         return ToolResult(success=False, error=f"Tool '{name}' has no handler")
+    # Approval check
+    if tool.requires_approval and not ctx.metadata.get("approved"):
+        return ToolResult(
+            success=False,
+            error=f"Tool '{name}' requires approval. Set approved=true in context.",
+            evidence={"requires_approval": True, "tool": name},
+        )
+    # Audit
+    from atar_security.audit import log_action
+    cid = ctx.metadata.get("correlation_id", "")
+    log_action(f"tool:{name}", args=str(args)[:200], correlation_id=cid)
     try:
         result = await tool.handler(name, args, ctx)
         if len(result.output) > tool.max_output_chars:
@@ -77,6 +88,15 @@ async def execute(name: str, args: dict[str, Any], ctx: ToolContext | None = Non
         return result
     except Exception as exc:
         return ToolResult(success=False, error=str(exc))
+
+
+def to_schema(tool: Tool) -> dict[str, Any]:
+    """Provider-agnostic tool schema. Providers adapt independently."""
+    return {
+        "name": tool.name,
+        "description": tool.description,
+        "input_schema": tool.parameters or {"type": "object", "properties": {}},
+    }
 
 
 def to_openai_schema(tool: Tool) -> dict[str, Any]:

@@ -14,7 +14,6 @@ from atar_core.planning import PlanningEngine
 from atar_core.session import SessionManager
 from atar_core.skills import HookManager, SkillRegistry, SkillStatus
 from atar_core.taskboard import Delegator, TaskBoard
-from atar_security.secrets import SecretsManager
 
 app = typer.Typer(name="atar")
 sessions = SessionManager()
@@ -25,13 +24,13 @@ board = TaskBoard()
 
 
 def get_provider():
-    from atar_provider_anthropic.client import AnthropicProvider
-    s = SecretsManager()
-    k = s.resolve("deepseek", env_var="DEEPSEEK_API_KEY")
-    if k:
-        return AnthropicProvider(api_key=k, base_url="https://api.deepseek.com/anthropic", model="deepseek-v4-pro")
     from atar_core.fake_provider import FakeModelProvider
-    return FakeModelProvider(responses=["Set DEEPSEEK_API_KEY."])
+    from atar_provider_anthropic.client import AnthropicProvider
+    # Provider resolves key from env automatically
+    prov = AnthropicProvider(base_url="https://api.deepseek.com/anthropic", model="deepseek-v4-pro")
+    if prov.api_key:
+        return prov
+    return FakeModelProvider(responses=["Set DEEPSEEK_API_KEY or ANTHROPIC_API_KEY."])
 
 
 async def _chat(prompt: str, sid: str | None = None) -> None:
@@ -227,6 +226,49 @@ def eval_stats() -> None:
     """Show evaluation statistics."""
     s = Evaluator().stats()
     typer.echo(f"  Total: {s['total']} | Scored: {s['scored']} | Avg: {s['avg_score']}")
+
+
+@app.command()
+def checkpoint_save(
+    file: Annotated[str, typer.Argument(help="File to checkpoint")],
+) -> None:
+    """Save a checkpoint of a file."""
+    from atar_core.checkpoint import Checkpoint
+    cp = Checkpoint()
+    cid = cp.save(file)
+    if cid:
+        typer.echo(f"  ✅ Checkpoint: {cid}")
+    else:
+        typer.echo(f"  ❌ File not found: {file}")
+
+
+@app.command()
+def checkpoint_restore(
+    cid: Annotated[str, typer.Argument(help="Checkpoint ID")],
+) -> None:
+    """Restore a file from checkpoint."""
+    from atar_core.checkpoint import Checkpoint
+    cp = Checkpoint()
+    if cp.restore(cid):
+        typer.echo(f"  ✅ Restored: {cid}")
+    else:
+        typer.echo(f"  ❌ Checkpoint not found: {cid}")
+
+
+@app.command()
+def checkpoint_list() -> None:
+    """List all checkpoints."""
+    from atar_core.checkpoint import Checkpoint
+    cp = Checkpoint()
+    for c in cp.list():
+        typer.echo(f"  {c['id']} — {c['original']} ({c['time'][:19]})")
+
+
+@app.command()
+def tui() -> None:
+    """Launch full-screen TUI."""
+    from atar_tui.app import main
+    main()
 
 
 @app.command()

@@ -13,6 +13,7 @@ class ToolContext(BaseModel):
     working_directory: str = "."
     env: dict[str, str] = Field(default_factory=dict)
     sandbox: str = "local"
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ToolResult(BaseModel):

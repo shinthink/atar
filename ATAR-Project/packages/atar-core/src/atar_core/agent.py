@@ -105,8 +105,8 @@ class Agent:
         return await tool_execute(name, args)
 
     def _tool_schemas(self) -> list[Any]:
-        from atar_tools.registry import list_all, to_anthropic_schema
-        return [to_anthropic_schema(t) for t in list_all()]
+        from atar_tools.registry import list_all, to_schema
+        return [to_schema(t) for t in list_all()]
 
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)
