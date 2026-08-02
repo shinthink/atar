@@ -47,7 +47,7 @@ def default() -> None:
 
             agent.state.force("idle")
 
-            async def _chat(text: str = user) -> None:
+            async def _chat(text: str = user, ag: Agent = agent) -> None:
                 printed = False
 
                 async def delta(t: str) -> None:
@@ -55,7 +55,7 @@ def default() -> None:
                     printed = True
                     print(t, end="", flush=True)
 
-                result = await agent.run(text, StreamCallbacks(on_delta=delta))
+                result = await ag.run(text, StreamCallbacks(on_delta=delta))
                 print()
                 if not printed and result and result.text:
                     print(result.text)
