@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 
+from atar_core.config_reader import get_api_key, save_api_key
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
@@ -41,12 +42,12 @@ class ChatScreen(Screen):
             return
         inp.value = ""
         out.write(f"[bold gold3]▸[/] {text}")
-        key = os.environ.get("DEEPSEEK_API_KEY") or ""
+        key = get_api_key()
         if key:
             from atar_core.agent import Agent, StreamCallbacks
             from atar_provider_anthropic.client import AnthropicProvider
             provider = AnthropicProvider(
-                base_url="https://api.deepseek.com/anthropic",
+                api_key=key, base_url="https://api.deepseek.com/anthropic",
                 model="deepseek-v4-pro",
             )
             agent = Agent(provider=provider)
@@ -58,7 +59,8 @@ class ChatScreen(Screen):
             await agent.run(text, StreamCallbacks(on_delta=on_delta))
             out.write("[dim]" + "".join(buf) + "[/]")
         else:
-            out.write("[dim]Set DEEPSEEK_API_KEY for AI.[/]")
+            out.write("[bold red]No API key configured.[/]")
+            out.write("[dim]Run Setup screen or export DEEPSEEK_API_KEY[/]")
 
 
 class PlanScreen(Screen):
@@ -75,13 +77,13 @@ class PlanScreen(Screen):
             return
         event.input.value = ""
         out = self.query_one("#plan-output", RichLog)
-        key = os.environ.get("DEEPSEEK_API_KEY", "")
+        key = get_api_key()
         if key:
             from atar_core.agent import Agent
             from atar_core.planning import PlanningEngine
             from atar_provider_anthropic.client import AnthropicProvider
             provider = AnthropicProvider(
-                base_url="https://api.deepseek.com/anthropic",
+                api_key=key, base_url="https://api.deepseek.com/anthropic",
                 model="deepseek-v4-pro",
             )
             engine = PlanningEngine(Agent(provider=provider))
@@ -91,7 +93,7 @@ class PlanScreen(Screen):
                 icon = "🔴" if str(task.risk) == "HIGH" else "🟢"
                 out.write(f"  {icon} {task.title}")
         else:
-            out.write("[dim]Set DEEPSEEK_API_KEY.[/]")
+            out.write("[bold red]No API key configured.[/]")
 
 
 class TasksScreen(Screen):
@@ -213,16 +215,29 @@ class WelcomeScreen(Screen):
 
 class SetupScreen(Screen):
     def compose(self) -> ComposeResult:
-        ds = "✅ Set" if os.environ.get("DEEPSEEK_API_KEY") else "❌ Not set"
-        an = "✅ Set" if os.environ.get("ANTHROPIC_API_KEY") else "❌ Not set"
+        key_status = "Configured" if get_api_key() else "Not configured"
         yield Header()
-        yield Vertical(
-            Static("⚙️ Setup", classes="t"),
-            Static(f"DEEPSEEK_API_KEY: {ds}"),
-            Static(f"ANTHROPIC_API_KEY: {an}"),
-            Static(f"ATAR_HOME: {os.environ.get('ATAR_HOME', os.path.expanduser('~/.atar'))}"),
-        )
+        with Vertical():
+            yield Static("Setup", classes="t")
+            yield Static(f"Status: [bold]{key_status}[/]")
+            yield Static("")
+            yield Static("Provider: DeepSeek (Anthropic format)")
+            yield Static("Model: deepseek-v4-pro")
+            yield Static("")
+            yield Input(id="setup-key-input", placeholder="Paste API key (sk-...) and press Enter")
+            yield Static("", id="setup-status")
         yield Footer()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id != "setup-key-input":
+            return
+        key = event.value.strip()
+        if not key or not key.startswith("sk-"):
+            self.query_one("#setup-status", Static).update("[red]Invalid key format[/]")
+            return
+        event.input.value = ""
+        save_api_key(key)
+        self.query_one("#setup-status", Static).update("[bold green]Key saved. Restart or switch to Chat.[/]")
 
 
 class ProviderScreen(Screen):
