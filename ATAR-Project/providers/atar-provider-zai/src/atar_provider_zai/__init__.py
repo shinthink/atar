@@ -1,1 +1,1 @@
-\"\"\"ATAR zai provider.\"\"\"
+"""ATAR provider."""

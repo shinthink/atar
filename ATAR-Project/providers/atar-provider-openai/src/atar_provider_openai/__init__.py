@@ -1,1 +1,1 @@
-\"\"\"ATAR openai provider.\"\"\"
+"""ATAR provider."""

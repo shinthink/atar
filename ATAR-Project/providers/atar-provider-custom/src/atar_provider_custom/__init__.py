@@ -1,1 +1,1 @@
-\"\"\"ATAR custom provider.\"\"\"
+"""ATAR provider."""

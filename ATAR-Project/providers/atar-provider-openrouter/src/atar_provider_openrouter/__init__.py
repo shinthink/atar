@@ -1,1 +1,1 @@
-\"\"\"ATAR openrouter provider.\"\"\"
+"""ATAR provider."""
