@@ -12,7 +12,6 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.styles import Style
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
@@ -120,24 +119,7 @@ def run_repl() -> None:
             console.print(Rule(style="#0288D1"))
             return
 
-        # Render with Obsidian panels
-        lines = response_text.strip().split("\n")
-        in_code, lang, buf = False, "", []
-        for line in lines:
-            s = line.strip()
-            if s.startswith("```") and not in_code:
-                if buf: console.print(Markdown("\n".join(buf))); buf = []
-                in_code = True; lang = s[3:].strip() or "code"
-                continue
-            if s.startswith("```") and in_code:
-                in_code = False
-                code = "\n".join(buf); buf = []
-                console.print(Panel(code, title=f"  {lang}", border_style="#7C3AED" if lang in ("bash","sh","shell") else "#4FC3F7", padding=(1,2)))
-                continue
-            buf.append(line)
-        if buf: console.print(Markdown("\n".join(buf)))
-
-        # Extract bash commands for approval
+        # Extract bash commands only — text was already streamed
         cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
         cmds = [c.strip() for c in cmds if c.strip()]
         if cmds:
