@@ -69,6 +69,23 @@ class ChatScreen(Screen):
     _tool_cards: list[dict] = []
     _total_tokens: int = 0
     _total_cost: float = 0.0
+    _message_queue: list[str] = []  # queued messages while agent runs
+    _state: str = "idle"  # idle|typing|planning|executing|cancelling|recovering
+
+    STATES = {
+        "idle": "[green]● idle[/]",
+        "typing": "[yellow]◉ typing[/]",
+        "planning": "[blue]◉ planning[/]",
+        "executing": "[#7C3AED]◉ executing[/]",
+        "cancelling": "[red]◉ cancelling[/]",
+        "recovering": "[orange]◉ recovering[/]",
+    }
+
+    def _set_state(self, state: str) -> None:
+        self._state = state
+        from contextlib import suppress
+        with suppress(Exception):
+            self.query_one("Header").sub_title = f"ATAR · {self.STATES.get(state, state)}"
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -91,20 +108,45 @@ class ChatScreen(Screen):
             await self._send()
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "chat-input" and not self._running:
+        if event.input.id == "chat-input":
+            if self._running:
+                # Queue message while agent runs
+                self._message_queue.append(event.value)
+                self.query_one("#chat-output", RichLog).write(
+                    f"[dim]Queued: {event.value[:40]}... ({len(self._message_queue)} in queue)[/]"
+                )
+                event.input.value = ""
+                return
             await self._send()
 
     def action_cancel(self) -> None:
         if self._task and not self._task.done():
+            self._set_state("cancelling")
             self._task.cancel()
             self._running = False
             out = self.query_one("#chat-output", RichLog)
             out.write("[bold yellow]⏹ Cancelled[/]")
+            self._set_state("idle")
+            self._process_queue()
 
     def action_send(self) -> None:
-        """Send from TextArea (Ctrl+Enter)."""
         ta = self.query_one("#chat-input", TextArea)
         if ta.text.strip():
+            if self._running:
+                self._message_queue.append(ta.text)
+                self.query_one("#chat-output", RichLog).write(
+                    f"[dim]Queued ({len(self._message_queue)})[/]"
+                )
+                ta.text = ""
+                return
+            asyncio.create_task(self._send())
+
+    def _process_queue(self) -> None:
+        """Process queued messages after agent completes."""
+        if self._message_queue and not self._running:
+            next_msg = self._message_queue.pop(0)
+            ta = self.query_one("#chat-input", TextArea)
+            ta.text = next_msg
             asyncio.create_task(self._send())
 
     async def _send(self) -> None:
@@ -116,14 +158,27 @@ class ChatScreen(Screen):
         ta.text = ""
         self._running = True
 
+        # Detect image paste (base64 data URI)
+        if text.startswith("data:image/") or "[image]" in text.lower():
+            out.write("[bold yellow]🖼 Image detected[/] — ATAR cannot view images directly yet.")
+            out.write("[dim]Paste image URLs or use /browser to fetch images.[/]")
+            out.write("[dim]Future: vision provider support coming.[/]")
+            self._running = False
+            self._set_state("idle")
+            self._process_queue()
+            return
+
         # Slash commands
         if text.startswith("/"):
             await self._handle_command(text, out)
             self._running = False
+            self._set_state("idle")
             self.query_one("#chat-input", TextArea).focus()
+            self._process_queue()
             return
 
         out.write(f"\n[bold #4FC3F7]▸[/] {text}")
+        self._set_state("typing")
 
         key = get_api_key()
         if not key:
@@ -153,6 +208,7 @@ class ChatScreen(Screen):
             out.write(t)
 
         async def on_tool(name: str, args: dict) -> None:
+            self._set_state("executing")
             ts = str(int(time.time() * 1000))
             icons = {"read_file": "📖", "write_file": "✍️", "terminal": "💻", "web_fetch": "🔎"}
             icon = icons.get(name, "🔧")
@@ -161,7 +217,6 @@ class ChatScreen(Screen):
             out.write(f"\n[bold #7C3AED]{icon} {name}[/] [dim]{card['args']}[/] [yellow](running)[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            # Update matching tool card state
             for c in self._tool_cards:
                 if c["name"] == name and c["state"] == "running":
                     c["state"] = "completed"
@@ -169,6 +224,7 @@ class ChatScreen(Screen):
             preview = result[:200].replace("\n", " ")
             emoji = "✓" if result else "✗"
             out.write(f"\n[bold #4CAF50]  {emoji} {name}[/] [dim]{preview}[/]")
+            self._set_state("typing")
 
         try:
             self._task = asyncio.create_task(
@@ -181,13 +237,17 @@ class ChatScreen(Screen):
             await self._task
         except asyncio.CancelledError:
             out.write("[dim][Cancelled][/]")
+            self._set_state("idle")
         except Exception as e:
             out.write(f"\n[red]Error: {e}[/]")
+            self._set_state("recovering")
 
         out.write("\n")
-        self._total_tokens += len(text) + len("".join(buf))  # rough estimate
+        self._total_tokens += len(text) + len("".join(buf))
         self._running = False
+        self._set_state("idle")
         self.query_one("#chat-input", TextArea).focus()
+        self._process_queue()
 
     async def _handle_command(self, cmd: str, out: RichLog) -> None:
         cmd = cmd.strip()
