@@ -7,6 +7,7 @@ import json
 import os
 import re
 import uuid
+from contextlib import suppress
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
@@ -320,10 +321,8 @@ def run_repl() -> None:
 
             # Run agent turn
             _current_task = asyncio.create_task(_agent_turn(user, agent))
-            try:
+            with suppress(asyncio.CancelledError):
                 await _current_task
-            except asyncio.CancelledError:
-                pass
 
     # Remove Ctrl+C signal handler override — let prompt_toolkit handle it
     asyncio.run(_run())
