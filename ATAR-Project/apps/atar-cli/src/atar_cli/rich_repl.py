@@ -182,7 +182,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     for i, line in enumerate(banner_lines):
         style = logo_colors[min(i, len(logo_colors)-1)]
         logo.append(line + "\n", style=f"bold {style}")
-    logo.append("Clarity in Complexity.\n\n", style=f"bold {c.primary}")
+    logo.append("Clarity in Complexity.\n\n", style=f"italic {c.primary}")
 
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
     if len(short_cwd) > 50:
