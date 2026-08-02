@@ -437,7 +437,7 @@ class ATARApp(App):
     #sidebar Button:hover { background: #1565C0; color: #E1F5FE; }
     #sidebar .active { background: #0277BD; }
     #main { width: 1fr; padding: 1; }
-    #welcome { color: #E1F5FE; background: #01579B; }
+    #welcome { color: #E1F5FE; }
     """
 
     BINDINGS = [
