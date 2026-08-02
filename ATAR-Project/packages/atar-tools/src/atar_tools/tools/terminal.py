@@ -1,38 +1,87 @@
-"""ATAR terminal tool — async subprocess execution."""
+"""ATAR terminal tool — hardened subprocess execution with process-tree kill."""
 
 from __future__ import annotations
 
 import asyncio
+import os
+import signal
 from typing import Any
 
 from atar_models.tools import ToolContext, ToolResult
 
 from atar_tools.registry import register
 
+# Safe minimal environment — no host secrets forwarded
+_SAFE_ENV: dict[str, str] = {
+    "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+    "HOME": os.environ.get("HOME", "/root"),
+    "LANG": os.environ.get("LANG", "C.UTF-8"),
+    "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
+}
+
 
 async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
     command = args.get("command", "")
     if not command:
         return ToolResult(success=False, error="command required")
-    cwd = args.get("cwd") or ctx.working_directory
-    timeout = args.get("timeout", 30)
+
+    cwd = args.get("cwd") or ctx.working_directory or os.getcwd()
+    timeout = min(args.get("timeout", 30), 300)  # max 5 minutes
+    max_output = 20_000
+
     try:
         proc = await asyncio.create_subprocess_shell(
             command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=cwd,
+            env=_SAFE_ENV,
+            preexec_fn=os.setsid,  # create new process group for tree-kill
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        output = stdout.decode("utf-8", errors="replace")
-        err = stderr.decode("utf-8", errors="replace")
+
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        except TimeoutError:
+            _kill_process_tree(proc.pid)
+            try:
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=5)
+            except TimeoutError:
+                return ToolResult(success=False, error=f"Timed out after {timeout}s (process would not die)")
+
+            output = stdout.decode("utf-8", errors="replace")[:max_output]
+            if len(stdout) > max_output:
+                output += f"\n[truncated: {len(stdout)} bytes]"
+            return ToolResult(
+                success=False,
+                output=output,
+                error=f"Timed out after {timeout}s — process killed",
+                metadata={"exit_code": proc.returncode or -9, "cwd": cwd, "timed_out": True},
+            )
+
+        output = stdout.decode("utf-8", errors="replace")[:max_output]
+        err = stderr.decode("utf-8", errors="replace")[:max_output]
+
+        if len(stdout) > max_output or len(stderr) > max_output:
+            output += "\n[output truncated]"
+
         return ToolResult(
             success=proc.returncode == 0,
             output=output + (f"\n[stderr]\n{err}" if err else ""),
             metadata={"exit_code": proc.returncode, "cwd": cwd},
         )
-    except TimeoutError:
-        return ToolResult(success=False, error=f"Timed out after {timeout}s")
+
+    except FileNotFoundError:
+        return ToolResult(success=False, error=f"Command not found. Use full path or install: {command.split()[0]}")
+    except PermissionError:
+        return ToolResult(success=False, error=f"Permission denied: {command.split()[0]}")
+
+
+def _kill_process_tree(pid: int) -> None:
+    """Kill the entire process group."""
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except (OSError, ProcessLookupError):
+        pass
 
 
 register("terminal", "Run a shell command", _run_terminal, parameters={
@@ -40,7 +89,7 @@ register("terminal", "Run a shell command", _run_terminal, parameters={
     "properties": {
         "command": {"type": "string", "description": "Command to run"},
         "cwd": {"type": "string", "description": "Working directory"},
-        "timeout": {"type": "integer", "description": "Timeout in seconds"},
+        "timeout": {"type": "integer", "description": "Timeout in seconds (max 300)"},
     },
     "required": ["command"],
 }, destructive=True, requires_approval=True, max_output_chars=20_000)
