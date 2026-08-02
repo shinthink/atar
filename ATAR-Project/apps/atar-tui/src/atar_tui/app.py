@@ -803,33 +803,119 @@ class AgentsScreen(Screen):
 
 
 class DiffScreen(Screen):
+    BINDINGS = [("r", "refresh", "Refresh")]
+
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("📊 Diff", classes="t"),
-            Static("Run: atar code 'diff' to see changes."),
-        )
+        with Vertical():
+            yield Static("📊 Git Diff", classes="t")
+            yield Static("", id="diff-status")
+            yield RichLog(id="diff-log")
         yield Footer()
+
+    def on_mount(self) -> None:
+        self._show_diff()
+
+    def action_refresh(self) -> None:
+        log = self.query_one("#diff-log", RichLog)
+        log.clear()
+        self._show_diff()
+
+    def _show_diff(self) -> None:
+        log = self.query_one("#diff-log", RichLog)
+        status = self.query_one("#diff-status", Static)
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--stat"], capture_output=True, text=True, timeout=5
+            )
+            if result.stdout:
+                status.update("[green]Git diff available[/]")
+                log.write(result.stdout)
+                log.write("[dim]── Full diff ──[/]")
+                r2 = subprocess.run(
+                    ["git", "diff"], capture_output=True, text=True, timeout=5
+                )
+                log.write(r2.stdout[:2000] if r2.stdout else "[dim]Clean working tree.[/]")
+            else:
+                status.update("[dim]Clean working tree.[/]")
+                log.write("No changes to display.")
+        except Exception as e:
+            status.update(f"[red]Error: {e}[/]")
 
 
 class ProcessScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("⚡ Processes", classes="t"),
-            Static("Active subprocesses and background tasks."),
-        )
+        with Vertical():
+            yield Static("⚡ Processes", classes="t")
+            yield RichLog(id="proc-log")
         yield Footer()
+
+    def on_mount(self) -> None:
+        log = self.query_one("#proc-log", RichLog)
+        try:
+            import asyncio
+            task = asyncio.current_task()
+            if task:
+                log.write(f"[bold]Active Task:[/] {task.get_name()}")
+            import threading
+            for t in threading.enumerate():
+                log.write(f"  {'[bold]' if t is threading.current_thread() else ''}{t.name}{'[/]' if t is threading.current_thread() else ''} (daemon={t.daemon})")
+        except Exception as e:
+            log.write(f"[red]Cannot enumerate threads: {e}[/]")
 
 
 class BrowserScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Vertical(
-            Static("🌐 Browser", classes="t"),
-            Static("Use web_fetch tool or atar code with URLs."),
-        )
+        with Vertical():
+            yield Static("🌐 Web Browser", classes="t")
+            yield Input(id="browser-url", placeholder="Enter URL to fetch...")
+            yield RichLog(id="browser-log")
         yield Footer()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id != "browser-url":
+            return
+        url = event.value.strip()
+        if not url:
+            return
+        event.input.value = ""
+        log = self.query_one("#browser-log", RichLog)
+        log.write(f"[bold]Fetching: {url}[/]")
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as c:
+                resp = await c.get(url, headers={"User-Agent": "ATAR/1.0"})
+            log.write(f"[green]HTTP {resp.status_code}[/] {len(resp.text)} bytes")
+            log.write(f"[dim]{resp.text[:500]}[/]")
+        except Exception as e:
+            log.write(f"[red]Error: {e}[/]")
+
+
+class PluginsScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical():
+            yield Static("🔌 Plugins", classes="t")
+            yield RichLog(id="plugins-log")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        log = self.query_one("#plugins-log", RichLog)
+        try:
+            from atar_core.skills import HookManager
+            hooks = HookManager()
+            registered = hooks.list() if hasattr(hooks, "list") else []
+            if registered:
+                for r in registered:
+                    log.write(f"  • {r}")
+            else:
+                log.write("[dim]No plugins registered.[/]")
+                log.write("Use atar_skills to register plugin hooks.")
+        except Exception as e:
+            log.write(f"[yellow]Plugin system: {e}[/]")
+            log.write("[dim]Create hooks via SkillRegistry.[/]")
 
 
 class SkillsScreen(Screen):
@@ -846,16 +932,6 @@ class SkillsScreen(Screen):
         for s in SkillRegistry().list_all():
             icon = "🟢" if s.status == SkillStatus.ACTIVE else "⚪"
             log.write(f"  {icon} {s.name} [{s.status.value}]")
-
-
-class PluginsScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Vertical(
-            Static("🔌 Plugins", classes="t"),
-            Static("Hook manager: ordered, timeout, failure isolation."),
-        )
-        yield Footer()
 
 
 class CheckpointsScreen(Screen):
