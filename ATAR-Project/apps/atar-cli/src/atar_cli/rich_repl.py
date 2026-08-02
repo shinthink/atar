@@ -122,21 +122,18 @@ def _save_config(cfg: dict) -> None:
 
 def _create_provider():
     from atar_core.agent import Agent
-    from atar_core.config_reader import get_api_key
-    from atar_provider_deepseek.client import DeepSeekProvider
+    from atar_core.provider_router import create_router
 
-    cfg = _read_config()
-    prov_id = cfg.get("provider", "deepseek")
-    model = cfg.get("model", "deepseek-chat")
-    key = get_api_key(prov_id) or os.environ.get("DEEPSEEK_API_KEY") or ""
-
-    if not key:
-        return None, model, None
-    provider = DeepSeekProvider(api_key=key, model=model)
-    agent = Agent(provider=provider, max_turns=5, tools=[1])
-    agent.system_prompt = BASE_PROMPT
-    return provider, model, agent
-
+    try:
+        router = create_router()
+        first = router.providers[0]
+        model = getattr(first, "model", "deepseek-chat")
+        agent = Agent(provider=router, max_turns=5, tools=[1])
+        agent.system_prompt = BASE_PROMPT
+        return router, model, agent
+    except RuntimeError as e:
+        console.print(f"[red]{e}[/]")
+        return None, "none", None
 
 def _switch_model(idx: int) -> str:
     name, prov, model = MODELS[idx]
@@ -148,8 +145,13 @@ def _switch_model(idx: int) -> str:
 
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Compact 8-line banner — no full-width frame."""
+    """Compact banner using theme colors."""
+    from atar_core.theme import current_theme
+    theme = current_theme()
+    c = theme.colors
+
     logo = Text()
+    logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
     for i, line in enumerate([
         " █████╗ ████████╗ █████╗ ██████╗",
         "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗",
@@ -158,21 +160,21 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
         "██║  ██║   ██║   ██║  ██║██║  ██║",
         "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝",
     ]):
-        logo.append(line + "\n", style=f"bold {['#67D8FF','#5BC0EB','#4EA8D4','#4290BD','#3678A6','#2A608F'][i]}")
-    logo.append("Clarity in Complexity.\n\n", style="bold #67D8FF")
+        logo.append(line + "\n", style=f"bold {logo_colors[i]}")
+    logo.append("Clarity in Complexity.\n\n", style=f"bold {c.primary}")
 
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
     if len(short_cwd) > 50:
         short_cwd = "..." + short_cwd[-47:]
     info = Text()
-    info.append(f"{model}  ·  ", style="bold #67D8FF")
+    info.append(f"{model}  ·  ", style=f"bold {c.primary}")
     info.append(f"{short_cwd}  ·  ", style="dim")
     info.append(f"session {session_id[:6]}  ·  ", style="dim")
     info.append("6 tools", style="dim")
 
     console.print(logo)
     console.print(info)
-    console.print(Rule(style="#394B59"))
+    console.print(Rule(style=c.dim_border))
 
 
 def _status_bar() -> str:
