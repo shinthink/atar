@@ -115,13 +115,45 @@ def run_repl() -> None:
                 continue
             if user == "/help":
                 console.print(Panel(
-                    "[/]chat, /plan, /code — launch commands\n"
-                    "/clear — reset conversation\n"
-                    "/quit — exit\n"
+                    "/chat   normal chat mode\n"
+                    "/code   coding mode (file read/write, git, tests)\n"
+                    "/clear  reset conversation\n"
+                    "/quit   exit\n"
                     "When agent suggests commands, approve (y/n/e).",
                     title="Commands",
                     border_style="#4FC3F7",
                 ))
+                continue
+            if user == "/code":
+                import atar_tools.tools.file  # noqa: F401
+                import atar_tools.tools.git  # noqa: F401
+                import atar_tools.tools.test_runner  # noqa: F401
+                agent = Agent(provider=provider, max_turns=3, tools=[1])
+                agent.system_prompt = (
+                    "You are ATAR in CODE mode. You can read, write, and analyze code. "
+                    "Use tools: terminal (run cmds), read_file, write_file, git, run_tests. "
+                    "When making changes, always propose a ```bash command. "
+                    "Read relevant files before editing. Be precise."
+                )
+                cwd = os.getcwd()
+                console.print(Panel(
+                    f"[bold]Code mode active[/]\nWorking dir: {cwd}\n"
+                    "Tools: terminal, read_file, write_file, git, run_tests\n"
+                    "/chat to exit code mode",
+                    border_style="#4CAF50",
+                ))
+                console.print(Rule(style="#0288D1"))
+                continue
+            if user == "/chat":
+                agent = Agent(provider=provider, max_turns=1)
+                agent.system_prompt = (
+                    "You are ATAR, a terminal AI agent. When asked to create files, "
+                    "run commands, or modify the system, you MUST propose a bash command "
+                    "in a ```bash code block. Never just describe — always offer to execute. "
+                    "For file creation use: echo 'content' > path. Keep responses short."
+                )
+                console.print("[dim]Chat mode[/]")
+                console.print(Rule(style="#0288D1"))
                 continue
 
             agent.state.force("idle")
