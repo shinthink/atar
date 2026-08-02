@@ -24,7 +24,10 @@ session_pt = PromptSession(
     completer=WordCompleter(
         ["/help","/model","/sessions","/code","/chat","/clear","/quit","/exit","/q","/status","/tools","/reset"],
         sentence=True,
-        meta_dict={"/help":"Commands","/model":"Switch model","/sessions":"Sessions","/code":"Code mode","/chat":"Chat mode","/clear":"Reset","/quit":"Exit","/exit":"Exit","/q":"Quit","/status":"Status","/tools":"Tools","/reset":"Reset"},
+        meta_dict={"/help":"Commands","/model":"Switch model","/sessions":"Sessions",
+                   "/code":"Code mode","/chat":"Chat mode","/clear":"Reset",
+                   "/quit":"Exit","/exit":"Exit","/q":"Quit","/status":"Status",
+                   "/tools":"Tools","/reset":"Reset"},
     ),
 )
 
@@ -170,7 +173,11 @@ def run_repl() -> None:
                 console.print("[dim][Cleared][/]")
                 console.print(Rule(style="#0288D1")); continue
             if user == "/help":
-                console.print(Panel("/code  coding mode · /chat  chat mode\n/model  switch AI model\n/sessions  manage sessions\n/clear  reset · /quit  exit", title="Commands", border_style="#4FC3F7"))
+                console.print(Panel(
+                    "/code  coding mode · /chat  chat mode\n"
+                    "/model  switch AI model · /sessions  manage\n"
+                    "/clear  reset · /quit  exit",
+                    title="Commands", border_style="#4FC3F7"))
                 continue
             if user == "/model":
                 # Inline model picker — async, updates agent
