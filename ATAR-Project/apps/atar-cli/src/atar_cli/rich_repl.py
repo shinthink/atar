@@ -169,7 +169,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
     for i, line in enumerate(banner_lines):
         logo.append(line + "\n", style=f"bold {logo_colors[min(i, len(logo_colors)-1)]}")
-    logo.append("Clarity in Complexity.\n", style=f"italic {c.primary}")
+    logo.append("Clarity in Complexity.\n", style="italic white")
     console.print(logo)
 
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
