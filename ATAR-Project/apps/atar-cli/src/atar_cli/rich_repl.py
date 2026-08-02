@@ -1,10 +1,12 @@
-"""ATAR CLI — Hermes-style interface with prompt_toolkit + Rich."""
+"""ATAR CLI — full Hermes-style with info banner, tool panels, streaming progress."""
 
 from __future__ import annotations
 
 import asyncio
 import os
 import re
+import time
+import uuid
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
@@ -13,6 +15,7 @@ from rich.console import Console, Group
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.table import Table
 from rich.text import Text
 
 console = Console()
@@ -24,68 +27,40 @@ PT_STYLE = Style.from_dict({
 })
 
 BASE_PROMPT = (
-    "You are ATAR, a terminal AI agent. When asked to create files, "
-    "run commands, or modify the system, you MUST propose a bash command "
-    "in a ```bash code block. Never just describe — always offer to execute. "
-    "For file creation use: echo 'content' > path. Keep responses short."
-)
-
-CODE_PROMPT = (
-    "You are ATAR in CODE mode. You can read, write, and analyze code. "
-    "Use terminal for all operations. When making changes, always propose "
-    "a ```bash command. Read relevant files before editing. Be precise."
-)
-
-HELP_TEXT = (
-    "/chat   normal chat mode\n"
-    "/code   coding mode (file read/write, git, tests)\n"
-    "/clear  reset conversation\n"
-    "/quit   exit\n"
-    "When agent suggests commands, approve (y/n/e)."
+    "You are ATAR, a terminal AI agent. When asked to create files, run commands, "
+    "or modify the system, you MUST propose a single bash command in a ```bash block. "
+    "Never describe — always offer to execute. Keep responses short."
 )
 
 
-def show_banner() -> None:
-    """Render the ATAR startup banner — Hermes style."""
-    logo_lines = [
-        " █████╗ ████████╗ █████╗ ██████╗        █████╗  ██████╗ ███████╗███╗  ██╗████████╗",
-        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗      ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝",
-        "███████║   ██║   ███████║██████╔╝█████╗███████║██║  ███╗█████╗  ██╔██╗██║   ██║",
-        "██╔══██║   ██║   ██╔══██║██╔══██╗╚════╝██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║",
-        "██║  ██║   ██║   ██║  ██║██║  ██║      ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║",
-        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝",
+def show_banner(model: str, cwd: str, session_id: str) -> None:
+    """Hermes-style info banner with model, session, tools."""
+    logo = [
+        " █████╗ ████████╗ █████╗ ██████╗ ·  █████╗  ██████╗ ███████╗███╗  ██╗████████╗",
+        "██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝",
+        "███████║   ██║   ███████║██████╔╝   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║",
+        "██╔══██║   ██║   ██╔══██║██╔══██╗   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║",
+        "██║  ██║   ██║   ██║  ██║██║  ██║   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║",
+        "╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝",
     ]
     colors = ["#4FC3F7", "#29B6F6", "#0288D1", "#0277BD", "#01579B", "#01579B"]
-    logo_text = []
-    for i, line in enumerate(logo_lines):
-        logo_text.append(Text(line, style=f"bold {colors[i]}"))
+    logo_text = Text()
+    for i, line in enumerate(logo):
+        logo_text.append(Text(line + "\n", style=f"bold {colors[i]}"))
 
-    subtitle = Text("CLARITY IN COMPLEXITY  ", style="bold #4FC3F7")
-    ataraxia = Text("Ataraxia", style="italic #4FC3F7")
-    subtitle.append(Text(" — ", style="dim"))
-    subtitle.append(ataraxia)
+    info = Table.grid(padding=(0, 2))
+    info.add_column(justify="left")
+    info.add_column(justify="left")
+    info.add_row(Text(f"{model} · DeepSeek", style="bold #4FC3F7"), Text(f"Session: {session_id}", style="dim"))
+    info.add_row(Text(cwd, style="dim"), Text("/help for commands", style="dim"))
 
-    inner = Group(
-        Text(""),
-        *logo_text,
-        Text(""),
-        subtitle,
-    )
-    console.print(Panel(inner, border_style="#0288D1", padding=(1, 4)))
-    console.print(Text("  /quit   exit    /clear   reset    /help   commands", style="dim #4FC3F7"))
+    banner_content = Group(logo_text, Text(""), info, Text(""))
+    console.print(Panel(banner_content, border_style="#0288D1", padding=(1, 3)))
+    console.print(Text("  /quit · /clear · /code · /chat · /help", style="dim #4FC3F7"))
     console.print(Rule(style="#0288D1"))
 
 
-def build_prompt(session_id: str = "") -> HTML:
-    """Build the Hermes-style input prompt."""
-    sid = session_id[:8] if session_id else "new"
-    return HTML(
-        f'<prompt>{sid} ▸ </prompt>'
-    )
-
-
 def run_repl() -> None:
-    """Main REPL with Hermes-style interface."""
     import atar_tools.tools.terminal  # noqa: F401
     from atar_core.agent import Agent, StreamCallbacks
     from atar_models.tools import ToolContext
@@ -94,7 +69,7 @@ def run_repl() -> None:
 
     key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or ""
     if not key:
-        console.print("[red]Set DEEPSEEK_API_KEY or ANTHROPIC_API_KEY.[/]")
+        console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
 
     provider = AnthropicProvider(
@@ -102,118 +77,91 @@ def run_repl() -> None:
         model="deepseek-v4-pro",
     )
     agent = Agent(provider=provider, max_turns=1)
-    agent.system_prompt = (
-        "You are ATAR, a terminal AI agent. When asked to create files, run commands, "
-        "or modify the system, you MUST propose a bash command in a ```bash code block. "
-        "Never just describe what to do — always offer to execute. "
-        "For file creation use: echo 'content' > path. Keep responses short."
-    )
+    agent.system_prompt = BASE_PROMPT
+    session_id = uuid.uuid4().hex[:12]
 
-    show_banner()
+    show_banner("deepseek-v4-pro", os.getcwd(), session_id)
 
     async def _agent_turn(prompt: str, ag: Agent) -> None:
-        """Multi-turn agent interaction with tool approval loop."""
         ag.state.force("idle")
         response_text = ""
+        start_time = time.time()
 
         async def delta(t: str) -> None:
             nonlocal response_text
             response_text += t
 
-        with console.status("[#4FC3F7]Thinking...[/]", spinner="dots"):
+        with console.status("[#4FC3F7]Initializing agent...[/]", spinner="dots"):
             await ag.run(prompt, StreamCallbacks(on_delta=delta))
+
+        elapsed = time.time() - start_time
+        console.print(Rule(style="#0288D1"))
 
         if not response_text:
             console.print(Rule(style="#0288D1"))
             return
 
-        # Render: split into code blocks (panels) and text (markdown)
-        _render_response(response_text)
+        # Render with Obsidian-style code blocks
+        _render_obsidian(response_text)
 
-        # Extract bash commands
+        # Extract bash
         cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
         cmds = [c.strip() for c in cmds if c.strip()]
 
-        if not cmds:
-            console.print(Rule(style="#0288D1"))
-            return
-
-        # Show proposed commands
-        console.print(Panel(
-            "\n".join(f"[dim]$[/] [bold #4FC3F7]{c[:120]}[/]" for c in cmds),
-            title="Proposed Commands",
-            border_style="#FFD700",
-        ))
-
-        try:
-            answer = await session_pt.prompt_async(
-                HTML("<yellow>Run? (y/n/e)</yellow> <dim>[n]</dim> "),
-                style=PT_STYLE,
-            )
-        except (EOFError, KeyboardInterrupt):
-            answer = "n"
-
-        answer = answer.strip().lower()
-
-        if answer in ("y", "yes"):
-            for c in cmds:
-                tr = await tool_execute(
-                    "terminal", {"command": c},
-                    ToolContext(metadata={"approved": True}),
-                )
-                result_text = tr.output[:500] if tr.success else f"[red]{tr.error}[/]"
-                console.print(Panel(
-                    result_text,
-                    title=f"$ {c[:60]}",
-                    border_style="#4CAF50" if tr.success else "#F44336",
-                ))
-        elif answer in ("e", "edit"):
+        if cmds:
+            console.print(Panel(
+                "\n".join(f"[dim]$[/] [bold #4FC3F7]{c[:150]}[/]" for c in cmds),
+                title="Proposed Commands",
+                border_style="#FFD700",
+            ))
             try:
-                new_cmd = await session_pt.prompt_async(
-                    HTML("<dim>$ </dim>"), style=PT_STYLE,
+                answer = await session_pt.prompt_async(
+                    HTML("<yellow>Run? (y/n)</yellow> <dim>[n]</dim> "),
+                    style=PT_STYLE,
                 )
-                if new_cmd.strip():
+            except (EOFError, KeyboardInterrupt):
+                answer = "n"
+
+            if answer.strip().lower() in ("y", "yes"):
+                for c in cmds:
                     tr = await tool_execute(
-                        "terminal", {"command": new_cmd.strip()},
+                        "terminal", {"command": c},
                         ToolContext(metadata={"approved": True}),
                     )
                     console.print(Panel(
                         tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
+                        title=f"$ {c[:80]}",
                         border_style="#4CAF50" if tr.success else "#F44336",
                     ))
-            except (EOFError, KeyboardInterrupt):
-                pass
-        else:
-            console.print("[dim][Rejected][/]")
+            else:
+                console.print("[dim][Rejected][/]")
 
+        # Footer with timing + token info
+        console.print(
+            Text(f" deepseek-v4-pro · {elapsed:.0f}s", style="dim #4FC3F7"),
+        )
         console.print(Rule(style="#0288D1"))
 
 
-    def _render_response(text: str) -> None:
-        """Render text — code blocks as panels, rest as markdown."""
+    def _render_obsidian(text: str) -> None:
+        """Render text: code blocks in Obsidian panels, rest as markdown."""
         lines = text.strip().split("\n")
-        in_code = False
-        lang = ""
-        buf: list[str] = []
+        in_code, lang, buf = False, "", []
 
         for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("```") and not in_code:
-                # End current text buffer
-                if buf:
-                    console.print(Markdown("\n".join(buf)))
-                    buf = []
-                in_code = True
-                lang = stripped[3:].strip() or "code"
+            s = line.strip()
+            if s.startswith("```") and not in_code:
+                if buf: console.print(Markdown("\n".join(buf))); buf = []
+                in_code, lang = True, s[3:].strip() or "code"
                 continue
-            if stripped.startswith("```") and in_code:
+            if s.startswith("```") and in_code:
                 in_code = False
-                code_content = "\n".join(buf)
-                buf = []
-                if lang in ("bash", "sh", "shell"):
-                    console.print(Panel(code_content, title="  bash", border_style="#7C3AED", padding=(1, 2)))
-                else:
-                    console.print(Panel(code_content, title=f"  {lang}", border_style="#4FC3F7", padding=(1, 2)))
+                code = "\n".join(buf); buf = []
+                console.print(Panel(
+                    code, title=f"  {lang}",
+                    border_style="#7C3AED" if lang in ("bash","sh","shell") else "#4FC3F7",
+                    padding=(1, 2),
+                ))
                 continue
             buf.append(line)
 
@@ -226,51 +174,40 @@ def run_repl() -> None:
         while True:
             try:
                 user = await session_pt.prompt_async(
-                    build_prompt(),
-                    style=PT_STYLE,
+                    HTML("<prompt>· </prompt>"), style=PT_STYLE,
                 )
             except (EOFError, KeyboardInterrupt):
-                console.print("\n[dim #4FC3F7]Ataraxic.[/]")
+                console.print("\n[dim]Ataraxic.[/]")
                 break
 
             user = user.strip()
-            if not user:
-                continue
+            if not user: continue
             if user in ("/quit", "/exit", "/q"):
-                console.print("[dim #4FC3F7]Ataraxic.[/]")
-                break
+                console.print("[dim]Ataraxic.[/]"); break
             if user in ("/clear", "/reset"):
                 agent = Agent(provider=provider, max_turns=1)
                 agent.system_prompt = BASE_PROMPT
                 console.print("[dim][Cleared][/]")
-                console.print(Rule(style="#0288D1"))
-                continue
+                console.print(Rule(style="#0288D1")); continue
             if user == "/help":
-                console.print(Panel(HELP_TEXT, title="Commands", border_style="#4FC3F7"))
-                continue
+                console.print(Panel(
+                    "/code  coding mode · /chat  chat mode\n/clear  reset · /quit  exit",
+                    title="Commands", border_style="#4FC3F7",
+                )); continue
             if user == "/code":
-                import atar_tools.tools.file  # noqa: F401
-                import atar_tools.tools.git  # noqa: F401
+                import atar_tools.tools.file
+                import atar_tools.tools.git
                 import atar_tools.tools.test_runner  # noqa: F401
                 agent = Agent(provider=provider, max_turns=3, tools=[1])
-                agent.system_prompt = CODE_PROMPT
-                cwd = os.getcwd()
-                console.print(Panel(
-                    f"[bold]Code mode active[/]\nWorking dir: {cwd}\n"
-                    "Tools: terminal, read_file, write_file, git, run_tests\n"
-                    "/chat to exit code mode",
-                    border_style="#4CAF50",
-                ))
-                console.print(Rule(style="#0288D1"))
-                continue
+                agent.system_prompt = "You are ATAR in CODE mode. Use terminal, read_file, write_file, git, run_tests. Always propose bash commands."
+                console.print(Panel("[bold]Code mode[/] · /chat to exit", border_style="#4CAF50"))
+                console.print(Rule(style="#0288D1")); continue
             if user == "/chat":
                 agent = Agent(provider=provider, max_turns=1)
                 agent.system_prompt = BASE_PROMPT
                 console.print("[dim]Chat mode[/]")
-                console.print(Rule(style="#0288D1"))
-                continue
+                console.print(Rule(style="#0288D1")); continue
 
-            # Multi-turn: agent may need multiple rounds
             await _agent_turn(user, agent)
 
     asyncio.run(_run())
