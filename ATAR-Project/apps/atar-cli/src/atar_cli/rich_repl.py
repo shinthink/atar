@@ -12,7 +12,8 @@ from contextlib import suppress
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.clipboard import ClipboardData
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
@@ -29,6 +30,20 @@ _TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
 console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH)
 
 # ── Keybindings ──
+class ATARCompleter(Completer):
+    """Custom completer for slash commands — matches / prefix."""
+    def get_completions(self, document: Document, complete_event):
+        text = document.text_before_cursor.lstrip()
+        if not text:
+            return
+        for cmd in SLASH_COMMANDS:
+            if cmd.startswith(text) or cmd.startswith("/" + text):
+                yield Completion(cmd, start_position=-len(text), display=cmd)
+        for meta_cmd, desc in SLASH_META.items():
+            if meta_cmd.startswith(text) or meta_cmd.startswith("/" + text):
+                yield Completion(meta_cmd, start_position=-len(text), display=f"{meta_cmd}  ({desc})")
+
+
 bindings = KeyBindings()
 
 
@@ -75,9 +90,9 @@ SLASH_META = {
 }
 
 session_pt = PromptSession(
-    completer=WordCompleter(SLASH_COMMANDS, sentence=True, meta_dict=SLASH_META),
+    completer=ATARCompleter(),
     key_bindings=bindings,
-    multiline=False,  # Alt+Enter for newline
+    multiline=False,
     enable_history_search=True,
 )
 
