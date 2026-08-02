@@ -48,19 +48,57 @@ def default() -> None:
             agent.state.force("idle")
 
             async def _chat(text: str = user, ag: Agent = agent) -> None:
-                printed = False
+                response_text = ""
 
                 async def delta(t: str) -> None:
-                    nonlocal printed
-                    printed = True
+                    nonlocal response_text
+                    response_text += t
                     print(t, end="", flush=True)
 
-                result = await ag.run(text, StreamCallbacks(on_delta=delta))
+                await ag.run(text, StreamCallbacks(on_delta=delta))
                 print()
-                if not printed and result and result.text:
-                    print(result.text)
-                elif not printed:
-                    print("[No response — check API key or connection]")
+
+                if not response_text:
+                    print("[No response]")
+                    return
+
+                # Check for bash commands in response
+                import re
+                cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
+                cmds = [c.strip() for c in cmds if c.strip()]
+
+                if cmds:
+                    print("\n  Run command? (y/n/e) [edit]")
+                    for c in cmds:
+                        print(f"  {c}")
+                    try:
+                        answer = input("  > ").strip().lower()
+                    except (EOFError, KeyboardInterrupt):
+                        answer = "n"
+
+                    if answer in ("y", "yes"):
+                        import atar_tools.tools.terminal  # noqa: F401
+                        from atar_models.tools import ToolContext
+                        from atar_tools.registry import execute as tool_execute
+                        for c in cmds:
+                            tr = await tool_execute(
+                                "terminal", {"command": c},
+                                ToolContext(metadata={"approved": True}),
+                            )
+                            print(f"  [{c[:50]}]\n  {tr.output[:300] if tr.success else tr.error}")
+                    elif answer in ("e", "edit"):
+                        new_cmd = input("  Command: ").strip()
+                        if new_cmd:
+                            import atar_tools.tools.terminal  # noqa: F401
+                            from atar_models.tools import ToolContext
+                            from atar_tools.registry import execute as tool_execute
+                            tr = await tool_execute(
+                                "terminal", {"command": new_cmd},
+                                ToolContext(metadata={"approved": True}),
+                            )
+                            print(f"  {tr.output[:300] if tr.success else tr.error}")
+                    else:
+                        print("  [Rejected]")
 
             await _chat()
 
