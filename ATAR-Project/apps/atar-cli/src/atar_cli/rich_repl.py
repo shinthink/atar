@@ -81,6 +81,12 @@ def run_repl() -> None:
         model="deepseek-v4-pro",
     )
     agent = Agent(provider=provider, max_turns=1)
+    agent.system_prompt = (
+        "You are ATAR, a terminal AI agent. When asked to create files, run commands, "
+        "or modify the system, you MUST propose a bash command in a ```bash code block. "
+        "Never just describe what to do — always offer to execute. "
+        "For file creation use: echo 'content' > path. Keep responses short."
+    )
 
     show_banner()
 
