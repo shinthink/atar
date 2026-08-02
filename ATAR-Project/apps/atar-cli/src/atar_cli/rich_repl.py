@@ -70,6 +70,7 @@ PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F
 
 session_pt = PromptSession(
     completer=NestedCompleter.from_nested_dict(dict.fromkeys(SLASH_COMMANDS)),
+    key_bindings=bindings,
     complete_while_typing=False,
 )
 
