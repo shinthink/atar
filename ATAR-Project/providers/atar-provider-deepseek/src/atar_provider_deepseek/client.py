@@ -72,9 +72,7 @@ class DeepSeekProvider:
     async def stream(self, request: ModelRequest) -> AsyncIterator[ModelEvent]:
         client = await self._get_client()
         body = self._build_body(request, stream=True)
-        tool_id = ""
-        tool_name = ""
-        tool_args = ""
+        acc: dict[int, dict[str, Any]] = {}  # per-index accumulator
         async with client.stream("POST", f"{self.base_url}/chat/completions", json=body) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
@@ -90,22 +88,31 @@ class DeepSeekProvider:
                 delta = data["choices"][0].get("delta", {})
                 if delta.get("content"):
                     yield ModelEvent(event_type="text_delta", text=str(delta["content"]))
-                tc = delta.get("tool_calls")
-                if tc:
-                    fn = tc[0].get("function", {}) if tc else {}
-                    if tc[0].get("id"):
-                        tool_id = tc[0]["id"]
+                tcs = delta.get("tool_calls") or []
+                for tc in tcs:
+                    idx = tc.get("index", 0)
+                    if idx not in acc:
+                        acc[idx] = {"id": "", "name": "", "arguments": ""}
+                    entry = acc[idx]
+                    if tc.get("id"):
+                        entry["id"] = tc["id"]
+                    fn = tc.get("function", {})
                     if fn.get("name"):
-                        tool_name = fn["name"]
-                        yield ModelEvent(event_type="tool_call", provider_metadata={"id": tool_id, "name": tool_name, "partial": True})
+                        entry["name"] = fn["name"]
                     if fn.get("arguments"):
-                        tool_args += fn["arguments"]
-                if data["choices"][0].get("finish_reason") == "tool_calls" and tool_name:
-                    try:
-                        parsed = json.loads(tool_args)
-                    except json.JSONDecodeError:
-                        parsed = {}
-                    yield ModelEvent(event_type="tool_call", provider_metadata={"id": tool_id, "name": tool_name, "input": parsed, "partial": False})
+                        entry["arguments"] += fn["arguments"]
+                if data["choices"][0].get("finish_reason") == "tool_calls":
+                    for idx in sorted(acc):
+                        entry = acc[idx]
+                        if entry["name"] and entry["arguments"]:
+                            try:
+                                parsed = json.loads(entry["arguments"])
+                            except json.JSONDecodeError:
+                                parsed = {}
+                            yield ModelEvent(event_type="tool_call", provider_metadata={
+                                "id": entry["id"], "name": entry["name"],
+                                "input": parsed, "partial": False,
+                            })
 
     async def count_tokens(self, request: TokenCountRequest) -> int:
         return 0
@@ -116,7 +123,16 @@ class DeepSeekProvider:
     def _build_body(self, request: ModelRequest, stream: bool) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
         for msg in request.messages:
-            messages.append({"role": msg.role, "content": msg.content})
+            entry: dict[str, Any] = {"role": msg.role, "content": msg.content}
+            if msg.tool_calls:
+                entry["tool_calls"] = [
+                    {"id": tc["id"], "type": "function", "function": {"name": tc["name"], "arguments": json.dumps(tc.get("input", {}))}}
+                    for tc in msg.tool_calls
+                ]
+                entry.pop("content", None)  # no content alongside tool_calls
+            if msg.tool_call_id:
+                entry["tool_call_id"] = msg.tool_call_id
+            messages.append(entry)
         body: dict[str, Any] = {
             "model": request.model or self.model,
             "max_tokens": request.max_output_tokens or self.max_tokens,

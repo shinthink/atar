@@ -48,7 +48,15 @@ class SqliteSessionStore:
                 model = SessionModel(session_id=session_id)
                 sess.add(model)
             model.title = title
-            model.messages_json = json.dumps([{"role": m.role, "content": m.content} for m in messages])
+            model.messages_json = json.dumps([
+                {
+                    "role": m.role,
+                    "content": m.content,
+                    "tool_calls": getattr(m, "tool_calls", None),
+                    "tool_call_id": getattr(m, "tool_call_id", None),
+                }
+                for m in messages if hasattr(m, "role")
+            ])
             model.updated_at = datetime.now(UTC)
             sess.commit()
         # Sync to FTS5

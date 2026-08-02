@@ -1,0 +1,10 @@
+[project]
+name = "atar-planning"
+version = "0.6.0"
+description = "ATAR planning engine"
+requires-python = ">=3.12"
+dependencies = ["atar-models", "atar-protocols"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
