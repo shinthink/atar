@@ -69,15 +69,15 @@ def default(
             run_repl()
             sys.exit(0)
 
-    # Interactive mode: TUI by default, CLI with --cli
-    if cli:
-        from atar_cli.rich_repl import run_repl
-        run_repl()
+    # Interactive mode: REPL by default, TUI with --tui
+    if tui:
+        from atar_tui.app import main as tui_main
+        tui_main()
         return
 
-    # Full-screen TUI
-    from atar_tui.app import main as tui_main
-    tui_main()
+    # Default: rich REPL
+    from atar_cli.rich_repl import run_repl
+    run_repl()
 
 
 # ── Existing subcommands ──
