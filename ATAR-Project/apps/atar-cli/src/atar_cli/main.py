@@ -13,6 +13,7 @@ from atar_core.memory import MemoryEngine, SessionSearch
 from atar_core.planning import PlanningEngine
 from atar_core.session import SessionManager
 from atar_core.skills import HookManager, SkillRegistry, SkillStatus
+from atar_core.state_machine import AgentState
 from atar_core.taskboard import Delegator, TaskBoard
 
 app = typer.Typer(name="atar", invoke_without_command=True)
@@ -22,7 +23,7 @@ app = typer.Typer(name="atar", invoke_without_command=True)
 def default() -> None:
     """Interactive chat (REPL mode) when no subcommand given."""
     p = get_provider()
-    agent = Agent(provider=p)
+    agent = Agent(provider=p, max_turns=1)  # single response per input
 
     print("ATAR Agent — Clarity in Complexity.")
     print("Type /quit to exit, /clear to reset.\n")
@@ -49,6 +50,7 @@ def default() -> None:
                 print()
 
             asyncio.run(_chat())
+            agent.state.force(AgentState.IDLE)  # reset for next turn
     except (KeyboardInterrupt, EOFError):
         print("\nAtaraxic.")
 sessions = SessionManager()
