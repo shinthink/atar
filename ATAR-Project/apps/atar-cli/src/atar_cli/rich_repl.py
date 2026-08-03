@@ -441,7 +441,7 @@ def run_repl() -> None:
                 lines = output.split("\n")[:10]
                 shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
                 preview = args_cache[name].get("command", "")[:50]
-                console.print(f"\r  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
+                console.print(f"\n  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
             elif name == "patch":
                 output = result.strip() or ""
                 colored = []
@@ -455,14 +455,14 @@ def run_repl() -> None:
                     else:
                         colored.append(f"    [dim]{ln}[/]")
                 path = args_cache[name].get("path", "")
-                console.print(f"\r  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
+                console.print(f"\n  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
             elif name == "write_file":
                 path = args_cache[name].get("path", "")
                 size = len(result) if result else 0
-                console.print(f"\r  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
+                console.print(f"\n  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
             elif name == "read_file":
                 path = args_cache[name].get("path", "")
-                console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
+                console.print(f"\n  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
 
         try:
             async def _capture(t: str) -> None:
