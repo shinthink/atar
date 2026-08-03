@@ -153,24 +153,22 @@ def code(question: Annotated[str, typer.Argument()]) -> None:
 
 
 @app.command()
-def search(query: Annotated[str, typer.Argument()]) -> None:
-
-
-@app.command()
 def remember(key: Annotated[str, typer.Argument()], value: Annotated[str, typer.Argument()]) -> None:
-    memory.save(key, value)
+    """Save a fact to persistent memory."""
+    from atar_core.memory import add_memory
+    add_memory(f"{key}: {value}", category="user")
     typer.echo(f"  Remembered: {key}")
 
 
 @app.command()
 def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
+    """Recall persistent memories."""
+    from atar_core.memory import list_memories
+    entries = list_memories()
     if query:
-        for k, v in memory.all().items():
-            if query.lower() in k.lower() or query.lower() in str(v).lower():
-                typer.echo(f"  {k}: {v}")
-    else:
-        for k, v in memory.all().items():
-            typer.echo(f"  {k}: {v}")
+        entries = [e for e in entries if query.lower() in e.content.lower()]
+    for e in entries[:10]:
+        typer.echo(f"  [{e.category}] {e.content}")
 
 
 @app.command()
