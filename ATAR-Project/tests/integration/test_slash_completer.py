@@ -20,7 +20,7 @@ class TestSlashCommandCompleter:
         assert "/model" in names
         assert "/quit" in names
         # Should return all registered commands
-        registered = [x for x in cmd_registry.completions()]
+        registered = list(cmd_registry.completions())
         for r in registered:
             assert r in names or f"/{r.lstrip('/')}" in names, f"Missing command: {r}"
 

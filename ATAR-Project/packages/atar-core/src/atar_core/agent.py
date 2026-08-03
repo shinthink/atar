@@ -175,7 +175,7 @@ class Agent:
         if last_user_idx < 0:
             return None
         # Remove from last user to end (includes assistant, tool calls, tool results)
-        removed = msgs[last_user_idx:]
+        msgs[last_user_idx:]
         self._messages = msgs[:last_user_idx]
         # Return the last non-system message as context
         return last_user_text[:50] if last_user_text else None

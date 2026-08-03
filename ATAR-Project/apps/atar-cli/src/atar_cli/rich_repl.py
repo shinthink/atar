@@ -121,7 +121,7 @@ class SlashCommandToolCompleter(Completer):
 
         # If user typed only "/" or "/<partial>", show matching commands
         if word == "/" or matching:
-            for cmd_name in sorted(matching if matching else [c for c in cmds]):
+            for cmd_name in sorted(matching if matching else list(cmds)):
                 cmd = cmd_registry.get(cmd_name)
                 if not cmd:
                     continue

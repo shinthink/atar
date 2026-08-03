@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from atar_core.agent import Agent, StreamCallbacks
+from atar_core.agent import Agent
 
 
 class FakeSimpleProvider:
