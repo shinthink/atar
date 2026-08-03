@@ -36,6 +36,7 @@ from atar_core.provider_registry import list_providers  # noqa: E402
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
 from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
+from atar_models.requests import Message  # noqa: E402
 
 register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
 register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
