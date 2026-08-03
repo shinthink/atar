@@ -10,7 +10,6 @@ from typing import Annotated
 import typer
 from atar_core.agent import Agent, StreamCallbacks
 from atar_core.batch import BatchRunner, Evaluator
-from atar_core.memory import MemoryEngine, SessionSearch
 from atar_core.planning import PlanningEngine
 from atar_core.session import SessionManager
 from atar_core.skills import HookManager, SkillRegistry, SkillStatus
@@ -18,7 +17,6 @@ from atar_core.taskboard import Delegator, TaskBoard
 
 app = typer.Typer(name="atar", invoke_without_command=True)
 sessions = SessionManager()
-memory = MemoryEngine()
 skills = SkillRegistry()
 hooks = HookManager()
 board = TaskBoard()
@@ -156,7 +154,6 @@ def code(question: Annotated[str, typer.Argument()]) -> None:
 
 @app.command()
 def search(query: Annotated[str, typer.Argument()]) -> None:
-    searcher = SessionSearch(sessions)
     for s, sn in searcher.search(query):
         typer.echo(f"\n📁 {s.title}")
         for x in sn[:3]:
