@@ -498,26 +498,39 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/sessions":
-                from atar_core.session import SessionManager
-                mgr = SessionManager()
-                sessions = mgr.list()
+                from atar_storage.sqlite_store import SqliteStore
+                store = SqliteStore()
+                sessions = store.list_all()
                 if not sessions:
                     console.print("[dim]No sessions.[/]")
                 else:
-                    lines = [f"  [{i}] {s.title or s.session_id[:12]}" for i, s in enumerate(sessions)]
+                    lines = [f"  [{i}] {s['title'] or s['session_id'][:12]} ({s.get('message_count','?')} msgs)" for i, s in enumerate(sessions)]
                     console.print(Panel("\n".join(lines), title="Sessions", border_style="#394B59"))
                     try:
-                        cs = await session_pt.prompt_async("Pick session: ", style=PT_STYLE, bottom_toolbar=_status_bar)
+                        cs = await session_pt.prompt_async("Pick session: ", style=PT_STYLE)
                         idx = int(cs)
                         if 0 <= idx < len(sessions):
                             s = sessions[idx]
-                            prov, model, ag = _create_provider()
-                            for m in getattr(s, "messages", [])[-20:]:
-                                ag._messages.append(m)
-                            provider, agent = prov, ag
-                            console.print(f"[green]\u2713 {s.title or s.session_id[:12]}[/]")
+                            data = store.load(s["session_id"])
+                            if data:
+                                prov, model, ag = _create_provider()
+                                for m in data.get("messages", [])[-20:]:
+                                    from atar_models.requests import Message as M
+                                    ag._messages.append(M(role=m.get("role","user"), content=m.get("content",""), tool_calls=m.get("tool_calls"), tool_call_id=m.get("tool_call_id")))
+                                provider, agent = prov, ag
+                                console.print(f"[green]✓ {s['title'] or s['session_id'][:12]}[/]")
                     except (ValueError, EOFError, KeyboardInterrupt):
-                        console.print("[dim]Cancelled.[/]")
+                        pass
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/save":
+                from atar_storage.sqlite_store import SqliteStore
+                store = SqliteStore()
+                msgs = [{"role": m.role, "content": m.content, "tool_calls": getattr(m, "tool_calls", None), "tool_call_id": getattr(m, "tool_call_id", None)} for m in agent._messages]
+                store.save(session_id, "ATAR Session", msgs)
+                console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
+                console.print(Rule(style="#394B59"))
+                continue
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/code":
