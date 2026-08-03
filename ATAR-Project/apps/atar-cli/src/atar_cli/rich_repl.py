@@ -28,6 +28,7 @@ console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH
 
 # ── Slash commands (from registry) ──
 from atar_core.commands import register_command, registry as cmd_registry
+from atar_core.provider_registry import list_providers, get_provider
 
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
@@ -102,11 +103,8 @@ session_pt = PromptSession(
 )
 
 MODELS = [
-    ("DeepSeek V3", "deepseek", "deepseek-chat"),
-    ("DeepSeek V4", "deepseek", "deepseek-v4-pro"),
-    ("OpenAI", "openai", "gpt-4o"),
-    ("Anthropic", "anthropic", "claude-sonnet-4-20250514"),
-    ("OpenRouter", "openrouter", "deepseek/deepseek-chat"),
+    (p.display_name, p.id, p.default_model)
+    for p in list_providers()
 ]
 
 BASE_PROMPT = (
