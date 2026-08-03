@@ -511,28 +511,6 @@ def run_repl() -> None:
         ))
         console.print(Rule(style=c.dim_border))
 
-        # Bash command extraction
-        cmds = re.findall(r"```(?:bash|shell|sh)\n(.*?)```", response_text, re.DOTALL)
-        cmds = [c.strip() for c in cmds if c.strip()]
-        if cmds:
-            console.print(Panel(
-                "\n".join(f"[dim]$[/] [bold #67D8FF]{c[:150]}[/]" for c in cmds),
-                title="Proposed Commands", border_style="#E8C07D"))
-            try:
-                answer = await session_pt.prompt_async(
-                    HTML("<yellow>Run? (y/n)</yellow> <dim>[n]</dim> "), style=PT_STYLE, bottom_toolbar=_status_bar,
-                )
-            except (EOFError, KeyboardInterrupt):
-                answer = "n"
-            if answer.strip().lower() in ("y", "yes"):
-                for c in cmds:
-                    tr = await tool_execute("terminal", {"command": c}, ToolContext(metadata={"approved": True}))
-                    console.print(Panel(
-                        tr.output[:500] if tr.success else f"[red]{tr.error}[/]",
-                        title=f"$ {c[:80]}", border_style="#78D6A5" if tr.success else "#F08C8C"))
-            else:
-                console.print("[dim][Rejected][/]")
-
     async def _run() -> None:
         nonlocal provider, model, agent, _current_task, _interrupt
         while True:
