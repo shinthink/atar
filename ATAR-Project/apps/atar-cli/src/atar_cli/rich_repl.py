@@ -397,6 +397,19 @@ def run_repl() -> None:
     _current_task: asyncio.Task | None = None
     _interrupt = False
 
+    async def _approval_prompt(name: str, args: dict) -> bool:
+        """Show y/n/e approval prompt before tool execution."""
+        preview = str(args).get("command", "") or str(args).get("path", "") or str(args)[:60]
+        console.print()
+        try:
+            ans = await session_pt.prompt_async(
+                HTML(f"<yellow>Approve {name}?</yellow> <dim>{preview}</dim> <dim>[y/n]</dim> "),
+                style=PT_STYLE,
+            )
+            return ans.strip().lower() in ("y", "yes", "")
+        except (EOFError, KeyboardInterrupt):
+            return False
+
     async def _agent_turn(prompt: str, ag: Agent) -> None:
         _stats["turns"] += 1
         import time as _t2
@@ -462,6 +475,7 @@ def run_repl() -> None:
                         status.update(f"[bold #67D8FF]\u25cf[/] [dim]{label}[/]")
                 await ag.run(prompt, StreamCallbacks(
                     on_delta=_stream_progress, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                    on_approval=_approval_prompt,
                 ))
         except asyncio.CancelledError:
             console.print("\n[dim]\u23f9 Interrupted[/]")

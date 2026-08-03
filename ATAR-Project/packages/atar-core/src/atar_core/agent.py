@@ -20,6 +20,7 @@ class StreamCallbacks:
     on_delta: Callable[[str], Coroutine[Any, Any, None] | None] | None = None
     on_tool_call: Callable[[str, dict[str, Any]], Coroutine[Any, Any, None] | None] | None = None
     on_tool_result: Callable[[str, str], Coroutine[Any, Any, None] | None] | None = None
+    on_approval: Callable[[str, dict[str, Any]], Coroutine[Any, Any, bool] | None] | None = None
     on_done: Callable[[ModelResponse], Coroutine[Any, Any, None] | None] | None = None
     on_error: Callable[[str], Coroutine[Any, Any, None] | None] | None = None
 
@@ -109,6 +110,15 @@ class Agent:
                         budget.record_tool(nc["name"])
                         if cb.on_tool_call:
                             await cb.on_tool_call(nc["name"], nc["arguments"])
+                        # Check approval before executing
+                        if cb.on_approval:
+                            approved = await cb.on_approval(nc["name"], nc["arguments"])
+                            if not approved:
+                                self._messages.append(Message(
+                                    role="tool", tool_call_id=nc["id"],
+                                    content=f"Tool {nc['name']} rejected by user.",
+                                ))
+                                continue
                         result = await self._execute_tool(nc["name"], nc["arguments"])
                         if cb.on_tool_result:
                             await cb.on_tool_result(nc["name"], result.output)
