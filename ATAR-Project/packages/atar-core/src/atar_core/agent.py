@@ -31,6 +31,7 @@ class Agent:
     tools: list[Any] | None = None
     system_prompt: str = "You are ATAR, an AI assistant that values clarity and precision."
     session_id: str = ""
+    interactive: bool = True
     event_bus: EventBus | None = None
     state: AgentStateMachine = field(default_factory=AgentStateMachine)
     _messages: list[Message] = field(default_factory=list)
