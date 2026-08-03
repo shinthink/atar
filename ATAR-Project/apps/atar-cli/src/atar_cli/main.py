@@ -154,10 +154,6 @@ def code(question: Annotated[str, typer.Argument()]) -> None:
 
 @app.command()
 def search(query: Annotated[str, typer.Argument()]) -> None:
-    for s, sn in searcher.search(query):
-        typer.echo(f"\n📁 {s.title}")
-        for x in sn[:3]:
-            typer.echo(f"  {x}")
 
 
 @app.command()
