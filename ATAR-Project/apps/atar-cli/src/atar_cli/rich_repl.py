@@ -212,7 +212,8 @@ def _create_provider(session_id: str = ""):
     try:
         router = create_router()
         first = router.providers[0]
-        model = getattr(first, "model", "deepseek-chat")
+        cfg = _read_config()
+        model = cfg.get("model") or getattr(first, "model", "deepseek-v4-flash")
         agent = Agent(provider=router, max_turns=8, tools=[1])
         prompt = assemble_prompt(session_id=session_id, model=model, cwd=os.getcwd())
         agent.system_prompt = prompt.full
