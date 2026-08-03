@@ -15,7 +15,7 @@ from atar_tools.registry import register
 # Safe minimal environment — no host secrets forwarded
 _SAFE_ENV: dict[str, str] = {
     "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
-    "HOME": os.environ.get("HOME", "/root"),
+    "HOME": os.environ.get("HOME", os.path.expanduser("~")),
     "LANG": os.environ.get("LANG", "C.UTF-8"),
     "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
 }
