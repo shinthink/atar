@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from atar_models.tools import ToolContext, ToolResult
-from atar_storage.sqlite_store import SqliteStore
 
 from atar_tools.registry import register
 
@@ -15,7 +14,7 @@ async def _session_search(_name: str, args: dict[str, Any], ctx: ToolContext) ->
     limit = min(args.get("limit", 5), 20)
 
     try:
-        store = SqliteStore()
+        store = SqliteSessionStore()
         results = store.search(query, limit=limit) if query else store.list_all(limit=limit)
 
         if not results:
@@ -47,7 +46,7 @@ async def _session_resume(_name: str, args: dict[str, Any], ctx: ToolContext) ->
         return ToolResult(success=False, error="session_id required")
 
     try:
-        store = SqliteStore()
+        store = SqliteSessionStore()
         data = store.load(session_id)
         if not data:
             return ToolResult(success=False, error=f"Session not found: {session_id[:12]}")
