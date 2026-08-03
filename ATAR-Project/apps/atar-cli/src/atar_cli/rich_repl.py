@@ -515,11 +515,14 @@ def run_repl() -> None:
                 if not use_anim:
                     return
                 anim.start()
+                import sys
                 while not _thinking_done:
-                    console.print(f"\r  {anim.tick()}", end="")
+                    frame = anim.tick()
+                    sys.stdout.write(f"\r  {frame}")
+                    sys.stdout.flush()
                     await asyncio.sleep(0.2)
             if use_anim:
-                console.print(f"\n  {anim.start()}", end="")
+                import sys; sys.stdout.write(f"\n  {anim.start()}"); sys.stdout.flush()
             else:
                 console.print("\n  ● thinking...", end="")
             _anim_task = asyncio.create_task(_animate_thinking())
@@ -529,7 +532,7 @@ def run_repl() -> None:
             _thinking_done = True
             if _anim_task and not _anim_task.done():
                 _anim_task.cancel()
-            console.print("\r" + " " * 80 + "\r", end="")
+            sys.stdout.write("\r" + " " * 80 + "\r"); sys.stdout.flush()
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
         except asyncio.CancelledError:
             console.print("\n[dim]\u23f9 Interrupted[/]")
