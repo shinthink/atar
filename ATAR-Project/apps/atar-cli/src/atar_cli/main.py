@@ -299,16 +299,6 @@ def tui() -> None:
     tui_main()
 
 
-    except Exception as e:
-        typer.echo(f"  Sessions: ERROR — {e}")
-    try:
-        from atar_tools.registry import list_all
-        tools = [t.name for t in list_all()]
-        typer.echo(f"  Tools: {', '.join(tools) if tools else 'none registered'}")
-    except Exception as e:
-        typer.echo(f"  Tools: ERROR — {e}")
-
-
 @app.command()
 def init() -> None:
     os.makedirs(".atar", exist_ok=True)
