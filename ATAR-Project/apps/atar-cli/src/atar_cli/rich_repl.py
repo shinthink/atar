@@ -26,17 +26,23 @@ _HAS_COLOR = os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "d
 _TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
 console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH)
 
-# ── Slash commands ──
-SLASH_COMMANDS = [
-    "/help", "/model", "/sessions", "/code", "/chat",
-    "/clear", "/quit", "/exit", "/q", "/status", "/tools",
-]
-SLASH_META = {
-    "/help": "Commands", "/model": "Switch model", "/sessions": "Sessions",
-    "/code": "Code mode", "/chat": "Chat mode", "/clear": "Reset",
-    "/quit": "Exit", "/exit": "Exit", "/q": "Quit",
-    "/status": "Status", "/tools": "Tools",
-}
+# ── Slash commands (from registry) ──
+from atar_core.commands import register_command, registry as cmd_registry
+
+# Register all commands
+register_command("/help", "Show available commands", aliases=["/h"], category="system")
+register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
+register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
+register_command("/code", "Coding mode", category="tools")
+register_command("/chat", "Chat mode", category="tools")
+register_command("/clear", "Reset conversation", aliases=["/reset"], category="session")
+register_command("/quit", "Exit ATAR", aliases=["/exit", "/q"], category="system")
+register_command("/status", "Show runtime status", category="system")
+register_command("/tools", "List available tools", category="tools")
+register_command("/new", "Start a new session (fresh ID + history)", category="session", arg_hint="[name]")
+register_command("/title", "Set session title", category="session", arg_hint="[name]")
+register_command("/usage", "Show context usage", category="system")
+register_command("/save", "Save current conversation", category="session")
 
 
 # ── Keybindings ──
@@ -53,18 +59,21 @@ def _(event):
     """Tab: show slash completions via inline menu."""
     b = event.current_buffer
     text = b.text.lstrip()
-    matches = [c for c in SLASH_COMMANDS if c.startswith(text)]
+    cmds = cmd_registry.completions()
+    matches = [c for c in cmds if c.startswith(text)]
     if not matches:
-        matches = [c for c in SLASH_COMMANDS if text in c]
+        matches = [c for c in cmds if text in c]
     if matches:
         b.text = ""
         console.print()
-        lines = [f"  [bold #67D8FF]{m}[/]  [dim]{SLASH_META.get(m, '')}[/]" for m in matches[:12]]
+        lines = []
+        for m in matches[:12]:
+            cmd = cmd_registry.get(m)
+            desc = cmd.description if cmd else ""
+            lines.append(f"  [bold #67D8FF]{m}[/]  [dim]{desc}[/]")
         console.print("\n".join(lines) if lines else "[dim]No commands[/]")
-        # Re-fill user's partial input
         b.text = text
     else:
-        # Insert literal tab character if no match
         b.insert_text("\t")
 
 
@@ -208,14 +217,20 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     info.append(f"[bold {c.primary}]{model}[/] · [dim]{short_cwd}[/]")
     info.append(f"[dim]Session: {session_id[:12]}[/]")
     info.append("")
-    info.append(f"[bold {c.secondary}]Available Tools[/]")
-    info.append("  [dim]read_file  write_file  terminal  web_search  web_fetch  git  run_tests[/]")
-    info.append("  [dim]patch  search_files  browser  execute_code  cronjob  delegate_task[/]")
+    from atar_tools.registry import list_all as _list_tools
+    tools = _list_tools()
+    tool_names = [t.name for t in tools]
+    tool_count = len(tools)
+    skill_count = 3  # TODO: wire real skill registry
+
+    info.append("  Available Tools")
+    line = "    " + "  ".join(tool_names[:7])
+    info.append(line)
+    if len(tool_names) > 7:
+        info.append("    " + "  ".join(tool_names[7:]))
     info.append("")
-    info.append(f"[bold {c.secondary}]Skills[/]")
-    info.append("  [dim]coding  research  file-ops  planning  multi-agent  memory  security[/]")
-    info.append("")
-    info.append("[dim]7 tools · 7 skills · /help for commands · ATAR v0.6.0[/]")
+
+    info.append(f"  {tool_count} tools · {skill_count} skills · /help for commands · ATAR v0.6.0")
     info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
 
     panel_content = "\n".join(info)
@@ -452,7 +467,15 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/help":
-                console.print("[bold]/help /model /sessions /code /chat /clear /quit[/]")
+                cmds = cmd_registry.list_all()
+                cats = cmd_registry.list_by_category()
+                for cat, items in cats.items():
+                    console.print(f"\n[bold]{cat.upper()}[/]")
+                    for c in items:
+                        hint = f" {c.arg_hint}" if c.arg_hint else ""
+                        aliases = f" ({', '.join(c.aliases)})" if c.aliases else ""
+                        console.print(f"  [bold #67D8FF]{c.name}{hint}[/] {c.description}{aliases}")
+                console.print()
                 continue
             if user == "/model":
                 lines = [f"  [{i}] {n} \u2014 {m}" for i, (n, _, m) in enumerate(MODELS)]
