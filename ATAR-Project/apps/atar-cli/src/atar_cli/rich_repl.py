@@ -325,6 +325,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     console.print()
 
 _last_diff: list[str] = []
+_pending_queue: list[str] = []
 
 # ── Runtime stats for status bar ──
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "last_response": None, "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
@@ -360,7 +361,7 @@ def _status_bar() -> str:
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
     b = []
     if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
-    if _stats.get("background_tasks", 0): b.append(f"\u25b6 {_stats['background_tasks']}")
+    if get_active_bg_count() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
     bg = " " + " ".join(b) if b else ""
     if w >= 76:
         return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 turns {_stats['turns']} \u2502 tools {_stats['tools']} \u2502 {c} \u2502 {d}{bg}"
@@ -534,6 +535,18 @@ def run_repl() -> None:
             width=min(_TERM_WIDTH - 4, 100),
         ))
         console.print(Rule(style=c.dim_border))
+        # Process pending queue
+        if _pending_queue:
+            nxt = _pending_queue.pop(0)
+            _current_task = asyncio.create_task(_agent_turn(nxt, agent))
+            console.print(f"[dim]Running queued: {nxt[:60]}[/]")
+        # Display background results
+        for bg in get_pending_bg_results():
+            console.print(Panel(
+                Markdown(bg.result or "(no output)"),
+                title=f"Background #{bg.task_id}",
+                border_style="#67D8FF",
+                padding=(1,2)))
 
     async def _run() -> None:
         nonlocal provider, model, agent, _current_task, _interrupt
@@ -918,6 +931,26 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
 
+            # Busy-mode handling
+            is_running = _current_task and not _current_task.done()
+            if is_running:
+                mode = get_busy_mode()
+                if mode == "queue":
+                    _pending_queue.append(user)
+                    console.print(f"[dim]Queued (will run after current turn)[/]")
+                    console.print(Rule(style="#394B59"))
+                    continue
+                elif mode == "steer":
+                    # Inject into current run agent context
+                    agent._messages.append(Message(role="user", content=f"[Steer] {user.strip()}"))
+                    console.print(f"[dim]↳ Steered: {user[:60]}[/]")
+                    console.print(Rule(style="#394B59"))
+                    continue
+                # interrupt is default — cancel and start fresh
+                if should_show_busy_hint():
+                    console.print("[dim]Tip: Use /busy queue or /busy steer to change behavior when busy[/]")
+                    mark_busy_hint_shown()
+                _current_task.cancel()
             _current_task = asyncio.create_task(_agent_turn(user, agent))
             with suppress(asyncio.CancelledError):
                 await _current_task
