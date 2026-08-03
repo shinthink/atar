@@ -1,148 +1,155 @@
-"""ATAR skills and plugins — self-improvement governance + hook system.
-
-Per blueprint Section 19: Skill lifecycle: proposed → reviewed → sandbox_tested →
-benchmarked → canary → active → monitored → revised/deprecated.
-Plugin hooks: ordered, timeout, cancellation, failure isolation.
-"""
+"""ATAR skill system — filesystem-based, agentskills.io-compatible, self-improving."""
 
 from __future__ import annotations
 
-import asyncio
+import dataclasses
 import json
 import os
-from collections.abc import Callable
-from datetime import UTC, datetime
-from enum import StrEnum
-from typing import Any
+import shutil
+import time
+from dataclasses import dataclass, field
+
+from atar_core.paths import _atar_home as atar_home
+
+SKILLS_DIR = os.path.join(atar_home(), "skills")
+SKILLS_PENDING_DIR = os.path.join(SKILLS_DIR, "_pending")
+SKILLS_ARCHIVE_DIR = os.path.join(SKILLS_DIR, "_archive")
+SKILLS_META_FILE = os.path.join(SKILLS_DIR, "_meta.json")
+
+os.makedirs(SKILLS_PENDING_DIR, exist_ok=True)
+os.makedirs(SKILLS_ARCHIVE_DIR, exist_ok=True)
 
 
-class SkillStatus(StrEnum):
-    PROPOSED = "proposed"
-    REVIEWED = "reviewed"
-    TESTED = "tested"
-    ACTIVE = "active"
-    DEPRECATED = "deprecated"
+@dataclass
+class SkillMeta:
+    name: str
+    description: str = ""
+    trigger_hints: list[str] = field(default_factory=list)
+    created_from_session: str = ""
+    created_at: float = 0.0
+    times_used: int = 0
+    last_used_at: float = 0.0
+    status: str = "active"  # active, pending, archived
+    corrections: int = 0
 
 
-class Skill:
-    def __init__(self, name: str, prompt: str, description: str = "") -> None:
-        self.name = name
-        self.prompt = prompt
-        self.description = description
-        self.status = SkillStatus.PROPOSED
-        self.benchmark_score: float | None = None
-        self.created_at = datetime.now(UTC)
+class SkillManager:
+    def __init__(self) -> None:
+        self._skills: dict[str, SkillMeta] = {}
+        self._load_meta()
 
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "prompt": self.prompt,
-            "description": self.description,
-            "status": self.status.value,
-            "benchmark_score": self.benchmark_score,
-            "created_at": self.created_at.isoformat(),
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> Skill:
-        s = cls(d["name"], d["prompt"], d.get("description", ""))
-        s.status = SkillStatus(d.get("status", "proposed"))
-        s.benchmark_score = d.get("benchmark_score")
-        return s
-
-
-class SkillRegistry:
-    def __init__(self, path: str = ".atar/skills.json") -> None:
-        self.path = path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        self._skills: dict[str, Skill] = {}
-        self._load()
-
-    def propose(self, name: str, prompt: str, description: str = "") -> Skill:
-        if name in self._skills:
-            raise ValueError(f"Skill {name} exists")
-        s = Skill(name, prompt, description)
-        self._skills[name] = s
-        self._flush()
-        return s
-
-    def review(self, name: str) -> Skill | None:
-        s = self._skills.get(name)
-        if s and s.status == SkillStatus.PROPOSED:
-            s.status = SkillStatus.REVIEWED
-            self._flush()
-        return s
-
-    def activate(self, name: str) -> Skill | None:
-        s = self._skills.get(name)
-        if s and s.status in (SkillStatus.REVIEWED, SkillStatus.TESTED):
-            s.status = SkillStatus.ACTIVE
-            self._flush()
-        return s
-
-    def deprecate(self, name: str) -> Skill | None:
-        s = self._skills.get(name)
-        if s:
-            s.status = SkillStatus.DEPRECATED
-            self._flush()
-        return s
-
-    def get(self, name: str) -> Skill | None:
-        return self._skills.get(name)
-
-    def list_active(self) -> list[Skill]:
-        return [s for s in self._skills.values() if s.status == SkillStatus.ACTIVE]
-
-    def list_all(self) -> list[Skill]:
-        return sorted(self._skills.values(), key=lambda s: s.created_at)
-
-    def _flush(self) -> None:
-        with open(self.path, "w") as f:
-            json.dump({n: s.to_dict() for n, s in self._skills.items()}, f, indent=2, default=str)
-
-    def _load(self) -> None:
-        if os.path.exists(self.path):
-            with open(self.path) as f:
+    def _load_meta(self) -> None:
+        if os.path.exists(SKILLS_META_FILE):
+            with open(SKILLS_META_FILE) as f:
                 data = json.load(f)
             for name, d in data.items():
-                self._skills[name] = Skill.from_dict(d)
+                self._skills[name] = SkillMeta(**d)
+
+    def _save_meta(self) -> None:
+        data = {n: dataclasses.asdict(s) for n, s in self._skills.items()}
+        with open(SKILLS_META_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+
+    def list_active(self) -> list[SkillMeta]:
+        return [s for s in self._skills.values() if s.status == "active"]
+
+    def list_pending(self) -> list[SkillMeta]:
+        return [s for s in self._skills.values() if s.status == "pending"]
+
+    def list_all(self) -> list[SkillMeta]:
+        return list(self._skills.values())
+
+    def load_skill_md(self, name: str) -> str | None:
+        path = os.path.join(SKILLS_DIR, name, "SKILL.md")
+        if os.path.exists(path):
+            with open(path) as f:
+                return f.read()
+        return None
+
+    def propose(self, name: str, content: str, description: str = "", session_id: str = "") -> bool:
+        """Write skill draft to _pending — NEVER to active dir directly."""
+        # Safety: reject writing to active skills dir
+        if name in self._skills and self._skills[name].status == "active":
+            return False
+        pending_path = os.path.join(SKILLS_PENDING_DIR, name)
+        os.makedirs(pending_path, exist_ok=True)
+        with open(os.path.join(pending_path, "SKILL.md"), "w") as f:
+            f.write(content)
+        self._skills[name] = SkillMeta(
+            name=name, description=description,
+            created_from_session=session_id,
+            created_at=time.time(), status="pending",
+        )
+        self._save_meta()
+        return True
+
+    def review(self, name: str, approve: bool) -> bool:
+        """Promote pending skill to active, or delete pending."""
+        if name not in self._skills or self._skills[name].status != "pending":
+            return False
+        if approve:
+            # Move from _pending to active
+            src = os.path.join(SKILLS_PENDING_DIR, name)
+            dst = os.path.join(SKILLS_DIR, name)
+            os.makedirs(dst, exist_ok=True)
+            if os.path.exists(os.path.join(src, "SKILL.md")):
+                shutil.move(os.path.join(src, "SKILL.md"), os.path.join(dst, "SKILL.md"))
+            shutil.rmtree(src, ignore_errors=True)
+            self._skills[name].status = "active"
+        else:
+            # Remove from _pending
+            shutil.rmtree(os.path.join(SKILLS_PENDING_DIR, name), ignore_errors=True)
+            del self._skills[name]
+        self._save_meta()
+        return True
+
+    def delete(self, name: str) -> bool:
+        """Archive skill — never hard-delete."""
+        if name not in self._skills:
+            return False
+        src = os.path.join(SKILLS_DIR, name)
+        dst = os.path.join(SKILLS_ARCHIVE_DIR, name)
+        if os.path.exists(src):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.move(src, dst)
+        self._skills[name].status = "archived"
+        self._save_meta()
+        return True
+
+    def refine(self, name: str, new_content: str) -> bool:
+        """Update skill content after refinement."""
+        if name not in self._skills:
+            return False
+        path = os.path.join(SKILLS_DIR, name, "SKILL.md")
+        if not os.path.exists(path):
+            return False
+        with open(path, "w") as f:
+            f.write(new_content)
+        self._skills[name].corrections = 0  # reset correction counter
+        self._save_meta()
+        return True
+
+    def record_use(self, name: str) -> None:
+        if name in self._skills:
+            self._skills[name].times_used += 1
+            self._skills[name].last_used_at = time.time()
+            self._save_meta()
+
+    def record_correction(self, name: str) -> int:
+        """Record a correction. Returns total corrections count."""
+        if name in self._skills:
+            self._skills[name].corrections += 1
+            self._save_meta()
+            return self._skills[name].corrections
+        return 0
 
 
-# ── Plugin Hooks ──
-
-HookFn = Callable[[dict[str, Any]], Any]
-
-
-class PluginHook:
-    def __init__(self, name: str, fn: HookFn, priority: int = 0, timeout: float = 10.0) -> None:
-        self.name = name
-        self.fn = fn
-        self.priority = priority
-        self.timeout = timeout
+# Global singleton
+_skill_manager: SkillManager | None = None
 
 
-class HookManager:
-    def __init__(self) -> None:
-        self._hooks: dict[str, list[PluginHook]] = {}
-
-    def register(self, event: str, hook: PluginHook) -> None:
-        self._hooks.setdefault(event, []).append(hook)
-        self._hooks[event].sort(key=lambda h: -h.priority)
-
-    def unregister(self, event: str, name: str) -> None:
-        if event in self._hooks:
-            self._hooks[event] = [h for h in self._hooks[event] if h.name != name]
-
-    async def fire(self, event: str, data: dict[str, Any] | None = None) -> list[Any]:
-        results: list[Any] = []
-        for hook in self._hooks.get(event, []):
-            try:
-                result = await asyncio.wait_for(
-                    asyncio.to_thread(hook.fn, data or {}), timeout=hook.timeout
-                )
-                results.append(result)
-            except TimeoutError:
-                results.append(f"timeout:{hook.name}")
-            except Exception as e:
-                results.append(f"error:{hook.name}:{e}")
-        return results
+def get_skill_manager() -> SkillManager:
+    global _skill_manager
+    if _skill_manager is None:
+        _skill_manager = SkillManager()
+    return _skill_manager

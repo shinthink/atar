@@ -52,6 +52,10 @@ register_command("/status", "Show runtime status", category="system")
 register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
 register_command("/memory forget", "Forget a memory entry", category="memory", arg_hint="[id]")
+register_command("/skills", "List active skills", category="tools")
+register_command("/skills review", "Review a pending skill", category="tools", arg_hint="[name]")
+register_command("/skills refine", "Refine a skill with corrections", category="tools", arg_hint="[name]")
+register_command("/skills delete", "Archive a skill", category="tools", arg_hint="[name]")
 register_command("/search", "Search past sessions", category="session", arg_hint="[query]")
 register_command("/undo", "Undo the last turn", category="session")
 register_command("/retry", "Retry the last turn", category="session")
@@ -713,6 +717,67 @@ def run_repl() -> None:
                         sid = r["session_id"][:12]
                         summary = r["summary"] or r["snippet"]
                         console.print(f"  [bold]{sid}[/] [dim]{summary[:100]}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+if user == "/skills":
+                from atar_core.skills import get_skill_manager
+                mgr = get_skill_manager()
+                active = mgr.list_active()
+                pending = mgr.list_pending()
+                if active:
+                    console.print("\n[bold]Active:[/]")
+                    for s in active:
+                        console.print(f"  {s.name} [dim]used {s.times_used}x, {s.description}[/]")
+                if pending:
+                    console.print("\n[bold]Pending:[/]")
+                    for s in pending:
+                        console.print(f"  {s.name} [dim]{s.description}[/]")
+                if not active and not pending:
+                    console.print("[dim]No skills yet. Skills are created after complex multi-step tasks.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/skills review "):
+                name = user.split(maxsplit=2)[-1].strip()
+                from atar_core.skills import get_skill_manager
+                mgr = get_skill_manager()
+                content = mgr.load_skill_md(name) or mgr.list_pending()
+                if isinstance(content, list):
+                    console.print(f"[red]No pending skill named {name}[/]")
+                else:
+                    console.print(Panel(content[:2000], title=f"Review: {name}", border_style="#E8C07D"))
+                    try:
+                        ans = await session_pt.prompt_async(
+                            HTML("<yellow>Approve? (y/n)</yellow> "), style=PT_STYLE
+                        )
+                        if ans.strip().lower() in ("y", "yes"):
+                            ok = mgr.review(name, approve=True)
+                            console.print(f"[green]✓ {name} promoted to active[/]" if ok else "[red]Failed[/]")
+                        else:
+                            mgr.review(name, approve=False)
+                            console.print("[dim]Rejected.[/]")
+                    except (EOFError, KeyboardInterrupt):
+                        console.print("[dim]Cancelled.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/skills delete "):
+                name = user.split(maxsplit=2)[-1].strip()
+                from atar_core.skills import get_skill_manager
+                mgr = get_skill_manager()
+                ok = mgr.delete(name)
+                console.print(f"[green]✓ Archived {name}[/]" if ok else f"[red]Skill {name} not found[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/skills refine "):
+                name = user.split(maxsplit=2)[-1].strip()
+                from atar_core.skills import get_skill_manager
+                mgr = get_skill_manager()
+                current = mgr.load_skill_md(name)
+                if not current:
+                    console.print(f"[red]Skill {name} not found[/]")
+                else:
+                    # Send to model for refinement
+                    agent._messages.append(Message(role="user", content=f"Refine skill {name} based on correction history:\n\n{current[:2000]}\n\nPropose improved SKILL.md."))
+                    console.print(f"[dim]Refining {name}... use /skills review to approve[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user.startswith("/remember "):

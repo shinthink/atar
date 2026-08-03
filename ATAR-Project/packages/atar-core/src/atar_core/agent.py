@@ -146,7 +146,8 @@ class Agent:
                 self.state.transition(AgentState.COMPLETED)
                 # Non-blocking memory extraction (fire-and-forget)
                 import asyncio
-                asyncio.create_task(_extract_memory(self, budget))
+                asyncio.create_task(_extract_memory(agent, budget))
+                asyncio.create_task(_maybe_create_skill(agent, budget))
                 return RunResult(state=TerminalState.COMPLETED, final_text=final_text, budget=budget.snapshot())
 
             except StateMachineError:
@@ -259,3 +260,52 @@ async def _extract_memory(agent, budget) -> None:
                 )
     except Exception:
         pass  # fire-and-forget — never block the user
+
+
+async def _maybe_create_skill(agent, budget) -> None:
+    """After session: if >=4 tool calls, ask model for skill draft → pending."""
+    try:
+        tools_called = sum(1 for m in agent._messages if getattr(m, 'role', '') == 'tool')
+        if tools_called < 4:
+            return
+        transcript = "\n".join(
+            f"[{getattr(m, 'role', '?')}] {str(getattr(m, 'content', ''))[:200]}"
+            for m in agent._messages[-12:]
+        )
+        prompt = (
+            "You are evaluating whether a reusable skill should be created from this session. "
+            "If the session involved solving a non-trivial, repeatable task with tool calls, "
+            "output a SKILL.md draft. Otherwise output SKIP.\n\n"
+            "Format if creating:\n"
+            "---\n"
+            "name: skill-name\n"
+            "description: One-line description\n"
+            "trigger_hints: [phrase1, phrase2]\n"
+            "---\n"
+            "# Skill Name\n\nStep-by-step procedure...\n\n"
+            f"Session transcript:\n{transcript}"
+        )
+        from atar_models.requests import Message, ModelRequest
+        req = ModelRequest(provider_id="", model="", messages=[
+            Message(role="user", content=prompt),
+        ])
+        text = ""
+        async for event in agent.provider.stream(req):
+            if hasattr(event, "text") and event.text:
+                text += event.text
+        if text.strip() == "SKIP" or "SKIP" in text[:20]:
+            return
+        # Extract skill name from frontmatter
+        import re
+        name_match = re.search(r'name:\s*(\S+)', text)
+        desc_match = re.search(r'description:\s*(.+)', text)
+        skill_name = name_match.group(1) if name_match else f"skill-{tools_called}"
+        skill_desc = desc_match.group(1).strip() if desc_match else ""
+        from atar_core.skills import get_skill_manager
+        mgr = get_skill_manager()
+        ok = mgr.propose(skill_name, text, description=skill_desc)
+        if ok:
+            import logging
+            logging.getLogger("atar.skills").info(f"Skill proposed: {skill_name}")
+    except Exception:
+        pass  # fire-and-forget

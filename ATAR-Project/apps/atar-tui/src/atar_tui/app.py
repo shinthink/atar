@@ -966,8 +966,6 @@ class PluginsScreen(Screen):
     def on_mount(self) -> None:
         log = self.query_one("#plugins-log", RichLog)
         try:
-            from atar_core.skills import HookManager
-            hooks = HookManager()
             registered = hooks.list() if hasattr(hooks, "list") else []
             if registered:
                 for r in registered:
@@ -992,8 +990,8 @@ class SkillsScreen(Screen):
         log = self.query_one("#skills-log", RichLog)
         from atar_core.skills import SkillRegistry, SkillStatus
         for s in SkillRegistry().list_all():
-            icon = "🟢" if s.status == SkillStatus.ACTIVE else "⚪"
-            log.write(f"  {icon} {s.name} [{s.status.value}]")
+        from atar_core.skills import get_skill_manager
+        for s in get_skill_manager().list_all():
 
 
 class CheckpointsScreen(Screen):

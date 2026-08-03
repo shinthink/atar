@@ -12,13 +12,10 @@ from atar_core.agent import Agent, StreamCallbacks
 from atar_core.batch import BatchRunner, Evaluator
 from atar_core.planning import PlanningEngine
 from atar_core.session import SessionManager
-from atar_core.skills import HookManager, SkillRegistry, SkillStatus
 from atar_core.taskboard import Delegator, TaskBoard
 
 app = typer.Typer(name="atar", invoke_without_command=True)
 sessions = SessionManager()
-skills = SkillRegistry()
-hooks = HookManager()
 board = TaskBoard()
 
 
@@ -181,7 +178,7 @@ def skill_activate(name: Annotated[str, typer.Argument()]) -> None:
 @app.command()
 def skill_list() -> None:
     for s in skills.list_all():
-        icon = "🟢" if s.status == SkillStatus.ACTIVE else "⚪"
+        icon = "🟢" if s.status == "active" else "⚪"
         typer.echo(f"  {icon} {s.name} [{s.status.value}]")
 
 
