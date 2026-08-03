@@ -35,7 +35,7 @@ class Agent:
     state: AgentStateMachine = field(default_factory=AgentStateMachine)
     _messages: list[Message] = field(default_factory=list)
 
-    async def run(self, user_input: str, callbacks: StreamCallbacks | None = None, budget: RunBudget | None = None) -> RunResult:
+    async def run(self, user_input: str, callbacks: StreamCallbacks | None = None, budget: RunBudget | None = None, cancel_token: Any = None) -> RunResult:
         """Execute one full agent turn loop with structured result."""
         if budget is None:
             budget = RunBudget()
@@ -48,6 +48,8 @@ class Agent:
         budget.started_at = _time.monotonic()
 
         while budget.turns_remaining() > 0:
+            if cancel_token and getattr(cancel_token, "cancelled", lambda: False)():
+                return RunResult(state=TerminalState.CANCELLED, error="Cancelled by user", budget=budget.snapshot())
             if budget.is_exhausted():
                 return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
 
