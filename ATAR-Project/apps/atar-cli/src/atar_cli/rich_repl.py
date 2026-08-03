@@ -442,19 +442,19 @@ def run_repl() -> None:
             console.print(f"\n  [bold {c.secondary}]\u250a {icon} preparing {name}\u2026[/] [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
+            icons = {"read_file": "0001F4D6", "WRITE_FILE": "270DFE0F", "TERMINAL": "0001F4BB", "WEB_FETCH": "0001F4C4", "WEB_SEARCH": "0001F50D", "PATCH": "0001F527"}
             from atar_core.theme import current_theme
             c = current_theme().colors
             icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-            icon = icons.get(name, "\U0001f527")
+            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f4c4", "web_search": "\U0001f50d", "patch": "\U0001f527"}
 
             if name == "terminal":
                 output = result.strip() or "(no output)"
                 lines = output.split("\n")[:10]
                 shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
-                console.print(f"\r  [bold {c.success}]\u2502 {icon} {name}[/] [dim]({elapsed:.1f}s)[/]\n{shown}" if shown else "")
+                preview = args.get("command", "")[:50]
+                console.print(f"\r  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
             elif name == "patch":
-                # Render colored diff: green +, red -, dim context
                 output = result.strip() or ""
                 colored = []
                 for ln in output.split("\n")[:20]:
@@ -466,15 +466,15 @@ def run_repl() -> None:
                         colored.append(f"    [bold #F87171]{ln}[/]")
                     else:
                         colored.append(f"    [dim]{ln}[/]")
-                console.print(f"\r  [bold {c.success}]\u2502 {icon} patch[/] [dim]({elapsed:.1f}s)[/]\n" + "\n".join(colored))
-            elif name in ("read_file", "write_file"):
+                path = args.get("path", "")
+                console.print(f"\r  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
+            elif name == "write_file":
+                path = args.get("path", "")
                 size = len(result) if result else 0
-                label = f"Wrote {size} bytes" if name == "write_file" else f"Read {len(result)} chars"
-                console.print(f"\r  [bold {c.success}]\u2502 {icon} {label}[/] [dim]({elapsed:.1f}s)[/]")
-            else:
-                cleaner = {"web_search": "Found results", "web_fetch": "Fetched content"}
-                verb = cleaner.get(name, "Done")
-                console.print(f"\r  [bold {c.success}]\u2502 {icon} {verb}[/] [dim]({elapsed:.1f}s)[/]")
+                console.print(f"\r  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
+            elif name == "read_file":
+                path = args.get("path", "")
+                console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
 
         console.print(Rule(style="#394B59"))
         try:
