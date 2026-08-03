@@ -416,6 +416,7 @@ def run_repl() -> None:
         _had_tools = False
         _tool_start_time: dict[str, float] = {}
         _last_tool_id: set[str] = set()
+        _tool_results: list[str] = []
         args_cache: dict[str, dict] = {}
 
         async def on_tool(name: str, args: dict) -> None:
@@ -441,66 +442,24 @@ def run_repl() -> None:
             c = current_theme().colors
             console.print(f"\n  [bold {c.secondary}]\u250a {icon} preparing {name}\u2026[/] [dim]{short}[/]")
 
-        async def on_tool_result(name: str, result: str) -> None:
-            icons = {"read_file": "0001F4D6", "WRITE_FILE": "270DFE0F", "TERMINAL": "0001F4BB", "WEB_FETCH": "0001F4C4", "WEB_SEARCH": "0001F50D", "PATCH": "0001F527"}
+                async def on_tool_result(name: str, result: str) -> None:
+            """Collect results; display happens after Status exits."""
             from atar_core.theme import current_theme
             c = current_theme().colors
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f4c4", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-
+            elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
+            a = args_cache.get(name, {})
             if name == "terminal":
-                output = result.strip() or "(no output)"
-                lines = output.split("\n")[:10]
-                shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
-                preview = args_cache[name].get("command", "")[:50]
-                console.print(f"\n  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
-            elif name == "patch":
-                output = result.strip() or ""
-                # Store for /diff full access
-                _last_diff = [output]
-                # Truncate large diffs
-                diff_lines = output.split("\n")
-                if len(diff_lines) > 40:
-                    shown = "\n".join(diff_lines[:40])
-                    remainder = len(diff_lines) - 40
-                    shown += f"\n    [dim]... {remainder} more lines, use /diff full to see everything[/]"
-                else:
-                    shown = output
-                # Render with Rich diff Syntax if available
-                try:
-                    from rich.syntax import Syntax
-                    lang = "diff"
-                    path = args_cache.get("patch", {}).get("path", "")
-                    if path and "." in path:
-                        ext = path.rsplit(".", 1)[-1]
-                        lang_map = {"py": "python", "js": "javascript", "ts": "typescript", "rs": "rust", "go": "go", "java": "java", "rb": "ruby", "c": "c", "cpp": "cpp", "css": "css", "html": "html", "json": "json", "yaml": "yaml", "toml": "toml", "sh": "bash", "md": "markdown"}
-                        lang = lang_map.get(ext, "diff")
-                    syntax = Syntax(shown, lang, theme="monokai", line_numbers=False)
-                    console.print(syntax)
-                except Exception:
-                    # Fallback: colorized diff
-                    colored = []
-                    for ln in diff_lines[:40]:
-                        if ln.startswith("+++") or ln.startswith("---"):
-                            colored.append(f"    [bold]{ln}[/]")
-                        elif ln.startswith("@@"):
-                            colored.append(f"    [bold #67D8FF]{ln}[/]")
-                        elif ln.startswith("+"):
-                            colored.append(f"    [bold #4ADE80]{ln}[/]")
-                        elif ln.startswith("-"):
-                            colored.append(f"    [bold #F87171]{ln}[/]")
-                        else:
-                            colored.append(f"    [dim]{ln}[/]")
-                    if len(diff_lines) > 40:
-                        colored.append(f"    [dim]... {remainder} more lines, use /diff full to see everything[/]")
-                    console.print("\n".join(colored))
+                preview = a.get("command", "")[:50]
+                _tool_results.append(f"  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]")
             elif name == "write_file":
-                path = args_cache[name].get("path", "")
+                path = a.get("path", "")
                 size = len(result) if result else 0
-                console.print(f"\n  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
+                _tool_results.append(f"  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
             elif name == "read_file":
-                path = args_cache[name].get("path", "")
-                console.print(f"\n  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
+                path = a.get("path", "")
+                _tool_results.append(f"  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
+            else:
+                _tool_results.append(f"  \u2502 [bold {c.success}]{name}[/] [dim]({elapsed:.1f}s)[/]")
 
         try:
             async def _capture(t: str) -> None:
@@ -530,6 +489,9 @@ def run_repl() -> None:
                         on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
                     ))
             await _run_with_status()
+            # Display collected tool results
+            for tr in _tool_results:
+                console.print(tr)
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
         except asyncio.CancelledError:
             console.print("\n[dim]\u23f9 Interrupted[/]")
