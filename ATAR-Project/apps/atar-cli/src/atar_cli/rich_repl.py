@@ -516,7 +516,19 @@ def run_repl() -> None:
             except KeyboardInterrupt:
                 if _current_task and not _current_task.done():
                     _current_task.cancel()
-                    console.print("\n[dim]Interrupted.[/]")
+                    console.print("\n[dim]⏸ Interrupted — type your redirect (or press Ctrl+C again to cancel):[/]")
+                    try:
+                        redirect = await session_pt.prompt_async(
+                            HTML(""), style=PT_STYLE
+                        )
+                        if redirect.strip():
+                            # Inject redirect into agent context as continuation
+                            agent._messages.append(Message(role="user", content=f"[Redirect] {redirect.strip()}"))
+                            console.print(f"[dim]↳ Redirected: {redirect[:60]}...[/]")
+                            _current_task = asyncio.create_task(_agent_turn("", agent))
+                    except KeyboardInterrupt:
+                        console.print("\n[dim]Cancelled.[/]")
+                        continue
                     continue
                 console.print("\n[dim]Press Ctrl+D to exit.[/]")
                 continue
