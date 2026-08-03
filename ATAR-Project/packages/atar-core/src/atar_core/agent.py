@@ -144,6 +144,9 @@ class Agent:
                 # Final response
                 self._messages.append(Message(role="assistant", content=final_text))
                 self.state.transition(AgentState.COMPLETED)
+                # Non-blocking memory extraction (fire-and-forget)
+                import asyncio
+                asyncio.create_task(_extract_memory(self, budget))
                 return RunResult(state=TerminalState.COMPLETED, final_text=final_text, budget=budget.snapshot())
 
             except StateMachineError:
@@ -213,3 +216,46 @@ class Agent:
 
     def history(self) -> list[Message]:
         return list(self._messages)
+
+
+async def _extract_memory(agent, budget) -> None:
+    """Async, non-blocking: extract memory entries from last N turns via LLM."""
+    try:
+        from atar_core.memory import create_entry
+        msgs = agent._messages[-6:]  # last 3 turns (user+assistant)
+        if len(msgs) < 4:
+            return
+        transcript = "\n".join(
+            f"[{getattr(m, 'role', '?')}] {str(getattr(m, 'content', ''))[:300]}"
+            for m in msgs
+        )
+        prompt = (
+            "You are a memory curator. Review this conversation excerpt and output "
+            "up to 5 structured memory entries as JSON array. Each entry: "
+            '{"category":"fact|preference|decision","content":"<single sentence>","confidence":0.0-1.0}. '
+            "Only include entries with confidence >= 0.6. Return ONLY valid JSON array, no other text.\n\n"
+            f"{transcript}"
+        )
+        from atar_models.requests import Message, ModelRequest
+        req = ModelRequest(provider_id="", model="", messages=[
+            Message(role="user", content=prompt),
+        ])
+        text = ""
+        async for event in agent.provider.stream(req):
+            if hasattr(event, "text") and event.text:
+                text += event.text
+        import json
+        try:
+            entries = json.loads(text.strip())
+        except json.JSONDecodeError:
+            return
+        for entry in entries:
+            if isinstance(entry, dict) and entry.get("confidence", 0) >= 0.6:
+                create_entry(
+                    category=entry.get("category", "fact"),
+                    content=entry["content"],
+                    source_session_id=getattr(agent, "session_id", ""),
+                    confidence=entry["confidence"],
+                )
+    except Exception:
+        pass  # fire-and-forget — never block the user

@@ -98,10 +98,11 @@ def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profil
     session_layers = [IDENTITY, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
 
     # Inject memory if present
-    from atar_core.memory import memory_snapshot
-    mem = memory_snapshot(profile=memory_profile)
-    if mem:
-        session_layers.append(PromptLayer(name="memory", content=mem, stability="session"))
+    from atar_core.memory import get_entries
+    entries = get_entries(limit=15)
+    if entries:
+        mem_text = "<memory>\n" + "\n".join(f"[{e.category}] {e.content}" for e in entries) + "\n</memory>"
+        session_layers.append(PromptLayer(name="memory", content=mem_text, stability="session"))
 
     session_prefix = "\n\n".join(layer.content for layer in session_layers)
 

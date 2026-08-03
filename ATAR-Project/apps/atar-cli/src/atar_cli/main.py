@@ -171,23 +171,6 @@ def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
         typer.echo(f"  [{e.category}] {e.content}")
 
 
-@app.command()
-def forget(key: Annotated[str, typer.Argument()]) -> None:
-    memory.forget(key)
-    typer.echo(f"  Forgotten: {key}")
-
-
-@app.command()
-def skill_propose(name: Annotated[str, typer.Argument()], prompt: Annotated[str, typer.Argument()]) -> None:
-    skills.propose(name, prompt)
-    typer.echo(f"  Proposed: {name}")
-
-
-@app.command()
-def skill_review(name: Annotated[str, typer.Argument()]) -> None:
-    skills.review(name)
-    typer.echo(f"  Reviewed: {name}")
-
 
 @app.command()
 def skill_activate(name: Annotated[str, typer.Argument()]) -> None:

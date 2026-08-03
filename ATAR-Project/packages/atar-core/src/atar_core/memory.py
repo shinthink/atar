@@ -1,104 +1,151 @@
-"""ATAR memory — bounded persistent knowledge store."""
+"""ATAR structured memory — SQLite-backed, auditable, secret-filtered."""
 
 from __future__ import annotations
 
-import json
+import os
+import re
+import sqlite3
+import time
 from dataclasses import dataclass
 
-from atar_core.paths import atar_memory_file, ensure_dirs
+from atar_core.paths import _atar_home as atar_home
 
-MAX_ENTRIES = 100
-MAX_ENTRY_LENGTH = 500
-MAX_TOTAL_CHARS = 5000
+DB_PATH = os.path.join(atar_home(), "memory.db")
 
+# Regex patterns that look like secrets — reject on sight
+SECRET_PATTERNS = [
+    re.compile(r'sk-[A-Za-z0-9]{20,}'),
+    re.compile(r'AKIA[A-Z0-9]{16}'),
+    re.compile(r'Bearer [A-Za-z0-9_\-.]+=*'),
+    re.compile(r'-----BEGIN (RSA |EC )?PRIVATE KEY-----'),
+    re.compile(r'ghp_[A-Za-z0-9]{36}'),
+    re.compile(r'glpat-[A-Za-z0-9\-_]{20,}'),
+]
 
 @dataclass
 class MemoryEntry:
-    content: str
-    category: str = "general"  # user, technical, preference, correction
-    created_at: str = ""
-    usage_count: int = 0
+    id: int = 0
+    category: str = "fact"
+    content: str = ""
+    source_session_id: str = ""
+    created_at: float = 0.0
+    updated_at: float = 0.0
+    confidence: float = 1.0
+    superseded_by: int | None = None
 
 
-def _load_memories(profile: str = "default") -> list[MemoryEntry]:
-    path = atar_memory_file(profile)
-    if not path.exists():
-        return []
-    try:
-        with open(path) as f:
-            data = json.load(f)
-        return [MemoryEntry(**item) for item in data if isinstance(item, dict)]
-    except (json.JSONDecodeError, KeyError):
-        return []
+def _is_secret(text: str) -> bool:
+    for pat in SECRET_PATTERNS:
+        if pat.search(text):
+            return True
+    return False
 
 
-def _save_memories(entries: list[MemoryEntry], profile: str = "default") -> None:
-    ensure_dirs(profile)
-    path = atar_memory_file(profile)
-    with open(path, "w") as f:
-        json.dump([{"content": e.content, "category": e.category, "created_at": e.created_at, "usage_count": e.usage_count} for e in entries], f, indent=2)
+def _get_conn() -> sqlite3.Connection:
+    os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS memory_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT NOT NULL DEFAULT 'fact',
+            content TEXT NOT NULL,
+            source_session_id TEXT DEFAULT '',
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL,
+            confidence REAL DEFAULT 1.0,
+            superseded_by INTEGER REFERENCES memory_entries(id)
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_category ON memory_entries(category)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_session ON memory_entries(source_session_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_active ON memory_entries(superseded_by) WHERE superseded_by IS NULL")
+    conn.commit()
+    return conn
 
 
-def add_memory(content: str, category: str = "general", profile: str = "default") -> bool:
-    """Add a memory entry. Rejects duplicates. Returns True if added."""
-    if len(content) > MAX_ENTRY_LENGTH:
-        content = content[:MAX_ENTRY_LENGTH]
-    entries = _load_memories(profile)
-
-    # Reject exact duplicates
-    if any(e.content == content for e in entries):
-        return False
-
-    # Cap total entries
-    if len(entries) >= MAX_ENTRIES:
-        entries.pop(0)
-
-    # Cap total chars
-    total = sum(len(e.content) for e in entries) + len(content)
-    while total > MAX_TOTAL_CHARS and entries:
-        total -= len(entries[0].content)
-        entries.pop(0)
-
-    import time
-    entries.append(MemoryEntry(
-        content=content,
-        category=category,
-        created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    ))
-    _save_memories(entries, profile)
-    return True
+def create_entry(category: str, content: str, source_session_id: str = "", confidence: float = 1.0) -> int | None:
+    if _is_secret(content):
+        import logging
+        logging.getLogger("atar.memory").warning(f"Rejected secret-like memory entry: {content[:60]}...")
+        return None
+    now = time.time()
+    conn = _get_conn()
+    cur = conn.execute(
+        "INSERT INTO memory_entries (category, content, source_session_id, created_at, updated_at, confidence) VALUES (?,?,?,?,?,?)",
+        (category, content, source_session_id, now, now, confidence),
+    )
+    conn.commit()
+    return cur.lastrowid
 
 
-def remove_memory(content_fragment: str, profile: str = "default") -> int:
-    """Remove entries containing the fragment. Returns count removed."""
-    entries = _load_memories(profile)
-    before = len(entries)
-    entries = [e for e in entries if content_fragment not in e.content]
-    removed = before - len(entries)
-    if removed:
-        _save_memories(entries, profile)
-    return removed
+def get_entries(category: str | None = None, query: str | None = None, limit: int = 30, active_only: bool = True) -> list[MemoryEntry]:
+    conn = _get_conn()
+    sql = "SELECT * FROM memory_entries WHERE 1=1"
+    params: list = []
+    if active_only:
+        sql += " AND superseded_by IS NULL"
+    if category:
+        sql += " AND category = ?"
+        params.append(category)
+    if query:
+        sql += " AND content LIKE ?"
+        params.append(f"%{query}%")
+    sql += " ORDER BY updated_at DESC LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(sql, params).fetchall()
+    return [_row_to_entry(r) for r in rows]
 
 
-def list_memories(profile: str = "default") -> list[MemoryEntry]:
-    return _load_memories(profile)
+def supersede_entry(entry_id: int, new_content: str) -> int | None:
+    """Mark old entry superseded, create new one. Returns new entry ID."""
+    if _is_secret(new_content):
+        return None
+    conn = _get_conn()
+    old = conn.execute("SELECT * FROM memory_entries WHERE id=?", (entry_id,)).fetchone()
+    if not old:
+        return None
+    now = time.time()
+    # Create new entry
+    cur = conn.execute(
+        "INSERT INTO memory_entries (category, content, source_session_id, created_at, updated_at, confidence) VALUES (?,?,?,?,?,?)",
+        (old["category"], new_content, old["source_session_id"], now, now, old["confidence"]),
+    )
+    new_id = cur.lastrowid
+    # Mark old as superseded
+    conn.execute("UPDATE memory_entries SET superseded_by=?, updated_at=? WHERE id=?", (new_id, now, entry_id))
+    conn.commit()
+    return new_id
 
 
-def memory_snapshot(max_chars: int = 2000, profile: str = "default") -> str:
-    """Get a snapshot for prompt injection. Truncated to max_chars."""
-    entries = _load_memories(profile)
-    if not entries:
-        return ""
-    lines = []
-    total = 0
-    for e in entries:
-        line = f"- {e.content}"
-        if total + len(line) > max_chars:
-            break
-        lines.append(line)
-        total += len(line)
-    return "User context (persistent memory):\n" + "\n".join(lines)
+def forget_entry(entry_id: int) -> bool:
+    """Supersede with tombstone — never hard-delete."""
+    return supersede_entry(entry_id, "[forgotten by user]") is not None
 
 
-def memory_count(profile: str = "default") -> int:
-    return len(_load_memories(profile))
+def count_active() -> int:
+    conn = _get_conn()
+    row = conn.execute("SELECT COUNT(*) as cnt FROM memory_entries WHERE superseded_by IS NULL").fetchone()
+    return row["cnt"] if row else 0
+
+
+def _row_to_entry(row) -> MemoryEntry:
+    return MemoryEntry(
+        id=row["id"],
+        category=row["category"],
+        content=row["content"],
+        source_session_id=row["source_session_id"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        confidence=row["confidence"] if row["confidence"] is not None else 1.0,
+        superseded_by=row["superseded_by"],
+    )
+
+
+# Backward compat: re-export old API names
+def list_memories() -> list[MemoryEntry]:
+    return get_entries()
+
+def add_memory(content: str, category: str = "fact") -> int | None:
+    return create_entry(category=category, content=content)

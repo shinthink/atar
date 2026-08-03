@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import re
 import shutil
 import uuid
 from contextlib import suppress
@@ -52,6 +51,8 @@ register_command("/quit", "Exit ATAR", aliases=["/exit", "/q"], category="system
 register_command("/status", "Show runtime status", category="system")
 register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
+register_command("/memory forget", "Forget a memory entry", category="memory", arg_hint="[id]")
+register_command("/search", "Search past sessions", category="session", arg_hint="[query]")
 register_command("/undo", "Undo the last turn", category="session")
 register_command("/retry", "Retry the last turn", category="session")
 register_command("/compress", "Compress conversation context", category="session")
@@ -378,8 +379,6 @@ def run_repl() -> None:
     import atar_tools.tools.web
     import atar_tools.tools.web_search  # noqa: F401
     from atar_core.agent import Agent, StreamCallbacks
-    from atar_models.tools import ToolContext
-    from atar_tools.registry import execute as tool_execute
 
     session_id = uuid.uuid4().hex[:12]
 
@@ -678,13 +677,42 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/memory":
-                from atar_core.memory import list_memories
-                entries = list_memories()
+                from atar_core.memory import count_active, get_entries
+                entries = get_entries()
                 if not entries:
                     console.print("[dim]No persistent memories.[/]")
                 else:
+                    cats: dict[str, list] = {}
                     for e in entries:
-                        console.print(f"  [dim]{e.category}[/] {e.content}")
+                        cats.setdefault(e.category, []).append(e)
+                    for cat, items in sorted(cats.items()):
+                        console.print(f"\n[bold]{cat}[/]")
+                        for e in items:
+                            console.print(f"  [{e.id}] [dim]{e.content}[/]")
+                console.print(f"\n[dim]{count_active()} active entries[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/memory forget "):
+                try:
+                    eid = int(user.split()[-1])
+                    from atar_core.memory import forget_entry
+                    ok = forget_entry(eid)
+                    console.print(f"[green]✓ Forgotten #{eid}[/]" if ok else f"[red]Entry #{eid} not found[/]")
+                except (ValueError, IndexError):
+                    console.print("[red]Usage: /memory forget <id>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/search "):
+                query = user[8:].strip()
+                from atar_core.session_search import search_sessions
+                results = search_sessions(query)
+                if not results:
+                    console.print(f"[dim]No sessions matching '{query}'[/]")
+                else:
+                    for r in results:
+                        sid = r["session_id"][:12]
+                        summary = r["summary"] or r["snippet"]
+                        console.print(f"  [bold]{sid}[/] [dim]{summary[:100]}[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user.startswith("/remember "):
