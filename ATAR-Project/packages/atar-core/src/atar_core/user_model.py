@@ -57,9 +57,8 @@ def update_from_messages(model: dict, messages: list) -> dict:
     }
     all_text = " ".join(user_msgs).lower()
     for topic, keywords in topic_keywords.items():
-        if any(kw in all_text for kw in keywords):
-            if topic not in model["topics"]:
-                model["topics"].append(topic)
+        if any(kw in all_text for kw in keywords) and topic not in model["topics"]:
+            model["topics"].append(topic)
 
     # Tool preference
     for msg in messages:
