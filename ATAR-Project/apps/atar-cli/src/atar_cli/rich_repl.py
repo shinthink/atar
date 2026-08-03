@@ -661,6 +661,10 @@ expand=True,
                 store = SqliteStore()
                 msgs = [{"role": m.role, "content": m.content, "tool_calls": getattr(m, "tool_calls", None), "tool_call_id": getattr(m, "tool_call_id", None)} for m in agent._messages]
                 store.save(session_id, "ATAR Session", msgs)
+                # Index for FTS5 search
+                from atar_core.session_search import index_session
+                text = "\n".join(f"[{m['role']}] {str(m.get('content', ''))[:500]}" for m in msgs)
+                index_session(session_id, "ATAR Session", text)
                 console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
                 console.print(Rule(style="#394B59"))
                 continue
@@ -765,7 +769,7 @@ expand=True,
                     console.print("[dim]No diff available. Run a patch operation first.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
-                        if user.startswith("/backend "):
+            if user.startswith("/backend "):
                 name = user[9:].strip()
                 try:
                     from atar_core.backends import switch_backend, get_backend
