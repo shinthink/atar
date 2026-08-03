@@ -349,6 +349,7 @@ def _context_bar() -> str:
 
 def _status_bar() -> str:
     import shutil as _sh
+from atar_core.interaction import get_active_bg_count as _get_bg
     import time as _t
     if _stats["start_time"] is None:
         _stats["start_time"] = _t.time()
