@@ -1,69 +1,106 @@
-"""ATAR session search — search across saved sessions."""
+"""ATAR memory — bounded persistent knowledge store."""
 
 from __future__ import annotations
 
-from atar_core.session import Session, SessionManager
+import json
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+from atar_core.paths import atar_memory_file, ensure_dirs
+
+MAX_ENTRIES = 100
+MAX_ENTRY_LENGTH = 500
+MAX_TOTAL_CHARS = 5000
 
 
-class SessionSearch:
-    def __init__(self, manager: SessionManager | None = None) -> None:
-        self.sessions = manager or SessionManager()
-
-    def search(self, query: str, limit: int = 10) -> list[tuple[Session, list[str]]]:
-        """Search sessions for query. Returns matching sessions with snippet lines."""
-        results: list[tuple[Session, list[str]]] = []
-        q = query.lower()
-        for sess in self.sessions.list():
-            snippets: list[str] = []
-            for msg in sess.messages:
-                if q in msg.content.lower():
-                    snippet = msg.content[:200] + ("..." if len(msg.content) > 200 else "")
-                    snippets.append(f"[{msg.role}] {snippet}")
-            if snippets:
-                results.append((sess, snippets[:3]))
-            if len(results) >= limit:
-                break
-        return results
-
-    def recent(self, n: int = 5) -> list[Session]:
-        return self.sessions.list()[:n]
+@dataclass
+class MemoryEntry:
+    content: str
+    category: str = "general"  # user, technical, preference, correction
+    created_at: str = ""
+    usage_count: int = 0
 
 
-class MemoryEngine:
-    """Simple key-value memory with persistence."""
+def _load_memories(profile: str = "default") -> list[MemoryEntry]:
+    path = atar_memory_file(profile)
+    if not path.exists():
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return [MemoryEntry(**item) for item in data if isinstance(item, dict)]
+    except (json.JSONDecodeError, KeyError):
+        return []
 
-    def __init__(self, path: str = ".atar/memory.json") -> None:
-        import json
-        import os
-        self.path = path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        self._facts: dict[str, str] = {}
-        if os.path.exists(path):
-            with open(path) as f:
-                self._facts = json.load(f)
 
-    def save(self, key: str, value: str) -> None:
-        self._facts[key] = value
-        self._flush()
+def _save_memories(entries: list[MemoryEntry], profile: str = "default") -> None:
+    ensure_dirs(profile)
+    path = atar_memory_file(profile)
+    with open(path, "w") as f:
+        json.dump([{"content": e.content, "category": e.category, "created_at": e.created_at, "usage_count": e.usage_count} for e in entries], f, indent=2)
 
-    def recall(self, key: str) -> str | None:
-        return self._facts.get(key)
 
-    def search(self, query: str) -> list[tuple[str, str]]:
-        q = query.lower()
-        return [(k, v) for k, v in self._facts.items() if q in k.lower() or q in v.lower()]
+def add_memory(content: str, category: str = "general", profile: str = "default") -> bool:
+    """Add a memory entry. Rejects duplicates. Returns True if added."""
+    if len(content) > MAX_ENTRY_LENGTH:
+        content = content[:MAX_ENTRY_LENGTH]
+    entries = _load_memories(profile)
 
-    def forget(self, key: str) -> bool:
-        if key in self._facts:
-            del self._facts[key]
-            self._flush()
-            return True
+    # Reject exact duplicates
+    if any(e.content == content for e in entries):
         return False
 
-    def all(self) -> dict[str, str]:
-        return dict(self._facts)
+    # Cap total entries
+    if len(entries) >= MAX_ENTRIES:
+        entries.pop(0)
 
-    def _flush(self) -> None:
-        import json
-        with open(self.path, "w") as f:
-            json.dump(self._facts, f, indent=2, default=str)
+    # Cap total chars
+    total = sum(len(e.content) for e in entries) + len(content)
+    while total > MAX_TOTAL_CHARS and entries:
+        total -= len(entries[0].content)
+        entries.pop(0)
+
+    import time
+    entries.append(MemoryEntry(
+        content=content,
+        category=category,
+        created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    ))
+    _save_memories(entries, profile)
+    return True
+
+
+def remove_memory(content_fragment: str, profile: str = "default") -> int:
+    """Remove entries containing the fragment. Returns count removed."""
+    entries = _load_memories(profile)
+    before = len(entries)
+    entries = [e for e in entries if content_fragment not in e.content]
+    removed = before - len(entries)
+    if removed:
+        _save_memories(entries, profile)
+    return removed
+
+
+def list_memories(profile: str = "default") -> list[MemoryEntry]:
+    return _load_memories(profile)
+
+
+def memory_snapshot(max_chars: int = 2000, profile: str = "default") -> str:
+    """Get a snapshot for prompt injection. Truncated to max_chars."""
+    entries = _load_memories(profile)
+    if not entries:
+        return ""
+    lines = []
+    total = 0
+    for e in entries:
+        line = f"- {e.content}"
+        if total + len(line) > max_chars:
+            break
+        lines.append(line)
+        total += len(line)
+    return "User context (persistent memory):\n" + "\n".join(lines)
+
+
+def memory_count(profile: str = "default") -> int:
+    return len(_load_memories(profile))

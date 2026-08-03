@@ -93,9 +93,16 @@ class AssembledPrompt:
         return self.full
 
 
-def assemble(session_id: str = "", model: str = "", cwd: str = "") -> AssembledPrompt:
-    """Build a multi-layer system prompt."""
+def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profile: str = "default") -> AssembledPrompt:
+    """Build a multi-layer system prompt with memory snapshot."""
     session_layers = [IDENTITY, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
+
+    # Inject memory if present
+    from atar_core.memory import memory_snapshot
+    mem = memory_snapshot(profile=memory_profile)
+    if mem:
+        session_layers.append(PromptLayer(name="memory", content=mem, stability="session"))
+
     session_prefix = "\n\n".join(l.content for l in session_layers)
 
     ep = ephemeral_layer(session_id=session_id, model=model, cwd=cwd)

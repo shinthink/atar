@@ -45,6 +45,8 @@ register_command("/new", "Start a new session (fresh ID + history)", category="s
 register_command("/title", "Set session title", category="session", arg_hint="[name]")
 register_command("/usage", "Show context usage", category="system")
 register_command("/save", "Save current conversation", category="session")
+register_command("/memory", "Show persistent memories", category="memory")
+register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
 
 
 # ── Keybindings ──
@@ -532,6 +534,24 @@ def run_repl() -> None:
                 if ag2:
                     provider, model, agent = prov2, model2, ag2
                 console.print("[dim]Chat mode[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/memory":
+                from atar_core.memory import list_memories
+                entries = list_memories()
+                if not entries:
+                    console.print("[dim]No persistent memories.[/]")
+                else:
+                    for e in entries:
+                        console.print(f"  [dim]{e.category}[/] {e.content}")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/remember "):
+                from atar_core.memory import add_memory
+                text = user[len("/remember "):].strip()
+                if text:
+                    add_memory(text, category="user")
+                    console.print(f"[dim]Saved: {text[:80]}[/]")
                 console.print(Rule(style="#394B59"))
                 continue
 
