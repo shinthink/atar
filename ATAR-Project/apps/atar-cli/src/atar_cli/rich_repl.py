@@ -422,7 +422,7 @@ args_cache[name] = args
             short = str(args)[:60]
             # Show file path for read/write, command for terminal
             if name in ("read_file", "write_file"):
-                short = args.get("path", str(args))[:60]
+                short = args_cache[name].get("path", str(args))[:60]
             elif name == "terminal":
                 short = f"$ {args.get('command', '')[:60]}"
             from atar_core.theme import current_theme
@@ -440,7 +440,7 @@ args_cache[name] = args
                 output = result.strip() or "(no output)"
                 lines = output.split("\n")[:10]
                 shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
-                preview = args.get("command", "")[:50]
+                preview = args_cache[name].get("command", "")[:50]
                 console.print(f"\r  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
             elif name == "patch":
                 output = result.strip() or ""
@@ -454,14 +454,14 @@ args_cache[name] = args
                         colored.append(f"    [bold #F87171]{ln}[/]")
                     else:
                         colored.append(f"    [dim]{ln}[/]")
-                path = args.get("path", "")
+                path = args_cache[name].get("path", "")
                 console.print(f"\r  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
             elif name == "write_file":
-                path = args.get("path", "")
+                path = args_cache[name].get("path", "")
                 size = len(result) if result else 0
                 console.print(f"\r  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
             elif name == "read_file":
-                path = args.get("path", "")
+                path = args_cache[name].get("path", "")
                 console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
 
         try:
