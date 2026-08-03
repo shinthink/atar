@@ -163,7 +163,7 @@ def _(event):
         event.current_buffer.insert_text(text)
 
 
-PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F8C98"})
+PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "#7F8C98"})
 
 session_pt = PromptSession(
     completer=SlashCommandToolCompleter(),
