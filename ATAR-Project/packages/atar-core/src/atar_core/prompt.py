@@ -97,7 +97,7 @@ def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profil
     """Build a multi-layer system prompt with memory snapshot."""
     session_layers = [IDENTITY, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
 
-    
+
     # Inject user model if present
     from atar_core.user_model import load_model, model_to_prompt
     um = model_to_prompt(load_model())
