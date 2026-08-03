@@ -404,7 +404,7 @@ def run_repl() -> None:
         _had_tools = False
         _tool_start_time: dict[str, float] = {}
         _last_tool_id: set[str] = set()
-args_cache: dict[str, dict] = {}
+        args_cache: dict[str, dict] = {}
 
         async def on_tool(name: str, args: dict) -> None:
             nonlocal response_text, _had_tools
@@ -414,7 +414,7 @@ args_cache: dict[str, dict] = {}
             if tool_sig in _last_tool_id:
                 return
             _last_tool_id.add(tool_sig)
-args_cache[name] = args
+            args_cache[name] = args
             _stats["tools"] += 1
             _tool_start_time[name] = _t2.time()
             icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
