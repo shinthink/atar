@@ -510,13 +510,25 @@ def run_repl() -> None:
             from atar_core.display import ThinkingAnimator, calculate_cost
             anim = ThinkingAnimator()
             use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
+            _thinking_done = False
+            async def _animate_thinking():
+                if not use_anim:
+                    return
+                anim.start()
+                while not _thinking_done:
+                    console.print(f"\r  {anim.tick()}", end="")
+                    await asyncio.sleep(0.2)
             if use_anim:
                 console.print(f"\n  {anim.start()}", end="")
             else:
                 console.print("\n  ● thinking...", end="")
+            _anim_task = asyncio.create_task(_animate_thinking())
             await ag.run(prompt, StreamCallbacks(
                 on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
             ))
+            _thinking_done = True
+            if _anim_task and not _anim_task.done():
+                _anim_task.cancel()
             console.print("\r" + " " * 80 + "\r", end="")
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
         except asyncio.CancelledError:
