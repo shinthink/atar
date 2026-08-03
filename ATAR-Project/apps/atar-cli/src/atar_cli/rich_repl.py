@@ -12,6 +12,8 @@ from contextlib import suppress
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.clipboard import ClipboardData
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
@@ -70,27 +72,80 @@ def _(event):
     event.current_buffer.insert_text("\n")
 
 
-@bindings.add("tab")
-def _(event):
-    """Tab: show slash completions via inline menu."""
-    b = event.current_buffer
-    text = b.text.lstrip()
-    cmds = cmd_registry.completions()
-    matches = [c for c in cmds if c.startswith(text)]
-    if not matches:
-        matches = [c for c in cmds if text in c]
-    if matches:
-        b.text = ""
-        console.print()
-        lines = []
-        for m in matches[:12]:
-            cmd = cmd_registry.get(m)
-            desc = cmd.description if cmd else ""
-            lines.append(f"  [bold #67D8FF]{m}[/]  [dim]{desc}[/]")
-        console.print("\n".join(lines) if lines else "[dim]No commands[/]")
-        b.text = text
-    else:
-        b.insert_text("\t")
+class SlashCommandToolCompleter(Completer):
+    """Completer that shows all slash commands + tools when typing '/'."""
+
+    @staticmethod
+    def _tool_risk(tool_name: str) -> tuple[str, str]:
+        """Return (risk_label, color) for a tool."""
+        risk_map = {
+            "read_file": ("Read-only", "#4ADE80"),
+            "search_files": ("Read-only", "#4ADE80"),
+            "session_search": ("Read-only", "#4ADE80"),
+            "session_resume": ("Read-only", "#4ADE80"),
+            "git": ("Read-only", "#4ADE80"),
+            "web_search": ("Network", "#FBBF24"),
+            "web_fetch": ("Network", "#FBBF24"),
+            "browser": ("Network", "#FBBF24"),
+            "write_file": ("Write", "#F87171"),
+            "patch": ("Write", "#F87171"),
+            "terminal": ("Execute", "#EF4444"),
+            "run_tests": ("Execute", "#EF4444"),
+            "execute_code": ("Execute", "#EF4444"),
+            "cronjob": ("Execute", "#EF4444"),
+            "delegate_task": ("Execute", "#EF4444"),
+        }
+        return risk_map.get(tool_name, ("Unknown", "#9CA3AF"))
+
+    def get_completions(self, document: Document, complete_event):
+        text_before = document.text_before_cursor
+        # Only trigger for slash commands (text starts with /)
+        if not text_before.strip().startswith("/"):
+            return
+
+        word = text_before.strip()
+        # If cursor is past the first word, don't complete
+        if " " in text_before.strip() and not word.startswith("/"):
+            return
+
+        # Get slash commands from registry
+        cmds = cmd_registry.completions()
+        matching = [c for c in cmds if c.startswith(word)]
+
+        # If user typed only "/" or "/<partial>", show matching commands
+        if word == "/" or matching:
+            for cmd_name in sorted(matching if matching else [c for c in cmds]):
+                cmd = cmd_registry.get(cmd_name)
+                if not cmd:
+                    continue
+                display_meta = cmd.description
+                if cmd.aliases:
+                    display_meta += f" ({', '.join(cmd.aliases)})"
+                yield Completion(
+                    cmd_name,
+                    start_position=-len(word),
+                    display_meta=display_meta,
+                    style="fg:#67D8FF bold",
+                    selected_style="bg:#1a1a2e fg:#67D8FF bold",
+                )
+
+            # Also show tools after commands when user just typed "/"
+            if word == "/" or not matching:
+                from atar_tools.registry import list_all as _list_tools
+                tools = _list_tools()
+                seen = set()
+                for t in tools:
+                    if t.name in seen:
+                        continue
+                    seen.add(t.name)
+                    risk, color = self._tool_risk(t.name)
+                    yield Completion(
+                        f"/{t.name}",
+                        start_position=-len(word),
+                        display_meta=f"[{risk}] {t.description[:60]}" if hasattr(t, 'description') else f"[{risk}]",
+                        style=f"fg:{color}",
+                        selected_style=f"bg:#1a1a2e fg:{color}",
+                    )
 
 
 @bindings.add("c-c")
@@ -113,6 +168,7 @@ def _(event):
 PT_STYLE = Style.from_dict({"prompt": "#67D8FF bold", "toolbar": "bg:#1a1a2e #7F8C98"})
 
 session_pt = PromptSession(
+    completer=SlashCommandToolCompleter(),
     key_bindings=bindings,
     multiline=False,
 )
