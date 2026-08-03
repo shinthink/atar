@@ -465,8 +465,11 @@ def run_repl() -> None:
                 console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
 
         try:
+            async def _capture(t: str) -> None:
+                nonlocal response_text
+                response_text += t
             await ag.run(prompt, StreamCallbacks(
-                on_delta=None, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
             ))
         except asyncio.CancelledError:
             console.print("\n[dim]\u23f9 Interrupted[/]")
