@@ -324,6 +324,8 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     console.print(Columns([globe_text, panel], equal=False, expand=False))
     console.print()
 
+_last_diff: list[str] = []
+
 # ── Runtime stats for status bar ──
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "last_response": None, "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
 
@@ -449,18 +451,44 @@ def run_repl() -> None:
                 console.print(f"\n  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
             elif name == "patch":
                 output = result.strip() or ""
-                colored = []
-                for ln in output.split("\n")[:20]:
-                    if ln.startswith("+++") or ln.startswith("---"):
-                        colored.append(f"    [bold]{ln}[/]")
-                    elif ln.startswith("+"):
-                        colored.append(f"    [bold #4ADE80]{ln}[/]")
-                    elif ln.startswith("-"):
-                        colored.append(f"    [bold #F87171]{ln}[/]")
-                    else:
-                        colored.append(f"    [dim]{ln}[/]")
-                path = args_cache[name].get("path", "")
-                console.print(f"\n  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
+                # Store for /diff full access
+                _last_diff = [output]
+                # Truncate large diffs
+                diff_lines = output.split("\n")
+                if len(diff_lines) > 40:
+                    shown = "\n".join(diff_lines[:40])
+                    remainder = len(diff_lines) - 40
+                    shown += f"\n    [dim]... {remainder} more lines, use /diff full to see everything[/]"
+                else:
+                    shown = output
+                # Render with Rich diff Syntax if available
+                try:
+                    from rich.syntax import Syntax
+                    lang = "diff"
+                    path = args_cache.get("patch", {}).get("path", "")
+                    if path and "." in path:
+                        ext = path.rsplit(".", 1)[-1]
+                        lang_map = {"py": "python", "js": "javascript", "ts": "typescript", "rs": "rust", "go": "go", "java": "java", "rb": "ruby", "c": "c", "cpp": "cpp", "css": "css", "html": "html", "json": "json", "yaml": "yaml", "toml": "toml", "sh": "bash", "md": "markdown"}
+                        lang = lang_map.get(ext, "diff")
+                    syntax = Syntax(shown, lang, theme="monokai", line_numbers=False)
+                    console.print(syntax)
+                except Exception:
+                    # Fallback: colorized diff
+                    colored = []
+                    for ln in diff_lines[:40]:
+                        if ln.startswith("+++") or ln.startswith("---"):
+                            colored.append(f"    [bold]{ln}[/]")
+                        elif ln.startswith("@@"):
+                            colored.append(f"    [bold #67D8FF]{ln}[/]")
+                        elif ln.startswith("+"):
+                            colored.append(f"    [bold #4ADE80]{ln}[/]")
+                        elif ln.startswith("-"):
+                            colored.append(f"    [bold #F87171]{ln}[/]")
+                        else:
+                            colored.append(f"    [dim]{ln}[/]")
+                    if len(diff_lines) > 40:
+                        colored.append(f"    [dim]... {remainder} more lines, use /diff full to see everything[/]")
+                    console.print("\n".join(colored))
             elif name == "write_file":
                 path = args_cache[name].get("path", "")
                 size = len(result) if result else 0
@@ -719,6 +747,14 @@ def run_repl() -> None:
                         sid = r["session_id"][:12]
                         summary = r["summary"] or r["snippet"]
                         console.print(f"  [bold]{sid}[/] [dim]{summary[:100]}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/diff full":
+                if _last_diff:
+                    for d in _last_diff:
+                        console.print(d)
+                else:
+                    console.print("[dim]No diff available. Run a patch operation first.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user.startswith("/cron add "):

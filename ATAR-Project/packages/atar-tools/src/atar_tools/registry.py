@@ -143,4 +143,5 @@ def _import_all_tools() -> None:  # noqa
     with contextlib.suppress(ImportError): import atar_tools.tools.delegation  # noqa: F401, I001
     with contextlib.suppress(ImportError): import atar_tools.tools.test_runner  # noqa: F401, I001
 with contextlib.suppress(ImportError): import atar_tools.tools.skill_tool  # noqa: F401, I001
+with contextlib.suppress(ImportError): import atar_tools.tools.patch_tool  # noqa: F401, I001
 _import_all_tools()
