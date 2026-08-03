@@ -516,6 +516,7 @@ def run_repl() -> None:
         c = current_theme().colors
         console.print(Panel(
             Markdown(response_text),
+expand=True,
             title="ATAR", border_style=c.border, padding=(1, 2),
             width=min(_TERM_WIDTH - 4, 100),
         ))
