@@ -35,8 +35,12 @@ from atar_core.commands import registry as cmd_registry  # noqa: E402
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
 from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
+from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
+from atar_core.provider_registry import get_provider
 from atar_models.requests import Message  # noqa: E402
 
+PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
+MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
 register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
 register_command("/checkpoints", "List file checkpoints", category="session")
@@ -169,9 +173,6 @@ session_pt = PromptSession(
 
 # ── Model selection ──
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS
-from atar_core.provider_registry import get_provider
-
-PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
 
 MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 
