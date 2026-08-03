@@ -404,6 +404,7 @@ def run_repl() -> None:
         _had_tools = False
         _tool_start_time: dict[str, float] = {}
         _last_tool_id: set[str] = set()
+args_cache: dict[str, dict] = {}
 
         async def on_tool(name: str, args: dict) -> None:
             nonlocal response_text, _had_tools
@@ -413,6 +414,7 @@ def run_repl() -> None:
             if tool_sig in _last_tool_id:
                 return
             _last_tool_id.add(tool_sig)
+args_cache[name] = args
             _stats["tools"] += 1
             _tool_start_time[name] = _t2.time()
             icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
@@ -462,7 +464,6 @@ def run_repl() -> None:
                 path = args.get("path", "")
                 console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
 
-        console.print(Rule(style="#394B59"))
         try:
             with console.status("[bold #67D8FF]\u25cf[/]", spinner="dots") as status:
                 async def _stream_progress(t: str) -> None:
