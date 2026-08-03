@@ -35,10 +35,7 @@ class MemoryEntry:
 
 
 def _is_secret(text: str) -> bool:
-    for pat in SECRET_PATTERNS:
-        if pat.search(text):
-            return True
-    return False
+    return any(pat.search(text) for pat in SECRET_PATTERNS)
 
 
 def _get_conn() -> sqlite3.Connection:

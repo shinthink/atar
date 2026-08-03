@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 
 from atar_core.config import load_config
@@ -30,7 +31,6 @@ class TelegramGateway:
 
         async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             user_id = update.effective_user.id if update.effective_user else 0
-            chat_id = update.effective_chat.id if update.effective_chat else 0
 
             if user_id not in self.allowed_ids:
                 return  # silently ignore
@@ -52,10 +52,8 @@ class TelegramGateway:
             async def on_delta(t: str) -> None:
                 response_parts.append(t)
                 if len(response_parts) % 5 == 0:
-                    try:
+                    with contextlib.suppress(Exception):
                         await msg.edit_text("".join(response_parts)[:4000])
-                    except Exception:
-                        pass
 
             try:
                 await agent.run(text, callbacks=None)  # Simple run, no streaming callback

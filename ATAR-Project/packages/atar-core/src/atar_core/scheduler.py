@@ -147,7 +147,7 @@ def start_scheduler(agent_factory=None) -> None:
                             (now, _parse_simple_cron(job.cron_expr), job.id),
                         )
                     except Exception:
-                        failures = record_failure(job.id)
+                        record_failure(job.id)
                         # Notify target channel about failure
                 conn.commit()
             except Exception:
