@@ -325,8 +325,10 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     console.print()
 
 # ── Runtime stats for status bar ──
-_stats = {"turns": 0, "tools": 0, "tokens": 0, "start_time": None, "model": "deepseek-chat", "last_response": None}
+_stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "last_response": None, "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
 
+
+from atar_core.display import TOOL_ICONS
 
 def _context_bar() -> str:
     tokens = _stats.get("tokens") or 0
@@ -343,23 +345,26 @@ def _context_bar() -> str:
 
 
 def _status_bar() -> str:
-    import time as _time
+    import shutil as _sh, time as _t
     if _stats["start_time"] is None:
-        _stats["start_time"] = _time.time()
-    elapsed = int(_time.time() - _stats["start_time"])
-    h, rem = divmod(elapsed, 3600)
-    m, s = divmod(rem, 60)
-    time_str = f"{h}h {m}m" if h else f"{m}m {s}s"
-
-    parts = [f"\u25c6 {_stats['model']}"]
-    parts.append(_context_bar())
-    parts.append(f"turns {_stats['turns']}")
-    parts.append(f"tools {_stats['tools']}")
-    if _stats["last_response"] is not None:
-        parts.append(f"\u23f2 {_stats['last_response']:.0f}s")
-    parts.append(f"\u2713{time_str}")
-    return " \u2502 ".join(parts)
-
+        _stats["start_time"] = _t.time()
+    w = _sh.get_terminal_size().columns
+    e = int(_t.time() - _stats["start_time"])
+    h, r = divmod(e, 3600); m, s = divmod(r, 60)
+    d = f"{h}h{m}m" if h else f"{m}m{s}s"
+    from atar_core.display import context_bar
+    ctx = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
+    c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
+    b = []
+    if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
+    if _stats.get("background_tasks", 0): b.append(f"\u25b6 {_stats['background_tasks']}")
+    bg = " " + " ".join(b) if b else ""
+    if w >= 76:
+        return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 turns {_stats['turns']} \u2502 tools {_stats['tools']} \u2502 {c} \u2502 {d}{bg}"
+    elif w >= 52:
+        return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 {c} \u2502 {d}{bg}"
+    else:
+        return f"\u25c6 {_stats['model']} \u2502 {d}{bg}"
 
 def _try_resume_session() -> object | None:
     """Try to resume the last session from storage."""
