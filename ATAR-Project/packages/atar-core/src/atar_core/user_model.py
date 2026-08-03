@@ -102,7 +102,5 @@ def model_to_prompt(model: dict) -> str:
         parts.append(f"Often uses: {', '.join(top_tools)}")
     if not parts:
         return ""
-    return "<user_model>
-" + "
-".join(f"- {p}" for p in parts) + "
-</user_model>"
+    lines = ["<user_model>"] + [f"- {p}" for p in parts] + ["</user_model>"]
+    return "\n".join(lines)
