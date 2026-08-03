@@ -515,15 +515,5 @@ def config(
             typer.echo("No config file found. Run 'atar' first.")
 
 
-
-@app.command()
-def gateway(platform: str = "telegram"):
-    """Start a messaging gateway."""
-    if platform == "telegram":
-        from atar_core.gateway import start_gateway
-        start_gateway()
-    else:
-        print(f"Unknown gateway: {platform}")
-
 if __name__ == "__main__":
     app()
