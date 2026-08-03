@@ -34,12 +34,17 @@ from atar_core.commands import registry as cmd_registry  # noqa: E402
 
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
+from atar_core.interaction import (  # noqa: E402
+    get_active_bg_count,
+    get_busy_mode,
+    get_pending_bg_results,
+    mark_busy_hint_shown,
+    should_show_busy_hint,
+)
 from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
 from atar_core.provider_registry import get_provider
 from atar_models.requests import Message  # noqa: E402
-from atar_core.display import TOOL_ICONS
-from atar_core.interaction import (get_busy_mode, set_busy_mode, should_show_busy_hint, mark_busy_hint_shown, handle_busy_input, start_background, get_pending_bg_results, get_active_bg_count, generate_recap)  # noqa: E402
 
 PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
 MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
@@ -351,8 +356,8 @@ def _context_bar() -> str:
 
 def _status_bar() -> str:
     import shutil as _sh
-    from atar_core.interaction import (get_busy_mode, set_busy_mode, should_show_busy_hint, mark_busy_hint_shown, handle_busy_input, start_background, get_pending_bg_results, get_active_bg_count, generate_recap)
     import time as _t
+
     if _stats["start_time"] is None:
         _stats["start_time"] = _t.time()
     w = _sh.get_terminal_size().columns
@@ -917,7 +922,7 @@ def run_repl() -> None:
                 mode = get_busy_mode()
                 if mode == "queue":
                     _pending_queue.append(user)
-                    console.print(f"[dim]Queued (will run after current turn)[/]")
+                    console.print("[dim]Queued (will run after current turn)[/]")
                     console.print(Rule(style="#394B59"))
                     continue
                 elif mode == "steer":
