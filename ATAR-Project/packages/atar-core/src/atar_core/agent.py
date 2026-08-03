@@ -159,6 +159,34 @@ class Agent:
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)
 
+    def undo_last_turn(self) -> str | None:
+        """Undo last user+assistant turn. Returns the removed user message text or None."""
+        msgs = self._messages
+        if not msgs:
+            return None
+        # Find last user message
+        last_user_idx = -1
+        last_user_text = None
+        for i in range(len(msgs) - 1, -1, -1):
+            if msgs[i].role == "user":
+                last_user_idx = i
+                last_user_text = msgs[i].content or ""
+                break
+        if last_user_idx < 0:
+            return None
+        # Remove from last user to end (includes assistant, tool calls, tool results)
+        removed = msgs[last_user_idx:]
+        self._messages = msgs[:last_user_idx]
+        # Return the last non-system message as context
+        return last_user_text[:50] if last_user_text else None
+
+    def retry_last_turn(self) -> str | None:
+        """Return the last user message for retry (without modifying history)."""
+        for i in range(len(self._messages) - 1, -1, -1):
+            if self._messages[i].role == "user":
+                return self._messages[i].content
+        return None
+
     def _format_messages(self) -> list[Message]:
         msgs = list(self._messages)
         if self.system_prompt:

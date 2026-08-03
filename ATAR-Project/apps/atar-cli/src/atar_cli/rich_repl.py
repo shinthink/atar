@@ -61,6 +61,8 @@ register_command("/checkpoints", "List file checkpoints", category="session")
 register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
+register_command("/undo", "Undo the last turn", category="session")
+register_command("/retry", "Retry the last turn", category="session")
 
 
 # ── Keybindings ──
@@ -597,6 +599,23 @@ def run_repl() -> None:
                 msgs = [{"role": m.role, "content": m.content, "tool_calls": getattr(m, "tool_calls", None), "tool_call_id": getattr(m, "tool_call_id", None)} for m in agent._messages]
                 store.save(session_id, "ATAR Session", msgs)
                 console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/undo":
+                text = agent.undo_last_turn()
+                if text:
+                    console.print(f"[dim]↺ Undone: \"{text}...\"[/]")
+                else:
+                    console.print("[dim]Nothing to undo.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/retry":
+                last = agent.retry_last_turn()
+                if last:
+                    console.print(f"[dim]↻ Retrying: \"{last[:50]}...\"[/]")
+                    _current_task = asyncio.create_task(_agent_turn(last, agent))
+                else:
+                    console.print("[dim]Nothing to retry.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/checkpoints":
