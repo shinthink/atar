@@ -149,9 +149,13 @@ class Agent:
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
         from atar_tools.registry import execute as tool_execute
-        ctx = ToolContext(metadata={"session_id": self.session_id})
+        # Interactive mode: auto-approve tool calls (user can Ctrl+C)
+        approved = getattr(self, "interactive", True)
+        ctx = ToolContext(metadata={
+            "session_id": self.session_id,
+            "approved": approved,
+        })
         return await tool_execute(name, args, ctx)
-
     def _tool_schemas(self) -> list[Any]:
         from atar_tools.registry import list_all
         return list_all()

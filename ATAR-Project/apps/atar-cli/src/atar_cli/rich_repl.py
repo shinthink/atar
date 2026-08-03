@@ -219,7 +219,7 @@ def _create_provider(session_id: str = ""):
         first = router.providers[0]
         cfg = _read_config()
         model = cfg.get("model") or getattr(first, "model", "deepseek-v4-flash")
-        agent = Agent(provider=router, max_turns=8, tools=[1])
+        agent = Agent(provider=router, max_turns=8, tools=[1], interactive=True)
         prompt = assemble_prompt(session_id=session_id, model=model, cwd=os.getcwd())
         agent.system_prompt = prompt.full
         return router, model, agent
