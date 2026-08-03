@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from atar_models.tools import ToolContext, ToolResult
+from atar_storage.sqlite_store import SqliteSessionStore
 
 from atar_tools.registry import register
 

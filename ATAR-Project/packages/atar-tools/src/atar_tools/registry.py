@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from typing import Any
@@ -120,21 +121,13 @@ def to_anthropic_schema(tool: Tool) -> dict[str, Any]:
 
 # Auto-import all tool modules for registration
 def _import_all_tools():
-    try: import atar_tools.tools.file
-    except ImportError: pass
-    try: import atar_tools.tools.terminal
-    except ImportError: pass
-    try: import atar_tools.tools.web
-    except ImportError: pass
-    try: import atar_tools.tools.web_search
-    except ImportError: pass
-    try: import atar_tools.tools.git
-    except ImportError: pass
-    try: import atar_tools.tools.session
-    except ImportError: pass
-    try: import atar_tools.tools.delegation
-    except ImportError: pass
-    try: import atar_tools.tools.test_runner
-    except ImportError: pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
 
 _import_all_tools()
