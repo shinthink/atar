@@ -30,6 +30,7 @@ async def compress_history(agent, keep_last: int = 4) -> str:
     try:
         # Use a separate budget-limited call, not the full agent loop
         from atar_models.requests import Message, ModelRequest
+
         from atar_core.budgets import RunBudget
         sub_budget = RunBudget(max_turns=1, max_tool_calls=0, max_time_seconds=30)
 

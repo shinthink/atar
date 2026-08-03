@@ -119,24 +119,27 @@ def to_anthropic_schema(tool: Tool) -> dict[str, Any]:
     }
 
 
-
 # Auto-import all tool modules for registration
-def _import_all_tools() -> None:
-    try: import atar_tools.tools.file  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.terminal  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.web  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.web_search  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.git  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.session  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.delegation  # noqa: F401
-    except ImportError: pass
-    try: import atar_tools.tools.test_runner  # noqa: F401
-    except ImportError: pass
+def _import_all_tools():
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
+    with contextlib.suppress(ImportError): pass
 
+_import_all_tools()
+# Auto-import all tool modules for registration  # noqa: E501
+def _import_all_tools() -> None:  # noqa
+    import contextlib
+    with contextlib.suppress(ImportError): import atar_tools.tools.file  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.terminal  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.web  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.web_search  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.git  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.session  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.delegation  # noqa: F401
+    with contextlib.suppress(ImportError): import atar_tools.tools.test_runner  # noqa: F401
 _import_all_tools()
