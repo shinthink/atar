@@ -1,4 +1,4 @@
-"""Integration test — vertical slice: agent → provider → stream → response."""
+"""Integration test — vertical slice: agent → provider → stream → result."""
 
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ async def test_agent_run_returns_response(agent: Agent) -> None:
     async def on_delta(text: str) -> None:
         received.append(text)
 
-    response = await agent.run("Hello", StreamCallbacks(on_delta=on_delta))
+    result = await agent.run("Hello", StreamCallbacks(on_delta=on_delta))
 
-    assert response is not None
-    assert response.text == "I'm operational."
+    assert result is not None
+    assert result.final_text == "I'm operational."
     assert "".join(received) == "I'm operational."
 
 
@@ -55,8 +55,8 @@ async def test_agent_handles_provider_error() -> None:
     async def on_error(msg: str) -> None:
         errors.append(msg)
 
-    response = await agent.run("Hello", StreamCallbacks(on_error=on_error))
+    result = await agent.run("Hello", StreamCallbacks(on_error=on_error))
     # Fake provider fail_on delays to second call; stream() on first call works
-    assert response is not None
-    assert response.text == "x"
+    assert result is not None
+    assert result.final_text == "x"
     assert len(errors) == 0

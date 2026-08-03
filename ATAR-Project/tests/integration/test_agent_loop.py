@@ -74,7 +74,7 @@ class TestAutonomousAgentLoop:
         agent = Agent(provider=provider, max_turns=3, tools=[])
         result = await agent.run("hi")
         assert result is not None
-        assert "Hello" in result.text
+        assert "Hello" in result.final_text
         assert len(agent._messages) == 2  # user + assistant
 
     @pytest.mark.asyncio
@@ -92,7 +92,7 @@ class TestAutonomousAgentLoop:
         agent = Agent(provider=provider, max_turns=5, tools=[1])
         result = await agent.run("cari ataraxia")
         assert result is not None
-        assert "Found references" in result.text
+        assert "Found references" in result.final_text
         # Should have user + assistant(tool) + tool_result + assistant(final)
         assert len(agent._messages) >= 3
 
@@ -106,7 +106,8 @@ class TestAutonomousAgentLoop:
         agent = Agent(provider=provider, max_turns=2, tools=[1])
         result = await agent.run("search")
         assert result is not None
-        assert "Max turns" in result.text
+        assert result.state.name == "BUDGET_EXHAUSTED"
+        assert result.budget["turns_used"] >= 3
 
     @pytest.mark.asyncio
     async def test_partial_tool_call_skipped(self) -> None:
@@ -123,7 +124,7 @@ class TestAutonomousAgentLoop:
         ])
         agent = Agent(provider=provider, max_turns=3, tools=[1])
         result = await agent.run("search")
-        assert "Done" in result.text
+        assert "Done" in result.final_text
 
     @pytest.mark.asyncio
     async def test_role_ordering(self) -> None:

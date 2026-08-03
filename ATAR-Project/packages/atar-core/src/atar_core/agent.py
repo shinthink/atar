@@ -1,4 +1,4 @@
-"""ATAR agent orchestrator — with tool support."""
+"""ATAR agent orchestrator — with tool support and budget tracking."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from atar_protocols import ModelProvider
 
 from atar_core.event_bus import EventBus
 from atar_core.state_machine import AgentState, AgentStateMachine, StateMachineError
+from atar_core.budgets import RunBudget, RunResult, TerminalState
 
 
 @dataclass
@@ -19,34 +20,42 @@ class StreamCallbacks:
     on_delta: Callable[[str], Coroutine[Any, Any, None] | None] | None = None
     on_tool_call: Callable[[str, dict[str, Any]], Coroutine[Any, Any, None] | None] | None = None
     on_tool_result: Callable[[str, str], Coroutine[Any, Any, None] | None] | None = None
-    on_done: Callable[[ModelResponse | None], Coroutine[Any, Any, None] | None] | None = None
+    on_done: Callable[[ModelResponse], Coroutine[Any, Any, None] | None] | None = None
     on_error: Callable[[str], Coroutine[Any, Any, None] | None] | None = None
 
 
 @dataclass
 class Agent:
     provider: ModelProvider
+    max_turns: int = 8
+    tools: list[Any] | None = None
     system_prompt: str = "You are ATAR, an AI assistant that values clarity and precision."
-    tools: list[Any] = field(default_factory=list)
-    max_turns: int = 5
     session_id: str = ""
-    event_bus: EventBus = field(default_factory=EventBus)
+    event_bus: EventBus | None = None
     state: AgentStateMachine = field(default_factory=AgentStateMachine)
     _messages: list[Message] = field(default_factory=list)
 
-    async def run(
-        self, user_input: str, callbacks: StreamCallbacks | None = None
-    ) -> ModelResponse | None:
+    async def run(self, user_input: str, callbacks: StreamCallbacks | None = None, budget: RunBudget | None = None) -> RunResult:
+        """Execute one full agent turn loop with structured result."""
+        if budget is None:
+            budget = RunBudget()
         cb = callbacks or StreamCallbacks()
         self.state.transition(AgentState.UNDERSTANDING, session_id=self.session_id)
         self._messages.append(Message(role="user", content=user_input))
 
         turn = 0
-        while turn < self.max_turns:
+        import time as _time
+        budget.started_at = _time.monotonic()
+
+        while budget.turns_remaining() > 0:
+            if budget.is_exhausted():
+                return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
+
             turn += 1
+            budget.record_turn()
+
             request = ModelRequest(
-                provider_id="atar",
-                model="",
+                provider_id="atar", model="",
                 messages=self._format_messages(),
             )
             if self.tools:
@@ -67,9 +76,7 @@ class Agent:
 
                 final_text = "".join(text_parts)
 
-                # Execute tool calls if any — skip partial, dedup by id
                 if tool_calls:
-                    # Store assistant tool_call message first
                     normalized_calls = []
                     seen = set()
                     for tc in tool_calls:
@@ -82,6 +89,11 @@ class Agent:
                             continue
                         if tid:
                             seen.add(tid)
+                        # Check repeated call budget
+                        if budget.too_many_repeated(name):
+                            return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
+                        if budget.tools_remaining() <= 0:
+                            return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
                         normalized_calls.append({"id": tid, "name": name, "arguments": inp})
 
                     self._messages.append(Message(
@@ -91,6 +103,7 @@ class Agent:
                     ))
 
                     for nc in normalized_calls:
+                        budget.record_tool(nc["name"])
                         if cb.on_tool_call:
                             await cb.on_tool_call(nc["name"], nc["arguments"])
                         result = await self._execute_tool(nc["name"], nc["arguments"])
@@ -101,56 +114,51 @@ class Agent:
                             tool_call_id=nc["id"],
                             content=f"Tool {nc['name']} result: {result.output}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {result.output}",
                         ))
-                    continue  # next turn with tool results
+                    continue
 
-                # No tool calls — but if final_text is empty after tool results, prompt model to synthesize
-                if not final_text.strip() and len(self._messages) > 2:
-                    self._messages.append(Message(
-                        role="user",
-                        content=(
-                            "You have tool results above. "
-                            "If web_search returned results, use web_fetch on the top 2 URLs to extract content. "
-                            "Then synthesize a concise answer with sources. Do NOT say you will search — just act."
-                        )
-                    ))
-                    continue  # retry with follow-up prompt
+                # Check if empty response — inject follow-up
+                if not final_text.strip():
+                    tool_msgs = [m for m in self._messages if getattr(m, "role", "") == "tool"]
+                    if tool_msgs and budget.turns_remaining() > 0:
+                        self._messages.append(Message(role="user", content=(
+                            "You received tool results above. "
+                            "Synthesize a direct concise answer. "
+                            "Do NOT say you will search — just use web_fetch then answer."
+                        )))
+                        continue
+                    return RunResult(state=TerminalState.COMPLETED, final_text="", budget=budget.snapshot())
 
-                # No tool calls — response is final
+                # Final response
                 self._messages.append(Message(role="assistant", content=final_text))
-                response = ModelResponse(text=final_text, model="")
-                if cb.on_done:
-                    await cb.on_done(response) if callable(cb.on_done) else None
                 self.state.transition(AgentState.COMPLETED)
-                return response
+                return RunResult(state=TerminalState.COMPLETED, final_text=final_text, budget=budget.snapshot())
 
             except StateMachineError:
                 self.state.force(AgentState.FAILED)
-                return None
+                return RunResult(state=TerminalState.FAILED, error="State machine error", budget=budget.snapshot())
             except Exception as exc:
                 self.state.force(AgentState.FAILED)
                 if cb.on_error:
                     await cb.on_error(str(exc)) if callable(cb.on_error) else None
-                return None
+                return RunResult(state=TerminalState.FAILED, error=str(exc), budget=budget.snapshot())
 
-        return ModelResponse(text="Max turns reached.")
+        return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
 
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
         from atar_tools.registry import execute as tool_execute
-        # Approval delegated to registry handler — no hardcoded bypass
         ctx = ToolContext(metadata={"session_id": self.session_id})
         return await tool_execute(name, args, ctx)
 
     def _tool_schemas(self) -> list[Any]:
         from atar_tools.registry import list_all
-        return list_all()  # return Tool objects, not dicts
+        return list_all()
 
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)
 
     def _format_messages(self) -> list[Message]:
         msgs = list(self._messages)
-        # Always use fresh system prompt — replace old one if present
         if self.system_prompt:
             if msgs and msgs[0].role == "system":
                 msgs[0] = Message(role="system", content=self.system_prompt)
