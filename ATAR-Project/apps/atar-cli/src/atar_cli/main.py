@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -17,7 +17,7 @@ console = Console()
 @app.callback(invoke_without_command=True)
 def default(
     ctx: typer.Context,
-    run: Annotated[Optional[str], typer.Option("--run", help="Run a single prompt and exit")] = None,
+    run: Annotated[str | None, typer.Option("--run", help="Run a single prompt and exit")] = None,
 ) -> None:
     """ATAR — Autonomous Terminal AI Agent. Clarity in Complexity."""
     if ctx.invoked_subcommand is not None:

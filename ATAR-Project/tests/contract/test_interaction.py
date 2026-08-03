@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from atar_core.interaction import (
-    BUSY_MODES, generate_recap, get_busy_mode,
-    handle_busy_input, set_busy_mode, start_background,
+    generate_recap,
+    get_busy_mode,
+    handle_busy_input,
+    set_busy_mode,
 )
 
 

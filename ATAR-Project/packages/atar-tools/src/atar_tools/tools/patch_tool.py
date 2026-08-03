@@ -44,8 +44,8 @@ async def _patch_file(name: str, args: dict, ctx: ToolContext) -> ToolResult:
         new_content = new_content.replace(old_string, new_string, 1)
 
     # Generate unified diff
-    old_stripped = [l.rstrip("\n") for l in old_lines]
-    new_stripped = [l.rstrip("\n") for l in new_content.splitlines(keepends=True)]
+    old_stripped = [line.rstrip("\n") for line in old_lines]
+    new_stripped = [line.rstrip("\n") for line in new_content.splitlines(keepends=True)]
     diff_lines = list(difflib.unified_diff(
         old_stripped, new_stripped,
         fromfile=f"a/{path}", tofile=f"b/{path}",

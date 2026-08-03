@@ -43,7 +43,7 @@ from atar_core.interaction import (  # noqa: E402
 )
 from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
-from atar_core.provider_registry import get_provider
+from atar_core.provider_registry import get_provider  # noqa: E402
 from atar_models.requests import Message  # noqa: E402
 
 PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
@@ -186,7 +186,7 @@ session_pt = PromptSession(
 )
 
 # ── Model selection ──
-from atar_core.provider_registry import PROVIDERS as _PROVIDERS
+from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
 
 MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 
@@ -772,7 +772,7 @@ expand=True,
             if user.startswith("/backend "):
                 name = user[9:].strip()
                 try:
-                    from atar_core.backends import switch_backend, get_backend
+                    from atar_core.backends import get_backend, switch_backend
                     b = switch_backend(name)
                     avail = "✓" if b.is_available() else "✗ (unavailable)"
                     console.print(f"[green]{b.name} backend {avail}[/]")

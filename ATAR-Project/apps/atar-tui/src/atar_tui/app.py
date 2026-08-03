@@ -988,10 +988,9 @@ class SkillsScreen(Screen):
 
     def on_mount(self) -> None:
         log = self.query_one("#skills-log", RichLog)
-        from atar_core.skills import SkillRegistry, SkillStatus
-        for s in SkillRegistry().list_all():
         from atar_core.skills import get_skill_manager
         for s in get_skill_manager().list_all():
+            pass  # stub
 
 
 class CheckpointsScreen(Screen):

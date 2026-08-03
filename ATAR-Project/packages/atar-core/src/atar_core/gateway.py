@@ -27,7 +27,7 @@ class TelegramGateway:
         except ImportError:
             raise ImportError(
                 "python-telegram-bot not installed. Run: pip install python-telegram-bot[job-queue]"
-            )
+            ) from err
 
         async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             user_id = update.effective_user.id if update.effective_user else 0
