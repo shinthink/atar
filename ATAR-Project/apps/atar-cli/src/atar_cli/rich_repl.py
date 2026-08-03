@@ -442,8 +442,8 @@ def run_repl() -> None:
             c = current_theme().colors
             console.print(f"\n  [bold {c.secondary}]\u250a {icon} preparing {name}\u2026[/] [dim]{short}[/]")
 
-                async def on_tool_result(name: str, result: str) -> None:
-            """Collect results; display happens after Status exits."""
+        async def on_tool_result(name: str, result: str) -> None:
+            """Collect results for display after Status exits."""
             from atar_core.theme import current_theme
             c = current_theme().colors
             elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
@@ -458,8 +458,12 @@ def run_repl() -> None:
             elif name == "read_file":
                 path = a.get("path", "")
                 _tool_results.append(f"  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
+            elif name == "patch":
+                path = a.get("path", "")
+                _tool_results.append(f"  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]")
             else:
                 _tool_results.append(f"  \u2502 [bold {c.success}]{name}[/] [dim]({elapsed:.1f}s)[/]")
+            return
 
         try:
             async def _capture(t: str) -> None:
@@ -489,7 +493,6 @@ def run_repl() -> None:
                         on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
                     ))
             await _run_with_status()
-            # Display collected tool results
             for tr in _tool_results:
                 console.print(tr)
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
