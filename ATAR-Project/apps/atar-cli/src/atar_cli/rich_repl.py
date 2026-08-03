@@ -32,6 +32,7 @@ from atar_core.provider_registry import list_providers, get_provider
 
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
+from atar_core.prompt import assemble as assemble_prompt
 register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
 register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
 register_command("/code", "Coding mode", category="tools")
@@ -145,7 +146,8 @@ def _create_provider():
         first = router.providers[0]
         model = getattr(first, "model", "deepseek-chat")
         agent = Agent(provider=router, max_turns=8, tools=[1])
-        agent.system_prompt = BASE_PROMPT.replace("Platform: Linux", f"Platform: Linux. CWD: {os.getcwd()}")
+        prompt = assemble_prompt(session_id=session_id, model=model, cwd=os.getcwd())
+        agent.system_prompt = prompt.full
         return router, model, agent
     except RuntimeError as e:
         console.print(f"[red]{e}[/]")
@@ -301,12 +303,12 @@ def run_repl() -> None:
     from atar_models.tools import ToolContext
     from atar_tools.registry import execute as tool_execute
 
+    session_id = uuid.uuid4().hex[:12]
+
     provider, model, agent = _create_provider()
     if not provider or not agent:
         console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
-
-    session_id = uuid.uuid4().hex[:12]
 
     # Fresh session — no auto-resume to avoid old context contamination
     show_banner(model, os.getcwd(), session_id)
