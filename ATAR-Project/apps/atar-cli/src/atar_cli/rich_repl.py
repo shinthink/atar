@@ -31,7 +31,6 @@ console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH
 # ── Slash commands (from registry) ──
 from atar_core.commands import register_command  # noqa: E402
 from atar_core.commands import registry as cmd_registry  # noqa: E402
-from atar_core.provider_registry import list_providers  # noqa: E402
 
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
@@ -168,10 +167,13 @@ session_pt = PromptSession(
     multiline=False,
 )
 
-MODELS = [
-    (p.display_name, p.id, p.default_model)
-    for p in list_providers()
-]
+# ── Model selection ──
+from atar_core.provider_registry import PROVIDERS as _PROVIDERS
+from atar_core.provider_registry import get_provider
+
+PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
+
+MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 
 BASE_PROMPT = (
     "You are ATAR, an autonomous agent with tools: web_search, web_fetch, read_file, write_file, terminal.\n"
@@ -219,13 +221,15 @@ def _create_provider(session_id: str = ""):
         return None, "none", None
 
 
-def _switch_model(idx: int) -> str:
-    name, prov, model = MODELS[idx]
+def _switch_model(provider_id: str, model_id: str) -> str:
+    """Switch to a specific provider+model. Returns display string."""
+    prof = get_provider(provider_id)
+    name = prof.display_name if prof else provider_id
     cfg = _read_config()
-    cfg["provider"] = prov
-    cfg["model"] = model
+    cfg["provider"] = provider_id
+    cfg["model"] = model_id
     _save_config(cfg)
-    return f"{name} \u2014 {model}"
+    return f"{name} — {model_id}"
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
     """Hermes-style detailed startup banner."""
@@ -557,17 +561,35 @@ def run_repl() -> None:
                 console.print()
                 continue
             if user == "/model":
-                lines = [f"  [{i}] {n} \u2014 {m}" for i, (n, _, m) in enumerate(MODELS)]
-                console.print(Panel("\n".join(lines), title="Switch Model", border_style="#394B59"))
+                # Step 1: pick provider
+                provs = list(_PROVIDERS.keys())
+                lines = [f"  [{i}] {_PROVIDERS[p].display_name} ({_PROVIDERS[p].default_model})" for i, p in enumerate(provs)]
+                console.print(Panel("\n".join(lines), title="Pick Provider", border_style="#394B59"))
                 try:
-                    c = await session_pt.prompt_async("Pick model number: ", style=PT_STYLE, bottom_toolbar=_status_bar)
-                    idx = int(c)
-                    if 0 <= idx < len(MODELS):
-                        display = _switch_model(idx)
-                        _stats["model"] = display.split(" \u2014 ")[1] if " \u2014 " in display else display
-                        prov, model, ag = _create_provider(session_id)
-                        provider, agent = prov, ag
-                        console.print(f"[green]\u2713 {display}[/]")
+                    c = await session_pt.prompt_async("Provider #: ", style=PT_STYLE)
+                    pi = int(c)
+                    if 0 <= pi < len(provs):
+                        pid = provs[pi]
+                        models = PROVIDER_MODELS.get(pid, [])
+                        if len(models) == 1:
+                            # Single model — select immediately
+                            display = _switch_model(pid, models[0])
+                            prov, model, ag = _create_provider(session_id)
+                            provider, agent = prov, ag
+                            _stats["model"] = display
+                            console.print(f"[green]✓ {display}[/]")
+                        else:
+                            # Step 2: pick model
+                            mlines = [f"  [{i}] {m}" for i, m in enumerate(models)]
+                            console.print(Panel("\n".join(mlines), title=f"Pick Model — {_PROVIDERS[pid].display_name}", border_style="#394B59"))
+                            c2 = await session_pt.prompt_async("Model #: ", style=PT_STYLE)
+                            mi = int(c2)
+                            if 0 <= mi < len(models):
+                                display = _switch_model(pid, models[mi])
+                                prov, model, ag = _create_provider(session_id)
+                                provider, agent = prov, ag
+                                _stats["model"] = display
+                                console.print(f"[green]✓ {display}[/]")
                 except (ValueError, EOFError, KeyboardInterrupt):
                     console.print("[dim]Cancelled.[/]")
                 console.print(Rule(style="#394B59"))
