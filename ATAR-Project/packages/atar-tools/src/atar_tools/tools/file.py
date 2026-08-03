@@ -67,6 +67,8 @@ async def _write_file(_name: str, args: dict[str, Any], ctx: ToolContext) -> Too
 
     os.makedirs(os.path.dirname(safe) or ".", exist_ok=True)
     try:
+        from atar_tools.tools.checkpoints import checkpoint_before_write
+        checkpoint_before_write(safe)
         with open(safe, "w") as f:
             f.write(content)
         return ToolResult(

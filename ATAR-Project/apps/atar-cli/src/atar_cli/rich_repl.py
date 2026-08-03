@@ -35,16 +35,26 @@ register_command("/help", "Show available commands", aliases=["/h"], category="s
 from atar_core.prompt import assemble as assemble_prompt
 register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
 register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
+register_command("/checkpoints", "List file checkpoints", category="session")
+register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/code", "Coding mode", category="tools")
 register_command("/chat", "Chat mode", category="tools")
 register_command("/clear", "Reset conversation", aliases=["/reset"], category="session")
+register_command("/checkpoints", "List file checkpoints", category="session")
+register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/quit", "Exit ATAR", aliases=["/exit", "/q"], category="system")
 register_command("/status", "Show runtime status", category="system")
 register_command("/tools", "List available tools", category="tools")
 register_command("/new", "Start a new session (fresh ID + history)", category="session", arg_hint="[name]")
+register_command("/checkpoints", "List file checkpoints", category="session")
+register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/title", "Set session title", category="session", arg_hint="[name]")
+register_command("/checkpoints", "List file checkpoints", category="session")
+register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/usage", "Show context usage", category="system")
 register_command("/save", "Save current conversation", category="session")
+register_command("/checkpoints", "List file checkpoints", category="session")
+register_command("/restore", "Restore from checkpoint", category="session", arg_hint="[id]")
 register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
 
@@ -529,6 +539,25 @@ def run_repl() -> None:
                 msgs = [{"role": m.role, "content": m.content, "tool_calls": getattr(m, "tool_calls", None), "tool_call_id": getattr(m, "tool_call_id", None)} for m in agent._messages]
                 store.save(session_id, "ATAR Session", msgs)
                 console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/checkpoints":
+                from atar_tools.tools.checkpoints import list_checkpoints
+                cps = list_checkpoints()
+                if not cps:
+                    console.print("[dim]No checkpoints.[/]")
+                else:
+                    for cp in cps:
+                        console.print(f"  [dim]{cp['id'][:20]}[/] {cp.get('original','?')} ({cp.get('size',0)}B)")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/restore "):
+                from atar_tools.tools.checkpoints import restore_checkpoint
+                cid = user[len("/restore "):].strip()
+                if restore_checkpoint(cid):
+                    console.print(f"[green]✓ Restored {cid[:20]}[/]")
+                else:
+                    console.print(f"[red]Checkpoint not found: {cid[:20]}[/]")
                 console.print(Rule(style="#394B59"))
                 continue
                 console.print(Rule(style="#394B59"))
