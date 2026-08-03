@@ -108,6 +108,15 @@ async def _chat(prompt: str, sid: str | None = None) -> None:
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def chat(
     prompt: Annotated[str | None, typer.Argument()] = None,
     session: Annotated[str | None, typer.Option("--session", "-s")] = None,
@@ -119,6 +128,15 @@ def chat(
         from atar_tui.app import main as tui_main
         tui_main()
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def plan(goal: Annotated[str, typer.Argument()], yes: Annotated[bool, typer.Option("--yes", "-y")] = False) -> None:
@@ -136,6 +154,15 @@ def plan(goal: Annotated[str, typer.Argument()], yes: Annotated[bool, typer.Opti
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def code(question: Annotated[str, typer.Argument()]) -> None:
     async def _c() -> None:
         import atar_tools.tools.file
@@ -150,12 +177,30 @@ def code(question: Annotated[str, typer.Argument()]) -> None:
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def remember(key: Annotated[str, typer.Argument()], value: Annotated[str, typer.Argument()]) -> None:
     """Save a fact to persistent memory."""
     from atar_core.memory import add_memory
     add_memory(f"{key}: {value}", category="user")
     typer.echo(f"  Remembered: {key}")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
@@ -170,10 +215,28 @@ def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def skill_activate(name: Annotated[str, typer.Argument()]) -> None:
     skills.activate(name)
     typer.echo(f"  Activated: {name}")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def skill_list() -> None:
@@ -181,6 +244,15 @@ def skill_list() -> None:
         icon = "🟢" if s.status == "active" else "⚪"
         typer.echo(f"  {icon} {s.name} [{s.status.value}]")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], role: Annotated[str, typer.Option("--role", "-r")] = "default") -> None:
@@ -194,6 +266,15 @@ def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], ro
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def delegate_parallel(tasks: Annotated[list[str], typer.Argument(help="Tasks to run in parallel")]) -> None:
     d = Delegator(get_provider, board)
     async def _dp() -> None:
@@ -205,10 +286,28 @@ def delegate_parallel(tasks: Annotated[list[str], typer.Argument(help="Tasks to 
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def board_status() -> None:
     q, r, d = board.status()
     typer.echo(f"  Queued: {q}  Running: {r}  Done: {d}")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def batch(prompts: Annotated[list[str], typer.Argument(help="Prompts to run")], system: Annotated[str, typer.Option("--system", "-s")] = "") -> None:
@@ -221,6 +320,15 @@ def batch(prompts: Annotated[list[str], typer.Argument(help="Prompts to run")], 
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def eval_log(prompt: Annotated[str, typer.Argument()], expected: Annotated[str, typer.Option("--expected", "-e")] = "") -> None:
     ev = Evaluator()
     ev.log(prompt, expected)
@@ -228,11 +336,29 @@ def eval_log(prompt: Annotated[str, typer.Argument()], expected: Annotated[str, 
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def eval_stats() -> None:
     ev = Evaluator()
     t, s, a = ev.stats()
     typer.echo(f"  Total: {t}  Scored: {s}  Avg: {a:.1f}")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def checkpoint_save(file: Annotated[str, typer.Argument(help="File to checkpoint")]) -> None:
@@ -246,6 +372,15 @@ def checkpoint_save(file: Annotated[str, typer.Argument(help="File to checkpoint
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def checkpoint_restore(cid: Annotated[str, typer.Argument(help="Checkpoint ID")]) -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
@@ -256,12 +391,30 @@ def checkpoint_restore(cid: Annotated[str, typer.Argument(help="Checkpoint ID")]
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def checkpoint_list() -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
     for c in cp.list():
         typer.echo(f"  {c['id']} — {c['original']} ({c['time'][:19]})")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def tui() -> None:
@@ -271,10 +424,28 @@ def tui() -> None:
 
 
 @app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
+
+@app.command()
 def init() -> None:
     os.makedirs(".atar", exist_ok=True)
     typer.echo("Initialized .atar/")
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def doctor() -> None:
@@ -314,6 +485,15 @@ def doctor() -> None:
     if failed:
         raise typer.Exit(1)
 
+
+@app.command()
+def gateway(platform: Annotated[str, typer.Argument()] = "telegram") -> None:
+    """Start a messaging gateway (telegram)."""
+    if platform == "telegram":
+        from atar_core.gateway import start_gateway
+        start_gateway()
+    else:
+        typer.echo(f"Unknown gateway: {platform}")
 
 @app.command()
 def config(

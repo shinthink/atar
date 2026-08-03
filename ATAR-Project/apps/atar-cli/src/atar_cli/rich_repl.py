@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import shutil
+import time
 import uuid
 from contextlib import suppress
 
@@ -715,6 +716,60 @@ def run_repl() -> None:
                         console.print(f"  [bold]{sid}[/] [dim]{summary[:100]}[/]")
                 console.print(Rule(style="#394B59"))
                 continue
+            if user.startswith("/cron add "):
+                parts = user[10:].strip().split(maxsplit=2)
+                if len(parts) >= 2:
+                    expr, prompt = parts[0], parts[-1]
+                    from atar_core.scheduler import add_job
+                    jid = add_job(expr, prompt)
+                    console.print(f"[green]✓ Job #{jid} scheduled[/]")
+                else:
+                    console.print("[red]Usage: /cron add <expr> <prompt>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/cron list":
+                from atar_core.scheduler import list_jobs
+                jobs = list_jobs()
+                if not jobs:
+                    console.print("[dim]No scheduled jobs.[/]")
+                else:
+                    for j in jobs:
+                        status = "[green]on[/]" if j.enabled else "[red]off[/]"
+                        nxt = time.strftime("%H:%M", time.localtime(j.next_run_at)) if j.next_run_at else "?"
+                        console.print(f"  [{j.id}] {status} {nxt} [dim]{j.prompt[:60]}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/cron remove "):
+                try:
+                    jid = int(user.split()[-1])
+                    from atar_core.scheduler import remove_job
+                    ok = remove_job(jid)
+                    console.print(f"[green]✓ Removed #{jid}[/]" if ok else "[red]Not found[/]")
+                except ValueError:
+                    console.print("[red]Usage: /cron remove <id>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/cron pause "):
+                try:
+                    jid = int(user.split()[-1])
+                    from atar_core.scheduler import set_enabled
+                    set_enabled(jid, False)
+                    console.print(f"[dim]Paused #{jid}[/]")
+                except ValueError:
+                    console.print("[red]Usage: /cron pause <id>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/cron resume "):
+                try:
+                    jid = int(user.split()[-1])
+                    from atar_core.scheduler import set_enabled
+                    set_enabled(jid, True)
+                    console.print(f"[green]Resumed #{jid}[/]")
+                except ValueError:
+                    console.print("[red]Usage: /cron resume <id>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+
             if user == "/skills":
                 from atar_core.skills import get_skill_manager
                 mgr = get_skill_manager()
