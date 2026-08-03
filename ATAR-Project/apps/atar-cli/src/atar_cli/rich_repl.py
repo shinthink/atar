@@ -335,7 +335,7 @@ _last_diff: list[str] = []
 _pending_queue: list[str] = []
 
 # ── Runtime stats for status bar ──
-_stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "last_response": None, "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
+_stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
 
 
 

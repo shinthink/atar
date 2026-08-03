@@ -24,7 +24,7 @@ class TelegramGateway:
         try:
             from telegram import Update
             from telegram.ext import Application, ContextTypes, MessageHandler, filters
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "python-telegram-bot not installed. Run: pip install python-telegram-bot[job-queue]"
             ) from err

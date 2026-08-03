@@ -966,13 +966,13 @@ class PluginsScreen(Screen):
     def on_mount(self) -> None:
         log = self.query_one("#plugins-log", RichLog)
         try:
-            registered = hooks.list() if hasattr(hooks, "list") else []
+                registered = get_skill_manager().list_all()  # skills list
             if registered:
                 for r in registered:
                     log.write(f"  • {r}")
             else:
                 log.write("[dim]No plugins registered.[/]")
-                log.write("Use atar_skills to register plugin hooks.")
+                log.write("Use /skills to manage skills.")
         except Exception as e:
             log.write(f"[yellow]Plugin system: {e}[/]")
             log.write("[dim]Create hooks via SkillRegistry.[/]")
@@ -989,8 +989,7 @@ class SkillsScreen(Screen):
     def on_mount(self) -> None:
         log = self.query_one("#skills-log", RichLog)
         from atar_core.skills import get_skill_manager
-        for s in get_skill_manager().list_all():
-            pass  # stub
+        _skills = get_skill_manager().list_all()
 
 
 class CheckpointsScreen(Screen):
