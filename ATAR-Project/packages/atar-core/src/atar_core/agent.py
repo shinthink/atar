@@ -147,6 +147,11 @@ class Agent:
                 # Final response
                 self._messages.append(Message(role="assistant", content=final_text))
                 self.state.transition(AgentState.COMPLETED)
+                
+                # Update user model from conversation
+                from atar_core.user_model import update_from_messages, load_model
+                raw_msgs = [{"role": getattr(m, "role", ""), "content": str(getattr(m, "content", ""))} for m in agent._messages]
+                update_from_messages(load_model(), raw_msgs)
                 # Non-blocking memory extraction (fire-and-forget)
                 import asyncio
                 asyncio.create_task(_extract_memory(agent, budget))
