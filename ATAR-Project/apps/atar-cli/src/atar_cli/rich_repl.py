@@ -403,6 +403,8 @@ def run_repl() -> None:
         response_text = ""
         _had_tools = False
         _tool_start_time: dict[str, float] = {}
+        # Track tool results to display after spinner
+        _tool_results: list[str] = []
         _last_tool_id: set[str] = set()
         args_cache: dict[str, dict] = {}
 
@@ -410,42 +412,32 @@ def run_repl() -> None:
             nonlocal response_text, _had_tools
             _had_tools = True
             response_text = ""
+            args_cache[name] = args
             tool_sig = f"{name}:{args.get('path', '')}" if name in ("write_file", "read_file") else f"{name}:{str(args)}"
             if tool_sig in _last_tool_id:
                 return
             _last_tool_id.add(tool_sig)
-            args_cache[name] = args
             _stats["tools"] += 1
             _tool_start_time[name] = _t2.time()
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-            icon = icons.get(name, "\U0001f527")
-            short = str(args)[:60]
-            # Show file path for read/write, command for terminal
-            if name in ("read_file", "write_file"):
-                short = args_cache[name].get("path", str(args))[:60]
-            elif name == "terminal":
-                short = f"$ {args.get('command', '')[:60]}"
-            from atar_core.theme import current_theme
-            c = current_theme().colors
-            console.print(f"\n  [bold {c.secondary}]\u250a {icon} preparing {name}\u2026[/] [dim]{short}[/]")
+            short = args.get("path", "") or args.get("command", "") or str(args)[:40]
+            console.print(f"\n  \u250a \u25cc preparing {name}\u2026 [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            icons = {"read_file": "0001F4D6", "WRITE_FILE": "270DFE0F", "TERMINAL": "0001F4BB", "WEB_FETCH": "0001F4C4", "WEB_SEARCH": "0001F50D", "PATCH": "0001F527"}
+            """Collect tool results; display happens after spinner exits."""
             from atar_core.theme import current_theme
             c = current_theme().colors
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f4c4", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-
+            elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
+            a = args_cache.get(name, {})
             if name == "terminal":
                 output = result.strip() or "(no output)"
-                lines = output.split("\n")[:10]
-                shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
-                preview = args_cache[name].get("command", "")[:50]
-                console.print(f"\r  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]\n{shown}" if shown else "")
+                lines = output.split("\n")[:8]
+                shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines) if lines else ""
+                preview = a.get("command", "")[:50]
+                _tool_results.append(f"  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]" + ("\n" + shown if shown else ""))
             elif name == "patch":
                 output = result.strip() or ""
                 colored = []
-                for ln in output.split("\n")[:20]:
+                for ln in output.split("\n")[:15]:
                     if ln.startswith("+++") or ln.startswith("---"):
                         colored.append(f"    [bold]{ln}[/]")
                     elif ln.startswith("+"):
@@ -454,20 +446,17 @@ def run_repl() -> None:
                         colored.append(f"    [bold #F87171]{ln}[/]")
                     else:
                         colored.append(f"    [dim]{ln}[/]")
-                path = args_cache[name].get("path", "")
-                console.print(f"\r  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
+                path = a.get("path", "")
+                _tool_results.append(f"  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]\n" + "\n".join(colored))
             elif name == "write_file":
-                path = args_cache[name].get("path", "")
+                path = a.get("path", "")
                 size = len(result) if result else 0
-                console.print(f"\r  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
+                _tool_results.append(f"  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
             elif name == "read_file":
-                path = args_cache[name].get("path", "")
-                console.print(f"\r  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
-
-        try:
-            with console.status("[bold #67D8FF]\u25cf[/]", spinner="dots") as status:
-                async def _stream_progress(t: str) -> None:
-                    nonlocal response_text
+                path = a.get("path", "")
+                _tool_results.append(f"  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
+            else:
+                _tool_results.append(f"  \u2502 [bold {c.success}]{name}[/] [dim]({elapsed:.1f}s)[/]")
                     response_text += t
                     _stats["text_chars"] = (_stats.get("text_chars") or 0) + len(t)
                     preview = response_text[:80].replace("\n", " ")
@@ -487,6 +476,11 @@ def run_repl() -> None:
             return
 
         # Hermes-style response container
+        # Display tool results collected during spinner
+        for tr in _tool_results:
+            console.print(tr)
+        if _tool_results:
+            console.print()
         console.print()
         from atar_core.theme import current_theme
         c = current_theme().colors
