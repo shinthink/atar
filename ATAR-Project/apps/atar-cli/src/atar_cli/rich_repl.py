@@ -453,6 +453,20 @@ def run_repl() -> None:
                 lines = output.split("\n")[:10]
                 shown = "\n".join(f"    [dim]{ln}[/]" for ln in lines)
                 console.print(f"\r  [bold {c.success}]\u2502 {icon} {name}[/] [dim]({elapsed:.1f}s)[/]\n{shown}" if shown else "")
+            elif name == "patch":
+                # Render colored diff: green +, red -, dim context
+                output = result.strip() or ""
+                colored = []
+                for ln in output.split("\n")[:20]:
+                    if ln.startswith("+++") or ln.startswith("---"):
+                        colored.append(f"    [bold]{ln}[/]")
+                    elif ln.startswith("+"):
+                        colored.append(f"    [bold #4ADE80]{ln}[/]")
+                    elif ln.startswith("-"):
+                        colored.append(f"    [bold #F87171]{ln}[/]")
+                    else:
+                        colored.append(f"    [dim]{ln}[/]")
+                console.print(f"\r  [bold {c.success}]\u2502 {icon} patch[/] [dim]({elapsed:.1f}s)[/]\n" + "\n".join(colored))
             elif name in ("read_file", "write_file"):
                 size = len(result) if result else 0
                 label = f"Wrote {size} bytes" if name == "write_file" else f"Read {len(result)} chars"
