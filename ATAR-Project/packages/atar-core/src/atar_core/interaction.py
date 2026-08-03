@@ -8,11 +8,9 @@ import os
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from atar_core.paths import _atar_home as atar_home
-
 
 # ── Busy input mode ──
 BUSY_MODES = ("interrupt", "queue", "steer")
@@ -77,7 +75,7 @@ def handle_busy_input(user: str, is_running: bool) -> tuple[str, bool]:
 class BackgroundTask:
     task_id: str
     prompt: str
-    result: Optional[str] = None
+    result: str | None = None
     done: bool = False
     start_time: float = 0.0
 

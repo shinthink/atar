@@ -765,6 +765,24 @@ expand=True,
                     console.print("[dim]No diff available. Run a patch operation first.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
+                        if user.startswith("/backend "):
+                name = user[9:].strip()
+                try:
+                    from atar_core.backends import switch_backend, get_backend
+                    b = switch_backend(name)
+                    avail = "✓" if b.is_available() else "✗ (unavailable)"
+                    console.print(f"[green]{b.name} backend {avail}[/]")
+                except ValueError as e:
+                    console.print(f"[red]{e}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/backend":
+                from atar_core.backends import get_backend
+                b = get_backend()
+                console.print(f"[dim]Current backend: {b.name}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+
             if user.startswith("/cron add "):
                 parts = user[10:].strip().split(maxsplit=2)
                 if len(parts) >= 2:
