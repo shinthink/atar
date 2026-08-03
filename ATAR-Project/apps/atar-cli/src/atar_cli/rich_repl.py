@@ -603,7 +603,7 @@ def run_repl() -> None:
                             if data:
                                 prov, model, ag = _create_provider(session_id)
                                 for m in data.get("messages", [])[-20:]:
-                                    from atar_models.requests import Message
+
                                     ag._messages.append(Message(role=m.get("role","user"), content=m.get("content",""), tool_calls=m.get("tool_calls"), tool_call_id=m.get("tool_call_id")))
                                 provider, agent = prov, ag
                                 console.print(f"[green]✓ {s['title'] or s['session_id'][:12]}[/]")
