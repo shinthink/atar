@@ -468,9 +468,6 @@ def run_repl() -> None:
             async def _capture(t: str) -> None:
                 nonlocal response_text
                 response_text += t
-                # Show streaming preview
-                preview = (response_text[:60] + "...") if len(response_text) > 60 else response_text
-                console.print(f"\r  ● [dim]{preview}[/]", end="")
             console.print("\n  ● thinking...", end="")
             await ag.run(prompt, StreamCallbacks(
                 on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
