@@ -361,7 +361,7 @@ def _status_bar() -> str:
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
     b = []
     if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
-    if get_active_bg_count() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
+    if _get_bg() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
     bg = " " + " ".join(b) if b else ""
     if w >= 76:
         return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 turns {_stats['turns']} \u2502 tools {_stats['tools']} \u2502 {c} \u2502 {d}{bg}"
