@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -103,7 +103,7 @@ def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profil
     if mem:
         session_layers.append(PromptLayer(name="memory", content=mem, stability="session"))
 
-    session_prefix = "\n\n".join(l.content for l in session_layers)
+    session_prefix = "\n\n".join(layer.content for layer in session_layers)
 
     ep = ephemeral_layer(session_id=session_id, model=model, cwd=cwd)
 

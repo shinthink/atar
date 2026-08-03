@@ -27,12 +27,14 @@ _TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
 console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH)
 
 # ── Slash commands (from registry) ──
-from atar_core.commands import register_command, registry as cmd_registry
-from atar_core.provider_registry import list_providers, get_provider
+from atar_core.commands import register_command  # noqa: E402
+from atar_core.commands import registry as cmd_registry  # noqa: E402
+from atar_core.provider_registry import list_providers  # noqa: E402
 
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
-from atar_core.prompt import assemble as assemble_prompt
+from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
+
 register_command("/model", "Switch AI model", category="model", arg_hint="[name]")
 register_command("/sessions", "Manage sessions", aliases=["/s"], category="session")
 register_command("/checkpoints", "List file checkpoints", category="session")
@@ -150,7 +152,7 @@ def _save_config(cfg: dict) -> None:
         json.dump(cfg, f)
 
 
-def _create_provider():
+def _create_provider(session_id: str = ""):
     from atar_core.agent import Agent
     from atar_core.provider_router import create_router
     try:
@@ -319,7 +321,7 @@ def run_repl() -> None:
 
     session_id = uuid.uuid4().hex[:12]
 
-    provider, model, agent = _create_provider()
+    provider, model, agent = _create_provider(session_id)
     if not provider or not agent:
         console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
@@ -476,12 +478,12 @@ def run_repl() -> None:
                 console.print("[dim]Ataraxic.[/]")
                 break
             if user in ("/clear", "/reset"):
-                prov, model, agent = _create_provider()
+                prov, model, agent = _create_provider(session_id)
                 console.print("[dim]Cleared.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/help":
-                cmds = cmd_registry.list_all()
+                cmd_registry.list_all()
                 cats = cmd_registry.list_by_category()
                 for cat, items in cats.items():
                     console.print(f"\n[bold]{cat.upper()}[/]")
@@ -500,7 +502,7 @@ def run_repl() -> None:
                     if 0 <= idx < len(MODELS):
                         display = _switch_model(idx)
                         _stats["model"] = display.split(" \u2014 ")[1] if " \u2014 " in display else display
-                        prov, model, ag = _create_provider()
+                        prov, model, ag = _create_provider(session_id)
                         provider, agent = prov, ag
                         console.print(f"[green]\u2713 {display}[/]")
                 except (ValueError, EOFError, KeyboardInterrupt):
@@ -523,10 +525,10 @@ def run_repl() -> None:
                             s = sessions[idx]
                             data = store.load(s["session_id"])
                             if data:
-                                prov, model, ag = _create_provider()
+                                prov, model, ag = _create_provider(session_id)
                                 for m in data.get("messages", [])[-20:]:
-                                    from atar_models.requests import Message as M
-                                    ag._messages.append(M(role=m.get("role","user"), content=m.get("content",""), tool_calls=m.get("tool_calls"), tool_call_id=m.get("tool_call_id")))
+                                    from atar_models.requests import Message
+                                    ag._messages.append(Message(role=m.get("role","user"), content=m.get("content",""), tool_calls=m.get("tool_calls"), tool_call_id=m.get("tool_call_id")))
                                 provider, agent = prov, ag
                                 console.print(f"[green]✓ {s['title'] or s['session_id'][:12]}[/]")
                     except (ValueError, EOFError, KeyboardInterrupt):
@@ -563,7 +565,7 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/code":
-                prov2, model2, ag2 = _create_provider()
+                prov2, model2, ag2 = _create_provider(session_id)
                 if ag2:
                     ag2.max_turns = 3
                     ag2.system_prompt = "CODE mode. Use terminal, read_file, write_file, git, run_tests."
@@ -572,7 +574,7 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/chat":
-                prov2, model2, ag2 = _create_provider()
+                prov2, model2, ag2 = _create_provider(session_id)
                 if ag2:
                     provider, model, agent = prov2, model2, ag2
                 console.print("[dim]Chat mode[/]")

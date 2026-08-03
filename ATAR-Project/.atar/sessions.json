@@ -1,0 +1,72 @@
+{
+  "d4635a7e4238": {
+    "session_id": "d4635a7e4238",
+    "title": "Session-d4635a7e",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"My name is Alice\"}, {\"role\": \"assistant\", \"content\": \"Hello Alice, I'm ATAR. How can I assist you today?\"}, {\"role\": \"user\", \"content\": \"What is my name?\"}, {\"role\": \"assistant\", \"content\": \"Your name is Alice! You mentioned it just a moment ago. How can I help you today, Alice?\"}]",
+    "created_at": "2026-08-02T02:18:08.238413+00:00",
+    "updated_at": "2026-08-02T02:18:12.528447+00:00"
+  },
+  "90f9819501bd": {
+    "session_id": "90f9819501bd",
+    "title": "Session-90f98195",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"hi\"}, {\"role\": \"assistant\", \"content\": \"Hello.\"}]",
+    "created_at": "2026-08-02T02:18:33.816800+00:00",
+    "updated_at": "2026-08-02T02:18:35.416278+00:00"
+  },
+  "4a7afc308331": {
+    "session_id": "4a7afc308331",
+    "title": "Add dark mode toggle to settings",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"plan: Add dark mode toggle to settings\"}, {\"role\": \"assistant\", \"content\": \"{\\n  \\\"title\\\": \\\"Add dark mode toggle to settings\\\",\\n  \\\"goal\\\": \\\"Add dark mode toggle to settings\\\",\\n  \\\"tasks\\\": [\\n    {\\n      \\\"id\\\": \\\"\\\",\\n      \\\"title\\\": \\\"Set up theme state management with persistent storage (e.g., localStorage) [LOW]\\\",\\n      \\\"description\\\": \\\"\\\",\\n      \\\"risk\\\": \\\"low\\\",\\n      \\\"status\\\": \\\"approved\\\",\\n      \\\"depends_on\\\": [],\\n      \\\"agent\\\": \\\"default\\\",\\n      \\\"evidence\\\": \\\"\\\",\\n      \\\"output\\\": \\\"\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"\\\",\\n      \\\"title\\\": \\\"Define dark mode CSS variables or styles for the application [LOW]\\\",\\n      \\\"description\\\": \\\"\\\",\\n      \\\"risk\\\": \\\"low\\\",\\n      \\\"status\\\": \\\"approved\\\",\\n      \\\"depends_on\\\": [],\\n      \\\"agent\\\": \\\"default\\\",\\n      \\\"evidence\\\": \\\"\\\",\\n      \\\"output\\\": \\\"\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"\\\",\\n      \\\"title\\\": \\\"Build a toggle switch component in the settings UI [LOW]\\\",\\n      \\\"description\\\": \\\"\\\",\\n      \\\"risk\\\": \\\"low\\\",\\n      \\\"status\\\": \\\"approved\\\",\\n      \\\"depends_on\\\": [],\\n      \\\"agent\\\": \\\"default\\\",\\n      \\\"evidence\\\": \\\"\\\",\\n      \\\"output\\\": \\\"\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"\\\",\\n      \\\"title\\\": \\\"Wire the toggle to apply the selected theme to the document root [LOW]\\\",\\n      \\\"description\\\": \\\"\\\",\\n      \\\"risk\\\": \\\"low\\\",\\n      \\\"status\\\": \\\"approved\\\",\\n      \\\"depends_on\\\": [],\\n      \\\"agent\\\": \\\"default\\\",\\n      \\\"evidence\\\": \\\"\\\",\\n      \\\"output\\\": \\\"\\\"\\n    }\\n  ],\\n  \\\"evidence_required\\\": false\\n}\"}]",
+    "created_at": "2026-08-02T02:20:26.023373+00:00",
+    "updated_at": "2026-08-02T02:20:26.032982+00:00"
+  },
+  "b6ad4e7532a8": {
+    "session_id": "b6ad4e7532a8",
+    "title": "Session-b6ad4e75",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"hi\"}, {\"role\": \"assistant\", \"content\": \"Hello! How can I help you today?\"}]",
+    "created_at": "2026-08-02T02:46:12.844531+00:00",
+    "updated_at": "2026-08-02T02:46:14.431827+00:00"
+  },
+  "f8f0782bf8f1": {
+    "session_id": "f8f0782bf8f1",
+    "title": "Session-f8f0782b",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"test\"}, {\"role\": \"assistant\", \"content\": \"Test received \\u2014 I'm operational and ready to assist.\"}]",
+    "created_at": "2026-08-02T02:46:33.808597+00:00",
+    "updated_at": "2026-08-02T02:46:35.701535+00:00"
+  },
+  "a4b2ba0353a3": {
+    "session_id": "a4b2ba0353a3",
+    "title": "Session-a4b2ba03",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"hi\"}, {\"role\": \"assistant\", \"content\": \"Hello! How can I assist you today?\"}]",
+    "created_at": "2026-08-02T02:51:39.412807+00:00",
+    "updated_at": "2026-08-02T02:51:41.119627+00:00"
+  },
+  "258579c4a373": {
+    "session_id": "258579c4a373",
+    "title": "Session-258579c4",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"hi\"}, {\"role\": \"assistant\", \"content\": \"Hello! How can I assist you today?\"}]",
+    "created_at": "2026-08-02T02:56:28.343794+00:00",
+    "updated_at": "2026-08-02T02:56:31.455360+00:00"
+  },
+  "9856f8d3fe78": {
+    "session_id": "9856f8d3fe78",
+    "title": "Session-9856f8d3",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"done?\"}, {\"role\": \"assistant\", \"content\": \"Yes, I'm ready. What would you like me to do next?\"}]",
+    "created_at": "2026-08-02T03:05:32.498429+00:00",
+    "updated_at": "2026-08-02T03:05:36.469047+00:00"
+  },
+  "2d140a950e84": {
+    "session_id": "2d140a950e84",
+    "title": "Session-2d140a95",
+    "messages_json": "[{\"role\": \"user\", \"content\": \"test\"}, {\"role\": \"assistant\", \"content\": \"Max turns reached.\"}]",
+    "created_at": "2026-08-02T03:11:09.407631+00:00",
+    "updated_at": "2026-08-02T03:11:23.476767+00:00"
+  },
+  "edfa89425c41": {
+    "session_id": "edfa89425c41",
+    "title": "Session-edfa8942",
+    "messages_json": "[]",
+    "created_at": "2026-08-02T03:20:18.968138+00:00",
+    "updated_at": "2026-08-02T03:20:18.968142+00:00"
+  }
+}

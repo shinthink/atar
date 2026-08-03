@@ -13,6 +13,7 @@ members = [
     "atar-core",
     "atar-domain",
     "atar-models",
+    "atar-planning",
     "atar-projects",
     "atar-protocols",
     "atar-provider-anthropic",
@@ -399,6 +400,21 @@ source = { editable = "packages/atar-domain" }
 name = "atar-models"
 version = "0.1.0"
 source = { editable = "packages/atar-models" }
+
+[[package]]
+name = "atar-planning"
+version = "0.6.0"
+source = { editable = "packages/atar-planning" }
+dependencies = [
+    { name = "atar-models" },
+    { name = "atar-protocols" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "atar-models", editable = "packages/atar-models" },
+    { name = "atar-protocols", editable = "packages/atar-protocols" },
+]
 
 [[package]]
 name = "atar-projects"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import signal
 from typing import Any
@@ -78,10 +79,8 @@ async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> T
 
 def _kill_process_tree(pid: int) -> None:
     """Kill the entire process group."""
-    try:
+    with contextlib.suppress(OSError, ProcessLookupError):
         os.killpg(pid, signal.SIGKILL)
-    except (OSError, ProcessLookupError):
-        pass
 
 
 register("terminal", "Run a shell command", _run_terminal, parameters={

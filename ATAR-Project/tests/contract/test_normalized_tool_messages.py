@@ -53,7 +53,7 @@ class TestToolMessageRoles:
         await agent.run("search")
 
         # Check messages after tool execution
-        tool_messages = [m for m in agent._messages if "Tool " in str(getattr(m, "content", "")) or getattr(m, "role", "") == "tool"]
+        [m for m in agent._messages if "Tool " in str(getattr(m, "content", "")) or getattr(m, "role", "") == "tool"]
         user_tool_impersonations = [m for m in agent._messages if getattr(m, "role", "") == "user" and "Tool " in str(getattr(m, "content", ""))]
         assert len(user_tool_impersonations) == 0, (
             f"Found {len(user_tool_impersonations)} tool results stored as user messages. "

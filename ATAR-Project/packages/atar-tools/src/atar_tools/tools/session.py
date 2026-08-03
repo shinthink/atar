@@ -6,6 +6,7 @@ from typing import Any
 
 from atar_models.tools import ToolContext, ToolResult
 from atar_storage.sqlite_store import SqliteStore
+
 from atar_tools.registry import register
 
 
@@ -15,10 +16,7 @@ async def _session_search(_name: str, args: dict[str, Any], ctx: ToolContext) ->
 
     try:
         store = SqliteStore()
-        if query:
-            results = store.search(query, limit=limit)
-        else:
-            results = store.list_all(limit=limit)
+        results = store.search(query, limit=limit) if query else store.list_all(limit=limit)
 
         if not results:
             return ToolResult(success=True, output="No matching sessions found.")

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from atar_core.agent import Agent
+from atar_core.budgets import RunBudget, TerminalState
 from atar_models.tools import ToolContext, ToolResult
-from atar_core.agent import Agent, StreamCallbacks
-from atar_core.budgets import RunBudget, RunResult, TerminalState
+
 from atar_tools.registry import register
 
 

@@ -14,10 +14,7 @@ def _resolve_safe_path(path: str, ctx: ToolContext, must_exist: bool = False) ->
     """Resolve path within workspace. Returns (safe_abs_path, error) or (None, error)."""
     workspace = os.path.abspath(ctx.working_directory or os.getcwd())
 
-    if os.path.isabs(path):
-        candidate = os.path.abspath(path)
-    else:
-        candidate = os.path.abspath(os.path.join(workspace, path))
+    candidate = os.path.abspath(path) if os.path.isabs(path) else os.path.abspath(os.path.join(workspace, path))
 
     try:
         real = os.path.realpath(candidate)

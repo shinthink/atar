@@ -38,6 +38,7 @@ class TestConfig:
     def test_profile_isolation(self, temp_home) -> None:
         """Different profiles have separate configs."""
         import os
+
         from atar_core.config import load_config, save_config
         os.environ["ATAR_HOME"] = str(temp_home)
         cfg_a = load_config("profile_isolation_a")
@@ -50,8 +51,10 @@ class TestConfig:
 
     def test_config_merge_preserves_defaults(self, temp_home) -> None:
         """Partial config files merge with defaults."""
-        from atar_core.config import load_config, save_config, atar_config_file
-        import os, yaml
+        import os
+
+        import yaml
+        from atar_core.config import atar_config_file, load_config
         # Ensure isolated
         os.environ["ATAR_HOME"] = str(temp_home)
         # Write partial config
@@ -71,7 +74,7 @@ class TestPaths:
 
     def test_atarcd(self, temp_home) -> None:
         """Paths resolve under ATAR_HOME."""
-        from atar_core.paths import atar_config_dir, atar_data_dir, atar_skills_dir
+        from atar_core.paths import atar_config_dir, atar_data_dir
         assert str(temp_home) in str(atar_config_dir())
         assert str(temp_home) in str(atar_data_dir())
 
@@ -84,7 +87,7 @@ class TestPaths:
 
     def test_ensure_dirs_creates_all(self, temp_home) -> None:
         """ensure_dirs creates required directories."""
-        from atar_core.paths import ensure_dirs, atar_data_dir, atar_skills_dir
+        from atar_core.paths import atar_data_dir, atar_skills_dir, ensure_dirs
         ensure_dirs("test")
         assert atar_data_dir("test").exists()
         assert atar_skills_dir("test").exists()

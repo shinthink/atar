@@ -11,7 +11,6 @@ import yaml
 
 from atar_core.paths import atar_config_file, ensure_dirs
 
-
 DEFAULT_CONFIG = {
     "config_version": 1,
     "model": {

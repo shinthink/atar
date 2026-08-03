@@ -10,9 +10,9 @@ from atar_models.requests import Message, ModelRequest
 from atar_models.responses import ModelResponse
 from atar_protocols import ModelProvider
 
+from atar_core.budgets import RunBudget, RunResult, TerminalState
 from atar_core.event_bus import EventBus
 from atar_core.state_machine import AgentState, AgentStateMachine, StateMachineError
-from atar_core.budgets import RunBudget, RunResult, TerminalState
 
 
 @dataclass

@@ -7,7 +7,6 @@ from typing import Any
 
 from atar_tools.registry import list_all
 
-
 # Tool-to-toolset mapping
 _TOOL_TOOLSETS: dict[str, str] = {
     "read_file": "file",
@@ -85,10 +84,9 @@ def tools_for_toolsets(toolset_names: list[str]) -> list[Any]:
                 result.append(t)
                 seen.add(t.name)
             # "safe" includes read-only from any toolset
-            if ts_name == "safe" and t.name in {"read_file", "search_files", "session_search", "session_resume"}:
-                if t.name not in seen:
-                    result.append(t)
-                    seen.add(t.name)
+            if ts_name == "safe" and t.name in {"read_file", "search_files", "session_search", "session_resume"} and t.name not in seen:
+                result.append(t)
+                seen.add(t.name)
 
     return result
 
