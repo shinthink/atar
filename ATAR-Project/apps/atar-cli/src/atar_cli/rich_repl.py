@@ -330,7 +330,7 @@ _last_diff: list[str] = []
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "last_response": None, "compressions": 0, "background_tasks": 0, "cost": 0.0, "text_chars": 0}
 
 
-from atar_core.display import TOOL_ICONS
+
 
 def _context_bar() -> str:
     tokens = _stats.get("tokens") or 0
@@ -347,7 +347,8 @@ def _context_bar() -> str:
 
 
 def _status_bar() -> str:
-    import shutil as _sh, time as _t
+    import shutil as _sh
+    import time as _t
     if _stats["start_time"] is None:
         _stats["start_time"] = _t.time()
     w = _sh.get_terminal_size().columns
@@ -355,7 +356,7 @@ def _status_bar() -> str:
     h, r = divmod(e, 3600); m, s = divmod(r, 60)
     d = f"{h}h{m}m" if h else f"{m}m{s}s"
     from atar_core.display import context_bar
-    ctx = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
+    ctx, _ = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
     b = []
     if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
@@ -501,11 +502,19 @@ def run_repl() -> None:
             async def _capture(t: str) -> None:
                 nonlocal response_text
                 response_text += t
-            console.print("\n  ● thinking...", end="")
+                _stats["tokens_out"] += 1
+            from atar_core.display import ThinkingAnimator, calculate_cost
+            anim = ThinkingAnimator()
+            use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
+            if use_anim:
+                console.print(f"\n  {anim.start()}", end="")
+            else:
+                console.print("\n  ● thinking...", end="")
             await ag.run(prompt, StreamCallbacks(
                 on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
             ))
-            console.print("\r" + " " * 80 + "\r", end="")  # clear thinking line
+            console.print("\r" + " " * 80 + "\r", end="")
+            _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
         except asyncio.CancelledError:
             console.print("\n[dim]\u23f9 Interrupted[/]")
             return

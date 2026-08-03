@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 # ── Tool icons (one per tool category) ──
 TOOL_ICONS = {
@@ -33,16 +32,16 @@ def context_bar(tokens_used: int, max_tokens: int = 128000) -> str:
     filled = int(pct * 10)
     bar = "\u2588" * filled + "\u2591" * (10 - filled)
     if pct < 0.5:
-        color = "#4ADE80"     # green
+        color = "#4ADE80"
     elif pct < 0.8:
-        color = "#FBBF24"     # yellow
+        color = "#FBBF24"
     elif pct < 0.95:
-        color = "#FB923C"     # orange
+        color = "#FB923C"
     else:
-        color = "#F87171"     # red
+        color = "#F87171"
     pct_str = f"{tokens_used / 1000:.1f}K"
     max_str = f"{max_tokens / 1000:.0f}K" if max_tokens >= 1000 else str(max_tokens)
-    return f"{pct_str}/{max_str} [{bar}] {int(pct*100)}%"
+    return f"{pct_str}/{max_str} [{bar}] {int(pct*100)}%", color
 
 
 # ── Pricing model (per 1M tokens, input/output) ──
