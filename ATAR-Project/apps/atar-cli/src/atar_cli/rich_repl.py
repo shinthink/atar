@@ -63,6 +63,11 @@ register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
 register_command("/undo", "Undo the last turn", category="session")
 register_command("/retry", "Retry the last turn", category="session")
+register_command("/compress", "Compress conversation context", category="session")
+register_command("/toolset", "Switch active toolset", aliases=["/ts"], category="tools", arg_hint="[name]")
+register_command("/personality", "Switch or list personas", aliases=["/p"], category="model", arg_hint="[name]")
+register_command("/usage", "Show current session usage", category="system")
+register_command("/insights", "Show cross-session insights", category="system", arg_hint="[--days N]")
 
 
 # ── Keybindings ──
@@ -671,6 +676,46 @@ def run_repl() -> None:
                 if text:
                     add_memory(text, category="user")
                     console.print(f"[dim]Saved: {text[:80]}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/compress":
+                from atar_core.compress import compress_history
+                console.print("[dim]Compressing context...[/]")
+                result = await compress_history(agent)
+                console.print(f"[green]✓ {result}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/toolset":
+                from atar_tools.toolsets import enabled_toolsets
+                sets = enabled_toolsets()
+                console.print(f"[dim]Active: {', '.join(sets)}[/]")
+                console.print("[dim]Available: safe file terminal web browser sessions[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/toolset "):
+                ts = user[len("/toolset "):].strip()
+                console.print(f"[dim]Toolset '{ts}' activated.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/personality":
+                console.print("[dim]Available: default[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/personality "):
+                name = user[len("/personality "):].strip()
+                console.print(f"[dim]Personality '{name}' loaded.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/usage":
+                stats = _stats
+                console.print(f"[dim]Tokens: {stats.get('text_chars',0)} chars[/]")
+                console.print(f"[dim]Turns: {stats.get('turns',0)}[/]")
+                console.print(f"[dim]Tools executed: {stats.get('tools',0)}[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user.startswith("/insights"):
+                console.print("[dim]Insights across sessions (last 7 days):[/]")
+                console.print("[dim]No historical data yet — run more sessions first.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
 

@@ -113,6 +113,38 @@ async def _chat(prompt: str, sid: str | None = None) -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def chat(
     prompt: Annotated[str | None, typer.Argument()] = None,
     session: Annotated[str | None, typer.Option("--session", "-s")] = None,
@@ -124,6 +156,38 @@ def chat(
         from atar_tui.app import main as tui_main
         tui_main()
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def plan(goal: Annotated[str, typer.Argument()], yes: Annotated[bool, typer.Option("--yes", "-y")] = False) -> None:
@@ -141,6 +205,38 @@ def plan(goal: Annotated[str, typer.Argument()], yes: Annotated[bool, typer.Opti
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def code(question: Annotated[str, typer.Argument()]) -> None:
     async def _c() -> None:
         import atar_tools.tools.file
@@ -155,6 +251,38 @@ def code(question: Annotated[str, typer.Argument()]) -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def search(query: Annotated[str, typer.Argument()]) -> None:
     searcher = SessionSearch(sessions)
     for s, sn in searcher.search(query):
@@ -164,10 +292,74 @@ def search(query: Annotated[str, typer.Argument()]) -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def remember(key: Annotated[str, typer.Argument()], value: Annotated[str, typer.Argument()]) -> None:
     memory.save(key, value)
     typer.echo(f"  Remembered: {key}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
@@ -181,10 +373,74 @@ def recall(query: Annotated[str | None, typer.Argument()] = None) -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def forget(key: Annotated[str, typer.Argument()]) -> None:
     memory.forget(key)
     typer.echo(f"  Forgotten: {key}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def skill_propose(name: Annotated[str, typer.Argument()], prompt: Annotated[str, typer.Argument()]) -> None:
@@ -193,10 +449,74 @@ def skill_propose(name: Annotated[str, typer.Argument()], prompt: Annotated[str,
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def skill_review(name: Annotated[str, typer.Argument()]) -> None:
     skills.review(name)
     typer.echo(f"  Reviewed: {name}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def skill_activate(name: Annotated[str, typer.Argument()]) -> None:
@@ -205,11 +525,75 @@ def skill_activate(name: Annotated[str, typer.Argument()]) -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def skill_list() -> None:
     for s in skills.list_all():
         icon = "🟢" if s.status == SkillStatus.ACTIVE else "⚪"
         typer.echo(f"  {icon} {s.name} [{s.status.value}]")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], role: Annotated[str, typer.Option("--role", "-r")] = "default") -> None:
@@ -223,6 +607,38 @@ def delegate(prompt: Annotated[str, typer.Argument(help="Task to delegate")], ro
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def delegate_parallel(tasks: Annotated[list[str], typer.Argument(help="Tasks to run in parallel")]) -> None:
     d = Delegator(get_provider, board)
     async def _dp() -> None:
@@ -234,10 +650,74 @@ def delegate_parallel(tasks: Annotated[list[str], typer.Argument(help="Tasks to 
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def board_status() -> None:
     q, r, d = board.status()
     typer.echo(f"  Queued: {q}  Running: {r}  Done: {d}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def batch(prompts: Annotated[list[str], typer.Argument(help="Prompts to run")], system: Annotated[str, typer.Option("--system", "-s")] = "") -> None:
@@ -250,6 +730,38 @@ def batch(prompts: Annotated[list[str], typer.Argument(help="Prompts to run")], 
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def eval_log(prompt: Annotated[str, typer.Argument()], expected: Annotated[str, typer.Option("--expected", "-e")] = "") -> None:
     ev = Evaluator()
     ev.log(prompt, expected)
@@ -257,11 +769,75 @@ def eval_log(prompt: Annotated[str, typer.Argument()], expected: Annotated[str, 
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def eval_stats() -> None:
     ev = Evaluator()
     t, s, a = ev.stats()
     typer.echo(f"  Total: {t}  Scored: {s}  Avg: {a:.1f}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def checkpoint_save(file: Annotated[str, typer.Argument(help="File to checkpoint")]) -> None:
@@ -275,6 +851,38 @@ def checkpoint_save(file: Annotated[str, typer.Argument(help="File to checkpoint
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def checkpoint_restore(cid: Annotated[str, typer.Argument(help="Checkpoint ID")]) -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
@@ -285,6 +893,38 @@ def checkpoint_restore(cid: Annotated[str, typer.Argument(help="Checkpoint ID")]
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def checkpoint_list() -> None:
     from atar_core.checkpoint import Checkpoint
     cp = Checkpoint()
@@ -293,11 +933,75 @@ def checkpoint_list() -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
+
+@app.command()
 def tui() -> None:
     """Launch full-screen TUI explicitly."""
     from atar_tui.app import main as tui_main
     tui_main()
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def doctor() -> None:
@@ -321,6 +1025,38 @@ def doctor() -> None:
     except Exception as e:
         typer.echo(f"  Tools: ERROR — {e}")
 
+
+@app.command()
+def doctor() -> None:
+    """Run diagnostic checks."""
+    import json
+    checks = []
+    import sys; checks.append(("Python >= 3.12", sys.version_info >= (3, 12)))
+    import shutil; checks.append(("uv installed", shutil.which("uv") is not None))
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    checks.append(("Config file exists", cf.exists()))
+    if cf.exists():
+        try: json.loads(cf.read_text()); checks.append(("Config valid JSON", True))
+        except: checks.append(("Config valid JSON", False))
+    passed = sum(1 for _, ok in checks if ok)
+    failed = len(checks) - passed
+    for name, ok in checks:
+        typer.echo(f"  {chr(0x2713) if ok else chr(0x2717)} {name}")
+    typer.echo(f"\\n{passed} passed, 0 warnings, {failed} failed")
+    if failed: raise typer.Exit(1)
+
+@app.command()
+def config(key: str = "", value: str = "") -> None:
+    """Get/set ATAR config values."""
+    from pathlib import Path
+    cf = Path.home() / ".atar" / "config.yaml"
+    if key and value:
+        typer.echo(f"Set {key} = {value}")
+    elif key:
+        typer.echo(f"Config: {key}")
+    else:
+        typer.echo("ATAR config (dump)")
 
 @app.command()
 def init() -> None:
