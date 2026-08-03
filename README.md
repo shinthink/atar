@@ -165,11 +165,19 @@ Clarity in Complexity.
 | `/sessions` | Browse and resume saved sessions |
 | `/code` | Enter coding mode with file tools enabled |
 | `/chat` | Return to standard chat mode |
+| `/toolset` | Switch active toolset (safe, file, terminal, web, research, full) |
+| `/personality` | Switch or list AI personas |
+| `/retry` | Retry the last turn (in-place regenerate) |
+| `/undo` | Undo the last turn (removes user + assistant + tool results) |
+| `/compress` | Compress conversation context to free tokens |
+| `/usage` | Show current session token and tool usage |
+| `/insights` | Show cross-session usage insights |
+| `/memory` | Show persistent memories |
+| `/remember` | Save a fact to persistent memory |
+| `/checkpoints` | List file checkpoints |
 | `/help` | Show all available commands |
 | `/clear` / `/reset` | Reset conversation and start fresh |
 | `/quit` / `/exit` / `/q` | Exit ATAR |
-| `/status` | Show current runtime status |
-| `/tools` | List available tools |
 
 Press `Tab` while typing a slash command to see completions.
 
@@ -182,12 +190,10 @@ Press `Tab` while typing a slash command to see completions.
 | `Enter` | Send message |
 | `Alt+Enter` | Insert newline (multiline input) |
 | `Tab` | Show slash-command completions |
-| `Ctrl+C` | Interrupt current agent run |
+| `Ctrl+C` | Interrupt current agent run, prompt for redirect |
 | `Ctrl+C` twice | Force exit |
 | `Ctrl+D` | Exit with confirmation |
 | `Ctrl+V` | Paste (with preview for large content) |
-| `Ctrl+L` | Clear display |
-| `Ctrl+R` | History search |
 
 ---
 
