@@ -38,6 +38,8 @@ from atar_core.prompt import assemble as assemble_prompt  # noqa: E402
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
 from atar_core.provider_registry import get_provider
 from atar_models.requests import Message  # noqa: E402
+from atar_core.display import TOOL_ICONS
+from atar_core.interaction import (get_busy_mode, set_busy_mode, should_show_busy_hint, mark_busy_hint_shown, handle_busy_input, start_background, get_pending_bg_results, get_active_bg_count, generate_recap)  # noqa: E402
 
 PROVIDER_MODELS = {pid: prof.default_models for pid, prof in _PROVIDERS.items()}
 MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
