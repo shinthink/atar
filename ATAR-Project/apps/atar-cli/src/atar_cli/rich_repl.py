@@ -218,10 +218,12 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     info.append(f"[dim]Session: {session_id[:12]}[/]")
     info.append("")
     from atar_tools.registry import list_all as _list_tools
+    from atar_tools.toolsets import enabled_toolsets
     tools = _list_tools()
     tool_names = [t.name for t in tools]
     tool_count = len(tools)
-    skill_count = 3  # TODO: wire real skill registry
+    tsets = enabled_toolsets()
+    tset_count = len(tsets)
 
     info.append("  Available Tools")
     line = "    " + "  ".join(tool_names[:7])
@@ -230,7 +232,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
         info.append("    " + "  ".join(tool_names[7:]))
     info.append("")
 
-    info.append(f"  {tool_count} tools · {skill_count} skills · /help for commands · ATAR v0.6.0")
+    info.append(f"  {tool_count} tools · {tset_count} toolsets · /help for commands · ATAR v0.6.0")
     info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
 
     panel_content = "\n".join(info)
