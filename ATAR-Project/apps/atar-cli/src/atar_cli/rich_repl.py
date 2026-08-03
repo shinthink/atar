@@ -349,7 +349,7 @@ def _context_bar() -> str:
 
 def _status_bar() -> str:
     import shutil as _sh
-from atar_core.interaction import get_active_bg_count as _get_bg
+    from atar_core.interaction import (get_busy_mode, set_busy_mode, should_show_busy_hint, mark_busy_hint_shown, handle_busy_input, start_background, get_pending_bg_results, get_active_bg_count, generate_recap)
     import time as _t
     if _stats["start_time"] is None:
         _stats["start_time"] = _t.time()
@@ -362,7 +362,7 @@ from atar_core.interaction import get_active_bg_count as _get_bg
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
     b = []
     if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
-    if _get_bg() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
+    if get_active_bg_count() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
     bg = " " + " ".join(b) if b else ""
     if w >= 76:
         return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 turns {_stats['turns']} \u2502 tools {_stats['tools']} \u2502 {c} \u2502 {d}{bg}"
