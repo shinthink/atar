@@ -32,7 +32,7 @@ async def compress_history(agent, keep_last: int = 4) -> str:
         from atar_models.requests import Message, ModelRequest
 
         from atar_core.budgets import RunBudget
-        sub_budget = RunBudget(max_turns=1, max_tool_calls=0, max_time_seconds=30)
+        _ = RunBudget(max_turns=1, max_tool_calls=0, max_time_seconds=30)
 
         # Build minimal request for compression
         req = ModelRequest(
