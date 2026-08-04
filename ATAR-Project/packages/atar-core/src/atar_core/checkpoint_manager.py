@@ -34,7 +34,10 @@ class CheckpointManager:
             self._checkpoints.append(cp)
             return True
         except FileNotFoundError:
-            return False  # new file, no checkpoint needed
+            cp = Checkpoint(turn=turn, timestamp=time.time(), tool=tool,
+                           file_path=file_path, content="")  # sentinel: file didn't exist
+            self._checkpoints.append(cp)
+            return False
         except Exception:
             return False
 
@@ -44,10 +47,15 @@ class CheckpointManager:
         for _ in range(min(n, len(self._checkpoints))):
             cp = self._checkpoints.pop()
             try:
-                os.makedirs(os.path.dirname(cp.file_path) or ".", exist_ok=True)
-                with open(cp.file_path, "w") as f:
-                    f.write(cp.content)
-                restored.append(cp.file_path)
+                if cp.content == "":
+                    if os.path.exists(cp.file_path):
+                        os.remove(cp.file_path)
+                    restored.append(f"{cp.file_path} (deleted — was new file)")
+                else:
+                    os.makedirs(os.path.dirname(cp.file_path) or ".", exist_ok=True)
+                    with open(cp.file_path, "w") as f:
+                        f.write(cp.content)
+                    restored.append(cp.file_path)
             except Exception:
                 pass
         return restored
