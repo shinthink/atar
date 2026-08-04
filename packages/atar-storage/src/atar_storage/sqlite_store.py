@@ -95,7 +95,9 @@ class SqliteSessionStore:
                     {"q": query, "l": limit},
                 ).fetchall()
                 return [{"session_id": r[0], "title": r[1], "snippet": r[2]} for r in rows]
-            except Exception:
+            except Exception as e:
+                import logging
+                logging.getLogger("atar.storage").warning(f"FTS5 search failed: {e}")
                 return []
 
     def list_all(self, limit: int = 20) -> list[dict]:

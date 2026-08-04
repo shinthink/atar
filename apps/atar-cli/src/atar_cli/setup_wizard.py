@@ -71,6 +71,8 @@ def _read_config() -> dict[str, Any]:
 
 def _save_config(cfg: dict[str, Any]) -> None:
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True, mode=0o700)
+    # Ensure leaf directory also gets restrictive permissions
+    os.chmod(os.path.dirname(CONFIG_PATH), 0o700)
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=2)
     os.chmod(CONFIG_PATH, 0o600)

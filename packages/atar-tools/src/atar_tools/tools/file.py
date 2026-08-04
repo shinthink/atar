@@ -45,6 +45,10 @@ async def _read_file(_name: str, args: dict[str, Any], ctx: ToolContext) -> Tool
     try:
         with open(safe, errors="replace") as f:
             content = f.read()
+        # Truncate large files to prevent OOM
+        max_chars = 100_000
+        if len(content) > max_chars:
+            content = content[:max_chars] + f"\n... [truncated: {len(content)} bytes, showing first {max_chars}]"
         return ToolResult(
             success=True, output=content, metadata={"path": safe, "bytes": len(content)}
         )
