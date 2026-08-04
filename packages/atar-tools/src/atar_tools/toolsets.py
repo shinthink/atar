@@ -27,6 +27,7 @@ _TOOL_TOOLSETS: dict[str, str] = {
     "memory_add": "memory",
     "memory_list": "memory",
     "load_skill": "skills",
+    "analyze_image": "vision",
 }
 
 # Toolset definitions with defaults
@@ -42,6 +43,7 @@ DEFAULT_TOOLSETS: dict[str, dict[str, Any]] = {
     "delegation": {"enabled": False, "description": "Subagent delegation"},
     "memory": {"enabled": True, "description": "Memory add and query"},
     "skills": {"enabled": True, "description": "Skill loading"},
+    "vision": {"enabled": True, "description": "Image analysis via AI vision"},
 }
 
 

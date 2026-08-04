@@ -230,7 +230,22 @@ class Agent:
                         asyncio.create_task(_extract_memory(self, budget, bp, bm))
                     if bp and is_skills_auto_enabled():
                         asyncio.create_task(_maybe_create_skill(self, budget, bp, bm))
-                return RunResult(state=TerminalState.COMPLETED, final_text=final_text, budget=budget.snapshot())
+
+                # Memory nudge: check if user should review memories
+                nudge_triggered = False
+                try:
+                    from atar_core.memory_nudge import should_nudge
+                    if should_nudge():
+                        nudge_triggered = True
+                except Exception:
+                    pass
+
+                return RunResult(
+                    state=TerminalState.COMPLETED,
+                    final_text=final_text,
+                    budget=budget.snapshot(),
+                    evidence=[{"nudge_memory": True}] if nudge_triggered else [],
+                )
 
             except StateMachineError:
                 self.state.force(AgentState.FAILED)
