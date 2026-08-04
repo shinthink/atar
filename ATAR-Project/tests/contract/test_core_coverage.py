@@ -244,6 +244,19 @@ class TestCommands:
         result = registry.get("/_nonexistent_xyz_123")
         assert result is None
 
+    def test_command_properties(self) -> None:
+        from atar_core.commands import SlashCommand
+        cmd = SlashCommand(name="/test", aliases=["/t"], description="test", arg_hint="[x]")
+        assert "/t" in cmd.all_names
+        assert "[x]" in cmd.display
+
+    def test_registry_names(self) -> None:
+        from atar_core.commands import registry
+        names = registry.names()
+        assert isinstance(names, list)
+        cats = registry.list_by_category()
+        assert isinstance(cats, dict)
+
 
 class TestOutputTruncation:
     """Output truncation utility tests."""
@@ -335,6 +348,149 @@ class TestConfig:
         assert isinstance(cfg.security, dict)
         assert isinstance(cfg.sessions, dict)
         assert isinstance(cfg.display, dict)
+
+
+class TestBudgets:
+    """RunBudget edge cases."""
+
+    def test_time_remaining(self) -> None:
+        from atar_core.budgets import RunBudget
+        b = RunBudget(max_time_seconds=300)
+        assert b.time_remaining() > 0
+
+    def test_is_exhausted_turns(self) -> None:
+        from atar_core.budgets import RunBudget
+        b = RunBudget(max_turns=1, max_tool_calls=100, max_time_seconds=999)
+        b.record_turn()
+        b.record_turn()
+        state = b.is_exhausted()
+        assert state is not None
+
+    def test_is_exhausted_tools(self) -> None:
+        from atar_core.budgets import RunBudget
+        b = RunBudget(max_tool_calls=0)
+        b.record_tool("test")
+        state = b.is_exhausted()
+        assert state is not None
+
+    def test_too_many_repeated(self) -> None:
+        from atar_core.budgets import RunBudget
+        b = RunBudget(max_repeated_calls=2)
+        b.record_tool("web_search")
+        b.record_tool("web_search")
+        b.record_tool("web_search")
+        assert b.too_many_repeated("web_search") is True
+
+    def test_not_exhausted(self) -> None:
+        from atar_core.budgets import RunBudget
+        b = RunBudget(max_turns=10, max_tool_calls=10, max_time_seconds=999)
+        b.record_turn()
+        assert b.is_exhausted() is None
+
+
+class TestFakeProvider:
+    """FakeModelProvider coverage."""
+
+    @pytest.mark.asyncio
+    async def test_capabilities_no_events(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        p = FakeModelProvider()
+        caps = await p.capabilities()
+        assert caps.text is True
+        assert caps.streaming is False
+        assert caps.tools is False
+
+    @pytest.mark.asyncio
+    async def test_capabilities_with_events(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        from atar_models.model_events import ModelEvent
+        p = FakeModelProvider(events=[ModelEvent(event_type="text_delta", text="hi")])
+        caps = await p.capabilities()
+        assert caps.streaming is True
+
+    @pytest.mark.asyncio
+    async def test_list_models(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        p = FakeModelProvider()
+        models = await p.list_models()
+        assert "fake" in models[0]
+
+    @pytest.mark.asyncio
+    async def test_complete(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        from atar_models.requests import Message, ModelRequest
+        p = FakeModelProvider(responses=["hello world"])
+        req = ModelRequest(provider_id="fake", model="test", messages=[Message(role="user", content="hi")])
+        resp = await p.complete(req)
+        assert resp.text == "hello world"
+        assert len(p.complete_calls) == 1
+
+    @pytest.mark.asyncio
+    async def test_complete_fail_on(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        from atar_models.requests import Message, ModelRequest
+        p = FakeModelProvider(fail_on=1, responses=["will fail"])
+        req = ModelRequest(provider_id="fake", model="test", messages=[Message(role="user", content="hi")])
+        with pytest.raises(RuntimeError, match="Simulated failure"):
+            await p.complete(req)
+
+    @pytest.mark.asyncio
+    async def test_stream_with_events(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        from atar_models.model_events import ModelEvent
+        from atar_models.requests import Message, ModelRequest
+        events = [
+            ModelEvent(event_type="text_delta", text="a"),
+            ModelEvent(event_type="text_delta", text="b"),
+        ]
+        p = FakeModelProvider(events=events)
+        req = ModelRequest(provider_id="fake", model="test", messages=[Message(role="user", content="hi")])
+        results = []
+        async for ev in p.stream(req):
+            results.append(ev)
+        assert len(results) >= 2
+
+    @pytest.mark.asyncio
+    async def test_count_tokens(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        from atar_models.requests import Message, TokenCountRequest
+        p = FakeModelProvider()
+        req = TokenCountRequest(model="test", messages=[Message(role="user", content="hello world")])
+        count = await p.count_tokens(req)
+        assert count > 0
+
+    @pytest.mark.asyncio
+    async def test_health_check(self) -> None:
+        from atar_core.fake_provider import FakeModelProvider
+        p = FakeModelProvider(provider_id="myfake")
+        health = await p.health_check()
+        assert health.provider_id == "myfake"
+        assert health.status == "healthy"
+
+
+class TestProviderRegistry:
+    """Provider registry coverage."""
+
+    def test_get_provider_exists(self) -> None:
+        from atar_core.provider_registry import get_provider
+        p = get_provider("deepseek")
+        assert p is not None
+        assert p.id == "deepseek"
+
+    def test_get_provider_nonexistent(self) -> None:
+        from atar_core.provider_registry import get_provider
+        p = get_provider("nonexistent_xyz")
+        assert p is None
+
+    def test_list_providers(self) -> None:
+        from atar_core.provider_registry import list_providers
+        providers = list_providers()
+        assert len(providers) >= 5  # deepseek, openai, anthropic, openrouter, zai, custom
+
+    def test_list_available(self) -> None:
+        from atar_core.provider_registry import list_available
+        available = list_available()
+        assert isinstance(available, list)
 
 
 class TestCompress:

@@ -147,7 +147,7 @@ source = ["packages", "apps", "providers", "tools"]
 omit = ["*/tests/*", "*/test_*"]
 
 [tool.coverage.report]
-fail_under = 59
+fail_under = 60
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
