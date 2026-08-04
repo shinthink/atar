@@ -695,14 +695,12 @@ expand=True,
                     console.print(table)
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user == "/undo" or user.startswith("/undo "):
                 n = 1
                 if len(user) > 5:
-                    try:
+                    with suppress(ValueError):
                         n = int(user[6:].strip())
-                    except ValueError:
-                        pass
                 restored = agent.undo_last_turn(n)
                 if restored:
                     console.print(f"[dim]↺ Restored: {', '.join(restored)}[/]")
@@ -822,7 +820,6 @@ expand=True,
                 continue
 
             if user == "/cost":
-                from atar_core.display import calculate_cost
                 from atar_core.background import get_bg_tokens
                 from rich.table import Table
                 bg = get_bg_tokens()
@@ -839,7 +836,7 @@ expand=True,
                 console.print(table)
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user.startswith("/tools output "):
                 try:
                     tn = int(user[13:].strip())
@@ -849,14 +846,14 @@ expand=True,
                         console.print(f"[bold]Turn {tn} full output:[/]")
                         console.print(full[:10000])
                         if len(full) > 10000:
-                            console.print(f"[dim]... truncated at 10000 chars[/]")
+                            console.print("[dim]... truncated at 10000 chars[/]")
                     else:
                         console.print(f"[dim]No output saved for turn {tn}[/]")
                 except ValueError:
                     console.print("[red]Usage: /tools output <turn_number>[/]")
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user == "/memory on":
                 from atar_core.background import toggle_memory
                 toggle_memory()
@@ -881,9 +878,8 @@ expand=True,
                 console.print("[dim]Auto-skill creation: OFF[/]")
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user == "/init":
-                import subprocess
                 cwd = os.getcwd()
                 # Quick project scan
                 files = []
@@ -921,7 +917,7 @@ expand=True,
                         console.print("[dim]Not enough messages to compact.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user == "/yolo":
                 approval = get_approval()
                 approval.yolo = not approval.yolo
@@ -931,6 +927,7 @@ expand=True,
                 continue
             if user == "/permissions" or user.startswith("/permissions set "):
                 from rich.table import Table
+                from atar_core.approval import get_approval
                 approval = get_approval()
                 if user.startswith("/permissions set "):
                     parts = user.split()
@@ -953,7 +950,7 @@ expand=True,
                     console.print(table)
                 console.print(Rule(style="#394B59"))
                 continue
-            
+
             if user.startswith("/cron add "):
                 parts = user[10:].strip().split(maxsplit=2)
                 if len(parts) >= 2:
@@ -1106,7 +1103,7 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
 
-            
+
             # Resolve @file references in user input
             if "@" in user:
                 import re

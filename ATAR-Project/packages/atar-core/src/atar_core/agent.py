@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from typing import Any
-import re
 
 from atar_models.requests import Message, ModelRequest
 from atar_models.responses import ModelResponse
@@ -148,7 +148,7 @@ class Agent:
                         if cb.on_tool_result:
                             await cb.on_tool_result(nc["name"], result.output)
                         # Truncate output for context efficiency, save full copy
-                        from atar_core.output_truncation import truncate_tool_output, save_full_output
+                        from atar_core.output_truncation import save_full_output, truncate_tool_output
                         save_full_output(self._turn_count, result.output or "")
                         truncated = truncate_tool_output(result.output or "", tool_name=nc["name"])
                         self._messages.append(Message(
@@ -212,8 +212,8 @@ class Agent:
 
                 # Background tasks — throttled, cheap provider, togglable
                 import asyncio
-                from atar_core.background import (get_throttle, is_memory_enabled,
-                                                   is_skills_auto_enabled, get_background_provider_config)
+
+                from atar_core.background import get_background_provider_config, get_throttle, is_memory_enabled, is_skills_auto_enabled
                 throttle = get_throttle()
                 if self._turn_count % throttle == 0:
                     bp, bm = get_background_provider_config()
@@ -303,8 +303,8 @@ async def _extract_memory(agent, budget, bg_provider_id: str = "", bg_model: str
     if not bg_provider_id:
         return
     try:
-        from atar_core.memory import create_entry
         from atar_core.background import record_bg_tokens
+        from atar_core.memory import create_entry
         msgs = agent._messages[-6:]
         if len(msgs) < 4:
             return
@@ -320,6 +320,7 @@ async def _extract_memory(agent, budget, bg_provider_id: str = "", bg_model: str
             f"{transcript}"
         )
         from atar_models.requests import Message, ModelRequest
+
         from atar_core.provider_registry import get_provider
         bg_provider = get_provider(bg_provider_id)
         req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[
@@ -378,6 +379,7 @@ async def _maybe_create_skill(agent, budget, bg_provider_id: str = "", bg_model:
             f"Session transcript:\n{transcript}"
         )
         from atar_models.requests import Message, ModelRequest
+
         from atar_core.provider_registry import get_provider
         bg_provider = get_provider(bg_provider_id)
         req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[

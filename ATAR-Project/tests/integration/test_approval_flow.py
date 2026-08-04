@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from atar_tools.tools.diff_renderer import render_diff, diff_stats_line
-from atar_core.approval import ApprovalState, get_approval, reset_approval
+from atar_core.approval import get_approval, reset_approval
+from atar_tools.tools.diff_renderer import diff_stats_line, render_diff
 
 
 class TestDiffRenderer:

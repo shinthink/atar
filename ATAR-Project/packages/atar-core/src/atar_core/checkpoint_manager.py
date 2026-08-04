@@ -6,7 +6,6 @@ import dataclasses
 import os
 import time
 from collections import deque
-from typing import Optional
 
 MAX_CHECKPOINTS = 50
 

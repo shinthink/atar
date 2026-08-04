@@ -72,8 +72,9 @@ class TestUndoRetry:
 
         # Save checkpoint (file was new, get_checkpoints uses sentinel)
         # Manually simulate: agent wrote a new file, checkpoint was saved with empty content
-        from atar_core.checkpoint_manager import Checkpoint
         import time
+
+        from atar_core.checkpoint_manager import Checkpoint
         cp = Checkpoint(turn=1, timestamp=time.time(), tool="write_file",
                        file_path=tmp, content="")
         get_checkpoints()._checkpoints.append(cp)

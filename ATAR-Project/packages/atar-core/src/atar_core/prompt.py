@@ -111,7 +111,7 @@ def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profil
     session_layers = [IDENTITY, ACTION, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
 
 
-    
+
     # Inject ATAR.md project context if present
     atar_md_path = os.path.join(os.getcwd(), "ATAR.md")
     if not os.path.exists(atar_md_path):

@@ -27,7 +27,9 @@ def estimate_complexity(prompt: str, tool_call_history: int = 0) -> str:
 
 
 def load_route_config() -> dict:
-    import json, os
+    import json
+    import os
+
     from atar_core.paths import _atar_home
     try:
         with open(os.path.join(_atar_home(), "config.json")) as f:
