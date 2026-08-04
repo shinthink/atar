@@ -55,6 +55,13 @@ class TestMemoryNudge:
 class TestSkillImprovement:
     """Skill self-improvement logic."""
 
+    def setup_method(self) -> None:
+        # Clean stale state between tests
+        import os
+        stats_path = os.path.expanduser("~/.atar/skill_stats.json")
+        if os.path.exists(stats_path):
+            os.unlink(stats_path)
+
     def test_skill_stats_defaults(self) -> None:
         from atar_core.skill_improvement import SkillStats
         s = SkillStats(name="test-skill")
