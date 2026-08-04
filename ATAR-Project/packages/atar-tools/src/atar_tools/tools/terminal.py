@@ -37,7 +37,7 @@ async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> T
             stderr=asyncio.subprocess.PIPE,
             cwd=cwd,
             env=_SAFE_ENV,
-            preexec_fn=os.setsid,  # create new process group for tree-kill
+            start_new_session=True,  # create new process group for tree-kill
         )
 
         try:

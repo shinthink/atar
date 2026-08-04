@@ -97,5 +97,8 @@ def _prune(cdir: Path) -> None:
     snapshots = sorted(cdir.glob("*"), key=os.path.getmtime)
     while len(snapshots) > MAX_SNAPSHOTS:
         s = snapshots.pop(0)
-        s.unlink(missing_ok=True)
-        s.with_suffix(".meta.json").unlink(missing_ok=True)
+        if s.exists():
+            s.unlink()
+        meta_s = s.with_suffix(".meta.json")
+        if meta_s.exists():
+            meta_s.unlink()

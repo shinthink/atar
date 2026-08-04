@@ -21,7 +21,7 @@ def get_api_key(provider: str = "deepseek") -> str:
 
     # 2. Check environment
     env_map = {
-        "deepseek": ["DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY"],
+        "deepseek": ["DEEPSEEK_API_KEY"],
         "openai": ["OPENAI_API_KEY"],
         "anthropic": ["ANTHROPIC_API_KEY"],
         "zai": ["ZAI_API_KEY"],
@@ -53,9 +53,9 @@ def save_api_key(provider: str, key: str) -> bool:
     except (ImportError, Exception):
         pass
 
-    # Fallback: JSON config
+    # Fallback: JSON config with restrictive permissions
     config_dir = os.path.expanduser("~/.atar")
-    os.makedirs(config_dir, exist_ok=True)
+    os.makedirs(config_dir, exist_ok=True, mode=0o700)
     config_path = os.path.join(config_dir, "config.json")
     cfg = {}
     try:
@@ -66,6 +66,7 @@ def save_api_key(provider: str, key: str) -> bool:
     cfg[f"{provider}_api_key"] = key
     with open(config_path, "w") as f:
         json.dump(cfg, f)
+    os.chmod(config_path, 0o600)
     return True
 
 

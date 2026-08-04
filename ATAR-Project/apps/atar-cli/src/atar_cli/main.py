@@ -69,6 +69,29 @@ def forget(key: Annotated[str, typer.Option(help="Memory key to forget")]) -> No
 
 
 @app.command()
+def doctor() -> None:
+    """Diagnose environment and configuration."""
+    import platform as pl
+    import sys
+    console.print("[bold]ATAR Doctor[/]")
+    console.print(f"  Python: {pl.python_version()} ({sys.executable})")
+    console.print(f"  Platform: {pl.system()} {pl.release()}")
+    # Check API key
+    from atar_core.provider_registry import get_provider
+    try:
+        provider = get_provider()
+        console.print(f"  Provider: {provider.model or 'unknown'}")
+        api_key = getattr(provider, 'api_key', None)
+        if api_key:
+            masked = api_key[:4] + "..." + api_key[-4:] if len(api_key) > 8 else "***"
+            console.print(f"  API Key: {masked}")
+        else:
+            console.print("  API Key: [red]not set[/]")
+    except Exception as e:
+        console.print(f"  API Key: [red]error: {e}[/]")
+
+
+@app.command()
 def gateway(platform: str = "telegram") -> None:
     """Start a messaging gateway."""
     if platform == "telegram":

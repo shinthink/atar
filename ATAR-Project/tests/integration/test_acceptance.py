@@ -38,7 +38,7 @@ class TestHP02ResearchE2E:
 
         result = await agent.run("carikan referensi tentang ataraxia")
         assert result is not None
-        assert "Ataraxia" in result.text
+        assert "Ataraxia" in result.final_text
         assert len(agent._messages) >= 2  # user + tool_result + tool_result + assistant
 
         # Check roles: must have tool-related messages
@@ -55,7 +55,7 @@ class TestHP02ResearchE2E:
         agent = Agent(provider=provider, max_turns=3, tools=[1])
         result = await agent.run("hai")
         assert result is not None
-        assert "Hello" in result.text
+        assert "Hello" in result.final_text
 
     @pytest.mark.asyncio
     async def test_citations_match_sources(self) -> None:
@@ -66,7 +66,7 @@ class TestHP02ResearchE2E:
         ])
         agent = Agent(provider=provider, max_turns=3, tools=[1])
         result = await agent.run("cari referensi ataraxia")
-        assert "iep.utm.edu" in result.text  # real source in answer
+        assert "iep.utm.edu" in result.final_text  # real source in answer
 
 
 class TestHP12ProviderFallback:
@@ -89,7 +89,7 @@ class TestHP12ProviderFallback:
         agent = Agent(provider=router, max_turns=3, tools=[])
         result = await agent.run("test")
         assert result is not None
-        assert "second success" in result.text
+        assert "second success" in result.final_text
         assert router.fallback_count >= 1
 
     @pytest.mark.asyncio

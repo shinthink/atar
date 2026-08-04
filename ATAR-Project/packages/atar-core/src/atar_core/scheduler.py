@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from atar_core.paths import _atar_home as atar_home
 
-DB_PATH = os.path.join(atar_home(), "memory.db")
+DB_PATH = os.path.join(atar_home(), "scheduler.db")
 
 _thread: threading.Thread | None = None
 _running = False

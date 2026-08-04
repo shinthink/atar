@@ -120,28 +120,18 @@ def to_anthropic_schema(tool: Tool) -> dict[str, Any]:
 
 
 # Auto-import all tool modules for registration
-def _import_all_tools():
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
-    with contextlib.suppress(ImportError): pass
+def _import_all_tools() -> None:
+    """Import all tool modules so they self-register via @register decorators."""
+    import importlib
+    import pkgutil
+    tool_modules = [
+        name for _, name, _ in pkgutil.iter_modules(
+            __import__("atar_tools.tools", fromlist=["__path__"]).__path__
+        )
+        if not name.startswith("_")
+    ]
+    for mod_name in tool_modules:
+        with contextlib.suppress(ImportError, Exception):
+            importlib.import_module(f"atar_tools.tools.{mod_name}")
 
-_import_all_tools()
-# Auto-import all tool modules for registration  # noqa: E501
-def _import_all_tools() -> None:  # noqa
-    import contextlib
-    with contextlib.suppress(ImportError): import atar_tools.tools.file  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.terminal  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.web  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.web_search  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.git  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.session  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.delegation  # noqa: F401, I001
-    with contextlib.suppress(ImportError): import atar_tools.tools.test_runner  # noqa: F401, I001
-with contextlib.suppress(ImportError): import atar_tools.tools.skill_tool  # noqa: F401, I001
-with contextlib.suppress(ImportError): import atar_tools.tools.patch_tool  # noqa: F401, I001
 _import_all_tools()

@@ -50,9 +50,12 @@ async def _delegate_task(_name: str, args: dict[str, Any], ctx: ToolContext) -> 
 
 
 def _get_default_provider():
-    """Get the default provider from the current REPL context."""
-    from atar_provider_deepseek.client import DeepSeekProvider
-    return DeepSeekProvider(model="deepseek-chat")
+    """Get the default provider from configuration."""
+    from atar_core.provider_registry import get_provider, list_available
+    available = list_available()
+    if available:
+        return available[0]
+    return get_provider("deepseek")
 
 
 register(

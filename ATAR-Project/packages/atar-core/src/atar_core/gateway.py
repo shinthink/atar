@@ -33,7 +33,9 @@ class TelegramGateway:
             user_id = update.effective_user.id if update.effective_user else 0
 
             if user_id not in self.allowed_ids:
-                return  # silently ignore
+                import logging
+                logging.getLogger("atar.gateway").debug(f"Unauthorized access attempt from user {user_id}")
+                return  # silently ignore to untrusted parties
 
             text = update.message.text if update.message else ""
             if not text:
