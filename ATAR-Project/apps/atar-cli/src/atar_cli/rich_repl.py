@@ -823,15 +823,19 @@ expand=True,
 
             if user == "/cost":
                 from atar_core.display import calculate_cost
+                from atar_core.background import get_bg_tokens
                 from rich.table import Table
-                table = Table(title="Session Cost")
-                table.add_column("Metric", style="#67D8FF")
-                table.add_column("Value", style="#4ADE80")
-                table.add_row("Turns", str(_stats["turns"]))
-                table.add_row("Tools used", str(_stats["tools"]))
-                table.add_row("Tokens (in/out)", f"{_stats['tokens']}/{_stats['tokens_out']}")
-                table.add_row("Total cost", f"${_stats['cost']:.4f}")
-                table.add_row("Model", _stats["model"])
+                bg = get_bg_tokens()
+                table = Table(title="Session Cost Breakdown")
+                table.add_column("Category", style="#67D8FF")
+                table.add_column("Tokens", style="#FBBF24")
+                table.add_column("Cost", style="#4ADE80")
+                table.add_row("Main response", f"{_stats['tokens']}/{_stats['tokens_out']}", f"${_stats['cost']:.4f}")
+                table.add_row("Background: memory", str(bg.get('memory', 0)), "")
+                table.add_row("Background: skill", str(bg.get('skill', 0)), "")
+                table.add_row("Turns", str(_stats["turns"]), "")
+                table.add_row("Tools used", str(_stats["tools"]), "")
+                table.add_row("Model", _stats["model"], "")
                 console.print(table)
                 console.print(Rule(style="#394B59"))
                 continue
