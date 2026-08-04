@@ -43,8 +43,7 @@ def render_diff(
         else:
             rich_lines.append(f"[dim]{ln.rstrip()}[/]")
 
-    markup = "
-".join(rich_lines)
+    markup = "\n".join(rich_lines)
     return markup, plain_text, stats
 
 
