@@ -36,6 +36,7 @@ class Agent:
     event_bus: EventBus | None = None
     state: AgentStateMachine = field(default_factory=AgentStateMachine)
     _messages: list[Message] = field(default_factory=list)
+    _turn_count: int = 0
 
     async def run(self, user_input: str, callbacks: StreamCallbacks | None = None, budget: RunBudget | None = None, cancel_token: Any = None) -> RunResult:
         """Execute one full agent turn loop with structured result."""
@@ -59,6 +60,7 @@ class Agent:
                 return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
 
             turn += 1
+            self._turn_count = turn
             budget.record_turn()
 
             request = ModelRequest(
@@ -192,26 +194,21 @@ class Agent:
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)
 
-    def undo_last_turn(self) -> str | None:
-        """Undo last user+assistant turn. Returns the removed user message text or None."""
-        msgs = self._messages
-        if not msgs:
-            return None
-        # Find last user message
-        last_user_idx = -1
-        last_user_text = None
-        for i in range(len(msgs) - 1, -1, -1):
-            if msgs[i].role == "user":
-                last_user_idx = i
-                last_user_text = msgs[i].content or ""
-                break
-        if last_user_idx < 0:
-            return None
-        # Remove from last user to end (includes assistant, tool calls, tool results)
-        msgs[last_user_idx:]
-        self._messages = msgs[:last_user_idx]
-        # Return the last non-system message as context
-        return last_user_text[:50] if last_user_text else None
+    def undo_last_turn(self, n: int = 1) -> list[str]:
+        """Restore the last n checkpointed files to their pre-tool-call content.
+
+        Does NOT touch conversation history — history stays intact so the
+        agent still remembers what it tried to do and why.
+        Returns the list of file paths that were restored.
+        """
+        from atar_core.checkpoint_manager import get_checkpoints
+        restored = get_checkpoints().undo(n)
+        return restored
+
+    def list_checkpoints(self) -> list[dict]:
+        """Expose recent checkpoints for the /checkpoints slash command."""
+        from atar_core.checkpoint_manager import get_checkpoints
+        return get_checkpoints().list_checkpoints()
 
     def retry_last_turn(self) -> str | None:
         """Return the last user message for retry (without modifying history)."""

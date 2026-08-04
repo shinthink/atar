@@ -696,16 +696,18 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
             
-            if user == "/undo":
-                text = agent.undo_last_turn()
-                from atar_core.checkpoint_manager import get_checkpoints
-                restored = get_checkpoints().undo(1)
+            if user == "/undo" or user.startswith("/undo "):
+                n = 1
+                if len(user) > 5:
+                    try:
+                        n = int(user[6:].strip())
+                    except ValueError:
+                        pass
+                restored = agent.undo_last_turn(n)
                 if restored:
                     console.print(f"[dim]↺ Restored: {', '.join(restored)}[/]")
-                if text:
-                    console.print(f"[dim]↺ Undone: \"{text}...\"[/]")
                 else:
-                    console.print("[dim]Nothing to undo.[/]")
+                    console.print("[dim]Nothing to undo — no checkpoints yet.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/retry":
