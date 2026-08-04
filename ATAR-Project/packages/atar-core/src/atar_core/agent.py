@@ -199,14 +199,22 @@ class Agent:
                 self._messages.append(Message(role="assistant", content=final_text))
                 self.state.transition(AgentState.COMPLETED)
 
-                # Update user model from conversation
+                # Update user model from conversation (local computation, no LLM)
                 from atar_core.user_model import load_model, update_from_messages
                 raw_msgs = [{"role": getattr(m, "role", ""), "content": str(getattr(m, "content", ""))} for m in self._messages]
                 update_from_messages(load_model(), raw_msgs)
-                # Non-blocking memory extraction (fire-and-forget)
+
+                # Background tasks — throttled, cheap provider, togglable
                 import asyncio
-                asyncio.create_task(_extract_memory(self, budget))
-                asyncio.create_task(_maybe_create_skill(self, budget))
+                from atar_core.background import (get_throttle, is_memory_enabled,
+                                                   is_skills_auto_enabled, get_background_provider_config)
+                throttle = get_throttle()
+                if self._turn_count % throttle == 0:
+                    bp, bm = get_background_provider_config()
+                    if bp and is_memory_enabled():
+                        asyncio.create_task(_extract_memory(self, budget, bp, bm))
+                    if bp and is_skills_auto_enabled():
+                        asyncio.create_task(_maybe_create_skill(self, budget, bp, bm))
                 return RunResult(state=TerminalState.COMPLETED, final_text=final_text, budget=budget.snapshot())
 
             except StateMachineError:
@@ -279,11 +287,14 @@ class Agent:
         return list(self._messages)
 
 
-async def _extract_memory(agent, budget) -> None:
-    """Async, non-blocking: extract memory entries from last N turns via LLM."""
+async def _extract_memory(agent, budget, bg_provider_id: str = "", bg_model: str = "") -> None:
+    """Async, non-blocking: extract memory entries from last N turns via cheap LLM."""
+    if not bg_provider_id:
+        return
     try:
         from atar_core.memory import create_entry
-        msgs = agent._messages[-6:]  # last 3 turns (user+assistant)
+        from atar_core.background import record_bg_tokens
+        msgs = agent._messages[-6:]
         if len(msgs) < 4:
             return
         transcript = "\n".join(
@@ -298,13 +309,20 @@ async def _extract_memory(agent, budget) -> None:
             f"{transcript}"
         )
         from atar_models.requests import Message, ModelRequest
-        req = ModelRequest(provider_id="", model="", messages=[
+        from atar_core.provider_registry import get_provider
+        bg_provider = get_provider(bg_provider_id)
+        req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[
             Message(role="user", content=prompt),
         ])
         text = ""
-        async for event in agent.provider.stream(req):
+        tokens_used = 0
+        async for event in bg_provider.stream(req):
             if hasattr(event, "text") and event.text:
                 text += event.text
+            if hasattr(event, "provider_metadata"):
+                meta = event.provider_metadata or {}
+                tokens_used += meta.get("usage", {}).get("total_tokens", 0)
+        record_bg_tokens("memory", tokens_used)
         import json
         try:
             entries = json.loads(text.strip())
@@ -322,9 +340,12 @@ async def _extract_memory(agent, budget) -> None:
         pass  # fire-and-forget — never block the user
 
 
-async def _maybe_create_skill(agent, budget) -> None:
-    """After session: if >=4 tool calls, ask model for skill draft → pending."""
+async def _maybe_create_skill(agent, budget, bg_provider_id: str = "", bg_model: str = "") -> None:
+    """After session: if >=4 tool calls, ask cheap model for skill draft → pending."""
+    if not bg_provider_id:
+        return
     try:
+        from atar_core.background import record_bg_tokens
         tools_called = sum(1 for m in agent._messages if getattr(m, 'role', '') == 'tool')
         if tools_called < 4:
             return
@@ -346,26 +367,24 @@ async def _maybe_create_skill(agent, budget) -> None:
             f"Session transcript:\n{transcript}"
         )
         from atar_models.requests import Message, ModelRequest
-        req = ModelRequest(provider_id="", model="", messages=[
+        from atar_core.provider_registry import get_provider
+        bg_provider = get_provider(bg_provider_id)
+        req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[
             Message(role="user", content=prompt),
         ])
         text = ""
-        async for event in agent.provider.stream(req):
+        tokens_used = 0
+        async for event in bg_provider.stream(req):
             if hasattr(event, "text") and event.text:
                 text += event.text
-        if text.strip() == "SKIP" or "SKIP" in text[:20]:
+            if hasattr(event, "provider_metadata"):
+                meta = event.provider_metadata or {}
+                tokens_used += meta.get("usage", {}).get("total_tokens", 0)
+        record_bg_tokens("skill", tokens_used)
+        if "SKIP" in text[:20]:
             return
-        # Extract skill name from frontmatter
-        import re
-        name_match = re.search(r'name:\s*(\S+)', text)
-        desc_match = re.search(r'description:\s*(.+)', text)
-        skill_name = name_match.group(1) if name_match else f"skill-{tools_called}"
-        skill_desc = desc_match.group(1).strip() if desc_match else ""
         from atar_core.skills import get_skill_manager
         mgr = get_skill_manager()
-        ok = mgr.propose(skill_name, text, description=skill_desc)
-        if ok:
-            import logging
-            logging.getLogger("atar.skills").info(f"Skill proposed: {skill_name}")
+        mgr.save_pending(text)
     except Exception:
         pass  # fire-and-forget

@@ -836,6 +836,31 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
             
+            if user == "/memory on":
+                from atar_core.background import toggle_memory
+                toggle_memory()
+                console.print("[green]Memory extraction: ON[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/memory off":
+                from atar_core.background import toggle_memory
+                toggle_memory()
+                console.print("[dim]Memory extraction: OFF[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/skills-auto on":
+                from atar_core.background import toggle_skills_auto
+                toggle_skills_auto()
+                console.print("[green]Auto-skill creation: ON[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/skills-auto off":
+                from atar_core.background import toggle_skills_auto
+                toggle_skills_auto()
+                console.print("[dim]Auto-skill creation: OFF[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            
             if user == "/init":
                 import subprocess
                 cwd = os.getcwd()
