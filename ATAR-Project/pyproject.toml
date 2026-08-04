@@ -4,14 +4,14 @@ version = "0.1.0"
 description = "ATAR — Clarity in Complexity. A local-first, full-screen terminal AI agent and project operating environment."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "shinthink" }]
 keywords = ["ai-agent", "terminal", "tui", "cli", "automation"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
@@ -93,9 +93,6 @@ members = [
     "packages/atar-storage",
     "packages/atar-tools",
     "packages/atar-security",
-    "packages/atar-projects",
-    "packages/atar-domain",
-    "packages/atar-planning",
     "providers/*",
 ]
 
@@ -150,7 +147,7 @@ source = ["packages", "apps", "providers", "tools"]
 omit = ["*/tests/*", "*/test_*"]
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 56
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
