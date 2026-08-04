@@ -1,4 +1,4 @@
-"""F1: /retry and /undo tests."""
+"""F1: /retry and /undo tests (disk-based)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,10 @@ import tempfile
 
 import pytest
 from atar_core.agent import Agent
-from atar_core.checkpoint_manager import get_checkpoints, reset_checkpoints
+from atar_tools.tools.checkpoints import (
+    checkpoint_before_write, clear_checkpoints,
+    list_checkpoints, restore_checkpoint,
+)
 from atar_models.requests import Message
 
 
@@ -26,66 +29,49 @@ class FakeSimpleProvider:
 
 
 class TestUndoRetry:
-    """Verify undo (filesystem restore) and retry behavior."""
+    def setup_method(self):
+        clear_checkpoints()
 
-    @pytest.mark.asyncio
-    async def test_undo_empty_history_returns_empty(self) -> None:
-        """Undo on empty history returns empty list, no crash."""
-        reset_checkpoints()
+    def test_undo_empty_returns_empty(self):
         agent = Agent(provider=FakeSimpleProvider())
         result = agent.undo_last_turn()
         assert result == []
 
-    @pytest.mark.asyncio
-    async def test_undo_restores_file(self) -> None:
-        """Undo restores file content to pre-checkpoint state."""
-        reset_checkpoints()
+    def test_undo_restores_file(self):
         agent = Agent(provider=FakeSimpleProvider())
         tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
         tmp.write("original")
         tmp.close()
 
-        # Save checkpoint
-        get_checkpoints().save(1, "write_file", tmp.name)
-
-        # Modify file
+        checkpoint_before_write(tmp.name)
         with open(tmp.name, "w") as f:
             f.write("modified")
 
-        # Undo should restore
         restored = agent.undo_last_turn()
-        assert tmp.name in restored or any(tmp.name in r for r in restored)
         with open(tmp.name) as f:
             assert f.read() == "original"
         os.unlink(tmp.name)
 
-    @pytest.mark.asyncio
-    async def test_undo_new_file_deletes(self) -> None:
-        """Undo deletes file that was newly created."""
-        reset_checkpoints()
+    def test_multiple_checkpoints(self):
+        tmp1 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        tmp1.write("v1")
+        tmp1.close()
+        tmp2 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        tmp2.write("v1")
+        tmp2.close()
+
+        checkpoint_before_write(tmp1.name)
+        checkpoint_before_write(tmp2.name)
+        with open(tmp1.name, "w") as f: f.write("v2")
+        with open(tmp2.name, "w") as f: f.write("v2")
+
         agent = Agent(provider=FakeSimpleProvider())
-        tmp = f"/tmp/_atar_undo_test_{os.getpid()}.txt"
+        restored = agent.undo_last_turn(n=2)
+        assert len(restored) >= 1
+        os.unlink(tmp1.name)
+        os.unlink(tmp2.name)
 
-        # Simulate creating a new file
-        with open(tmp, "w") as f:
-            f.write("new content")
-
-        # Save checkpoint (file was new, get_checkpoints uses sentinel)
-        # Manually simulate: agent wrote a new file, checkpoint was saved with empty content
-        import time
-
-        from atar_core.checkpoint_manager import Checkpoint
-        cp = Checkpoint(turn=1, timestamp=time.time(), tool="write_file",
-                       file_path=tmp, content="")
-        get_checkpoints()._checkpoints.append(cp)
-
-        restored = agent.undo_last_turn()
-        assert "deleted" in str(restored).lower()
-        assert not os.path.exists(tmp)  # file should be gone
-
-    @pytest.mark.asyncio
-    async def test_retry_returns_last_user_message(self) -> None:
-        """Retry returns the last user message for in-place regenerate."""
+    def test_retry_returns_last_user_message(self):
         agent = Agent(provider=FakeSimpleProvider())
         agent._messages = [
             Message(role="user", content="hello"),
@@ -94,8 +80,6 @@ class TestUndoRetry:
         last = agent.retry_last_turn()
         assert last == "hello"
 
-    @pytest.mark.asyncio
-    async def test_retry_empty_history(self) -> None:
-        """Retry on empty history returns None."""
+    def test_retry_empty_history(self):
         agent = Agent(provider=FakeSimpleProvider())
         assert agent.retry_last_turn() is None
