@@ -1,7 +1,7 @@
 [project]
-name = "atar"
+name = "atar-agent"
 version = "0.7.0"
-description = "ATAR — Clarity in Complexity. A local-first, full-screen terminal AI agent and project operating environment."
+description = "ATAR — Clarity in Complexity. Autonomous terminal AI agent with real-time tool execution, streaming responses, and persistent sessions."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
