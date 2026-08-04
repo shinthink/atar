@@ -24,6 +24,9 @@ _TOOL_TOOLSETS: dict[str, str] = {
     "execute_code": "code_execution",
     "cronjob": "scheduler",
     "delegate_task": "delegation",
+    "memory_add": "memory",
+    "memory_list": "memory",
+    "load_skill": "skills",
 }
 
 # Toolset definitions with defaults
@@ -37,6 +40,8 @@ DEFAULT_TOOLSETS: dict[str, dict[str, Any]] = {
     "code_execution": {"enabled": False, "description": "Python code execution"},
     "scheduler": {"enabled": False, "description": "Cron job scheduling"},
     "delegation": {"enabled": False, "description": "Subagent delegation"},
+    "memory": {"enabled": True, "description": "Memory add and query"},
+    "skills": {"enabled": True, "description": "Skill loading"},
 }
 
 
