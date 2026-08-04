@@ -456,6 +456,11 @@ def run_repl() -> None:
             a = args_cache.get(name, {})
             if name == "terminal":
                 preview = a.get("command", "")[:50]
+                if result:
+                    lines = result.strip().split("\n")
+                    if len(lines) > 10:
+                        _tool_results.append(f"  \u2502 [dim]{chr(10).join(lines[:10])}[/]")
+                        _tool_results.append(f"  \u2502 [dim]... {len(lines) - 10} more lines[/]")
                 _tool_results.append(f"  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]")
             elif name == "write_file":
                 path = a.get("path", "")
@@ -814,6 +819,61 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
 
+            if user == "/cost":
+                from atar_core.display import calculate_cost
+                from rich.table import Table
+                table = Table(title="Session Cost")
+                table.add_column("Metric", style="#67D8FF")
+                table.add_column("Value", style="#4ADE80")
+                table.add_row("Turns", str(_stats["turns"]))
+                table.add_row("Tools used", str(_stats["tools"]))
+                table.add_row("Tokens (in/out)", f"{_stats['tokens']}/{_stats['tokens_out']}")
+                table.add_row("Total cost", f"${_stats['cost']:.4f}")
+                table.add_row("Model", _stats["model"])
+                console.print(table)
+                console.print(Rule(style="#394B59"))
+                continue
+            
+            if user == "/init":
+                import subprocess
+                cwd = os.getcwd()
+                # Quick project scan
+                files = []
+                for root, _, filenames in os.walk(cwd):
+                    if '.venv' in root or '__pycache__' in root:
+                        continue
+                    for fn in filenames:
+                        if fn.endswith(('.py', '.toml', '.yaml', '.md', '.json')):
+                            files.append(os.path.relpath(os.path.join(root, fn), cwd))
+                        if len(files) > 50:
+                            break
+                draft = f"# ATAR Project Context\n\nGenerated from {cwd}\n\n"
+                if os.path.exists(os.path.join(cwd, 'pyproject.toml')):
+                    draft += "- Python project with pyproject.toml\n"
+                if os.path.exists(os.path.join(cwd, 'README.md')):
+                    draft += "- Has README.md\n"
+                draft += f"- {len(files)} source files detected\n\n"
+                draft += "## Commands\n- Test: `uv run pytest`\n- Lint: `uv run ruff check .`\n"
+                target = os.path.join(cwd, "ATAR.md")
+                with open(target, "w") as f:
+                    f.write(draft)
+                console.print(f"[green]✓ ATAR.md generated at {target}[/]")
+                console.print(f"[dim]{draft[:200]}...[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/compact":
+                # Trigger context compaction via agent
+                if agent._messages:
+                    old = len(agent._messages)
+                    # Keep first 2 + last 6 messages
+                    if old > 10:
+                        agent._messages = agent._messages[:2] + agent._messages[-6:]
+                        console.print(f"[dim]Compacted: {old} messages → {len(agent._messages)} (first 2 + last 6)[/]")
+                    else:
+                        console.print("[dim]Not enough messages to compact.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            
             if user == "/yolo":
                 approval = get_approval()
                 approval.yolo = not approval.yolo
@@ -997,6 +1057,22 @@ expand=True,
                 console.print("[dim]No historical data yet — run more sessions first.[/]")
                 console.print(Rule(style="#394B59"))
                 continue
+
+            
+            # Resolve @file references in user input
+            if "@" in user:
+                import re
+                for match in re.finditer(r'@([^\s]+)', user):
+                    ref_path = match.group(1)
+                    full_path = os.path.join(os.getcwd(), ref_path)
+                    if os.path.isfile(full_path):
+                        try:
+                            with open(full_path) as rf:
+                                fc = rf.read()[:3000]
+                            user = user.replace(f"@{ref_path}", f"[{ref_path}]")
+                            user += f"\n[File content from @{ref_path}]:\n{fc}\n"
+                        except Exception:
+                            pass
 
             # Busy-mode handling
             is_running = _current_task and not _current_task.done()

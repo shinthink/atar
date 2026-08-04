@@ -98,6 +98,18 @@ def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profil
     session_layers = [IDENTITY, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
 
 
+    
+    # Inject ATAR.md project context if present
+    atar_md_path = os.path.join(os.getcwd(), "ATAR.md")
+    if not os.path.exists(atar_md_path):
+        atar_md_path = os.path.join(os.getcwd(), ".atar", "context.md")
+    if os.path.exists(atar_md_path):
+        try:
+            with open(atar_md_path) as af:
+                session_layers.append(PromptLayer(name="project_context", content=af.read()[:4000], stability="session"))
+        except Exception:
+            pass
+
     # Inject user model if present
     from atar_core.user_model import load_model, model_to_prompt
     um = model_to_prompt(load_model())
