@@ -92,6 +92,15 @@ def doctor() -> None:
 
 
 @app.command()
+def setup() -> None:
+    """First-run setup wizard — configure AI provider."""
+    import asyncio
+
+    from atar_cli.setup_wizard import run_setup
+    asyncio.run(run_setup())
+
+
+@app.command()
 def gateway(platform: str = "telegram") -> None:
     """Start a messaging gateway."""
     if platform == "telegram":

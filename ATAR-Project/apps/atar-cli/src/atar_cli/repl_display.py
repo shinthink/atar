@@ -100,8 +100,8 @@ def format_tool_result_line(name: str, args: dict, result: str, elapsed: float, 
         if result:
             result_lines = result.strip().split("\n")
             if len(result_lines) > max_lines:
-                for l in result_lines[:max_lines]:
-                    lines.append(f"  │ [dim]{l}[/]")
+                for line in result_lines[:max_lines]:
+                    lines.append(f"  │ [dim]{line}[/]")
                 lines.append(f"  │ [dim]... {len(result_lines) - max_lines} more lines[/]")
         lines.append(f"  │ 💻 [bold]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]")
     elif name == "write_file":

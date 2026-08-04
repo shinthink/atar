@@ -172,8 +172,6 @@ session_pt = PromptSession(
 # ── Model selection ──
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
 
-from atar_cli.rich_repl_helpers import BASE_PROMPT
-
 MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 
 
