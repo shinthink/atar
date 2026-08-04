@@ -334,6 +334,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
 
 _last_diff: list[str] = []
 _pending_queue: list[str] = []
+_last_rejection_feedback: dict[str, str] = {}
 
 # ── Runtime stats for status bar ──
 _stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": None, "model": "deepseek-chat", "compressions": 0, "background_tasks": 0, "cost": 0.0}
@@ -477,6 +478,59 @@ def run_repl() -> None:
             return
 
         try:
+            async def on_approval(tool_name: str, arguments: dict) -> bool:
+                from atar_core.approval import get_approval, format_approval_prompt
+                approval = get_approval()
+                file_path = arguments.get("path", "") or arguments.get("file_path", "")
+                action = approval.resolve(tool_name, file_path)
+                if action == "approve":
+                    return True
+                if action == "reject":
+                    console.print(f"[red]✗ {tool_name} auto-rejected (permission: never)[/]")
+                    return False
+                # action == "ask" — show diff + prompt
+                diff_markup, stats = "", {"added": 0, "removed": 0}
+                if tool_name in ("write_file", "patch") and file_path:
+                    from atar_tools.tools.diff_renderer import render_diff
+                    old_content = None
+                    try:
+                        with open(file_path) as f:
+                            old_content = f.read()
+                    except FileNotFoundError:
+                        pass
+                    new_content = arguments.get("content", "") or arguments.get("new_string", "")
+                    diff_markup, _, stats = render_diff(old_content, new_content, file_path)
+                prompt_text = format_approval_prompt(tool_name, file_path, diff_markup, stats)
+                console.print(prompt_text)
+                try:
+                    choice = await session_pt.prompt_async(
+                        HTML("<dim>Choice [1-5]: </dim>"), style=PT_STYLE
+                    )
+                except (KeyboardInterrupt, EOFError):
+                    return False
+                choice = choice.strip()
+                if choice == "1":
+                    return True
+                if choice == "2":
+                    if file_path:
+                        approval.add_file_always(file_path)
+                    return True
+                if choice == "3":
+                    approval.set_tool_mode(tool_name, "always")
+                    return True
+                if choice == "4":
+                    try:
+                        feedback = await session_pt.prompt_async(
+                            HTML("<dim>What should the agent do instead? </dim>"), style=PT_STYLE
+                        )
+                        _last_rejection_feedback["text"] = feedback
+                    except (KeyboardInterrupt, EOFError):
+                        _last_rejection_feedback["text"] = "Stop this task."
+                    return False
+                # choice 5 or invalid
+                approval.set_tool_mode(tool_name, "never")
+                return False
+
             async def _capture(t: str) -> None:
                 nonlocal response_text
                 response_text += t
@@ -496,12 +550,16 @@ def run_repl() -> None:
                         tick_task = asyncio.create_task(_tick())
                         await ag.run(prompt, StreamCallbacks(
                             on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                            on_approval=on_approval,
+                            get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
                         ))
                         tick_task.cancel()
                 else:
                     console.print("\n  ● thinking...", end="")
                     await ag.run(prompt, StreamCallbacks(
                         on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                        on_approval=on_approval,
+                        get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
                     ))
             await _run_with_status()
             for tr in _tool_results:
@@ -919,6 +977,7 @@ expand=True,
                 continue
 
             if user == "/yolo":
+                from atar_core.approval import get_approval
                 approval = get_approval()
                 approval.yolo = not approval.yolo
                 status = "ON" if approval.yolo else "OFF"
@@ -926,6 +985,7 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
             if user == "/permissions" or user.startswith("/permissions set "):
+                from atar_core.approval import get_approval
                 from rich.table import Table
                 from atar_core.approval import get_approval
                 approval = get_approval()

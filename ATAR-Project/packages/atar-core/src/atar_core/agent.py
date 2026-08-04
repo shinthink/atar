@@ -22,6 +22,7 @@ class StreamCallbacks:
     on_tool_call: Callable[[str, dict[str, Any]], Coroutine[Any, Any, None] | None] | None = None
     on_tool_result: Callable[[str, str], Coroutine[Any, Any, None] | None] | None = None
     on_approval: Callable[[str, dict[str, Any]], Coroutine[Any, Any, bool] | None] | None = None
+    get_rejection_feedback: Callable[[], str | None] | None = None
     on_done: Callable[[ModelResponse], Coroutine[Any, Any, None] | None] | None = None
     on_error: Callable[[str], Coroutine[Any, Any, None] | None] | None = None
 
@@ -139,9 +140,14 @@ class Agent:
                         if cb.on_approval:
                             approved = await cb.on_approval(nc["name"], nc["arguments"])
                             if not approved:
+                                rejection_msg = f"Tool {nc['name']} rejected by user."
+                                if hasattr(cb, "get_rejection_feedback"):
+                                    fb = cb.get_rejection_feedback()
+                                    if fb:
+                                        rejection_msg += f" User feedback: {fb}"
                                 self._messages.append(Message(
                                     role="tool", tool_call_id=nc["id"],
-                                    content=f"Tool {nc['name']} rejected by user.",
+                                    content=rejection_msg,
                                 ))
                                 continue
                         result = await self._execute_tool(nc["name"], nc["arguments"])
