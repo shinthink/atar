@@ -29,9 +29,10 @@
 - Security: secret-filtered memory, audit logging, keyring-first credential resolution
 
 ### Quality
-- **153 tests** (contract, integration, security, TUI/PTY)
-- 57% coverage, 0 ruff warnings
+- **353 tests** (contract, integration, security, TUI/PTY)
+- 65% coverage, 0 ruff warnings
 - Security audited: 12 findings, 11 fixed
+- Provider clients: all 6 fully implemented (shared OpenAI-compatible base)
 
 ---
 

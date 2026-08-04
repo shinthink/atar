@@ -16,7 +16,8 @@ Clarity in Complexity.
 <p align="center">
   <a href="https://github.com/shinthink/atar/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-49%2F49-brightgreen?style=for-the-badge" alt="49/49 Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-353%2F353-brightgreen?style=for-the-badge" alt="353/353 Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-65%25-blue?style=for-the-badge" alt="65% Coverage"></a>
   <a href="#"><img src="https://img.shields.io/badge/RUFF-clean-black?style=for-the-badge&logo=ruff&logoColor=white" alt="RUFF Clean"></a>
 </p>
 
@@ -65,7 +66,10 @@ Built with Python 3.12+, prompt_toolkit, Rich, and a clean modular architecture,
 <tr><td><b>Six AI providers</b></td><td>DeepSeek (native tool calling), OpenAI, Anthropic, OpenRouter, Z.AI, and Custom OpenAI-compatible endpoints. Switch with <code>/model</code>. Provider fallback on failure.</td></tr>
 <tr><td><b>Research tools</b></td><td><code>web_search</code> (DuckDuckGo) and <code>web_fetch</code> for real-time information retrieval. The agent searches, extracts sources, and synthesizes answers with citations.</td></tr>
 <tr><td><b>Coding tools</b></td><td>Write files, read files, run terminal commands, git operations, run tests — all from the REPL with approval gates, live output streaming, and proper error handling.</td></tr>
-<tr><td><b>Session persistence</b></td><td>Save and resume conversations with structured tool-call history. Search past sessions. Fresh session or resume previous.</td></tr>
+<tr><td><b>Memory system</b></td><td>SQLite-backed persistent memory with secret filtering. LLM auto-extraction captures facts, preferences, and decisions across sessions. Searchable, supersedable, confidence-scored.</td></tr>
+<tr><td><b>Session persistence</b></td><td>Save and resume conversations with structured tool-call history. FTS5 full-text search across past sessions. Fresh session or resume previous.</td></tr>
+<tr><td><b>Skills system</b></td><td>Auto-created from complex sessions. Pending approval workflow. Skill manager with singleton registry.</td></tr>
+<tr><td><b>Scheduler</b></td><td>Persistent cron jobs with enable/disable, failure tracking, and auto-disable after repeated failures.</td></tr>
 <tr><td><b>Theme engine</b></td><td>Built-in <code>atar</code>, <code>monochrome</code>, and <code>high-contrast</code> skins. NO_COLOR support. Terminal-width responsive layout.</td></tr>
 <tr><td><b>Provider fallback</b></td><td>Automatic failover across providers. If one provider fails, the next takes over — no manual intervention needed.</td></tr>
 </table>
@@ -199,7 +203,7 @@ Press `Tab` while typing a slash command to see completions.
 
 ## Tools
 
-ATAR exposes 13 registered tools to the agent. All tools originate from one central registry used by the agent, REPL, and tests:
+ATAR exposes 14 registered tools to the agent. All tools originate from one central registry used by the agent, REPL, and tests:
 
 | Tool | Description | Risk |
 |------|-------------|------|
@@ -244,9 +248,12 @@ Provider fallback: if the primary provider fails, ATAR automatically tries the n
 atar (entry point)
   └── rich_repl.py              prompt_toolkit + Rich REPL
         └── Agent                 multi-turn tool-calling loop
-              ├── ProviderRouter   fallback chain across providers
-              ├── Tool Registry    web_search, web_fetch, read_file, write_file, terminal
-              ├── Session Manager  JSON persistence
+              ├── ProviderRouter   fallback chain across 6 providers
+              ├── Tool Registry    14 tools with auto-discovery
+              ├── Memory System    SQLite, secret-filtered, auto-extraction
+              ├── Session Manager  SQLite persistence + FTS5 search
+              ├── Skills Manager   auto-creation, pending approval
+              ├── Scheduler        persistent cron + failure tracking
               └── Theme Engine     atar / monochrome / high-contrast
 ```
 
@@ -272,9 +279,12 @@ ATAR-Project/
 │   ├── atar-provider-zai/
 │   └── atar-provider-custom/
 ├── tests/
-│   ├── contract/         Protocol contract tests
-│   └── integration/      Agent loop + acceptance tests
-└── docs/                 Architecture, ADRs, audit reports
+│   ├── contract/              Protocol + tool contract tests
+│   ├── integration/           Agent loop + acceptance tests
+│   ├── security/              Security hardening tests
+│   └── tui/                   PTY entry point tests
+├── plugins/                   Auto-discoverable plugin categories
+└── docs/                      Architecture, ADRs, audit reports
 ```
 
 ---
@@ -283,9 +293,11 @@ ATAR-Project/
 
 Sessions persist the full conversation: user messages, assistant responses, tool calls, tool results, token usage, and timestamps. Resume a session with `/sessions`.
 
-- **Fresh session**: Every `atar` launch starts fresh (no auto-contamination).
+- **SQLite storage**: Sessions and memory stored in SQLite with FTS5 full-text search.
+- **Fresh session**: Every `atar` launch starts fresh by default.
 - **Resume**: Use `/sessions` to pick and resume a previous session.
-- **Search**: Full-text search across past sessions.
+- **Search**: `/search` for full-text search across past sessions.
+- **Memory**: Persistent facts, preferences, and decisions auto-extracted by background LLM.
 - **Clear**: `/clear` resets the conversation within a session.
 
 ---
@@ -335,8 +347,11 @@ uv sync
 # Lint
 uv run ruff check .
 
-# Run all tests (49)
+# Run all tests (353)
 uv run pytest tests/ -q
+
+# Run with coverage (target: 65%)
+uv run pytest tests/ --cov=packages --cov=apps -q
 
 # Run specific test suite
 uv run pytest tests/integration/test_agent_loop.py -v
@@ -349,15 +364,11 @@ uv run atar
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
-| `tests/contract/test_provider_contract.py` | 7 | Provider protocol conformance |
-| `tests/contract/test_event_bus.py` | 6 | Async event pub/sub |
-| `tests/contract/test_state_machine.py` | 8 | Agent state transitions |
-| `tests/integration/test_agent.py` | 4 | Agent vertical slice |
-| `tests/integration/test_agent_loop.py` | 6 | Deterministic tool-call sequences |
-| `tests/integration/test_acceptance.py` | 5 | HP-02 research, HP-12 fallback |
-| `tests/tui/test_entry_pty.py` | 5 | PTY entry point tests |
-| `tests/tui/*` | 8 | TUI screen connectivity |
-| **Total** | **49** | All passing |
+| `tests/contract/` | 205 | Provider contracts, tool coverage, core modules, display helpers |
+| `tests/integration/` | 136 | Agent loop, acceptance, approval flow, config |
+| `tests/security/` | 7 | File path hardening, terminal policy, SSRF protection |
+| `tests/tui/` | 5 | PTY entry point tests |
+| **Total** | **353** | 65% coverage, 0 ruff warnings |
 
 ---
 
