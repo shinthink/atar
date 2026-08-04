@@ -85,25 +85,8 @@ class SlashCommandToolCompleter(Completer):
 
     @staticmethod
     def _tool_risk(tool_name: str) -> tuple[str, str]:
-        """Return (risk_label, color) for a tool."""
-        risk_map = {
-            "read_file": ("Read-only", "#4ADE80"),
-            "search_files": ("Read-only", "#4ADE80"),
-            "session_search": ("Read-only", "#4ADE80"),
-            "session_resume": ("Read-only", "#4ADE80"),
-            "git": ("Read-only", "#4ADE80"),
-            "web_search": ("Network", "#FBBF24"),
-            "web_fetch": ("Network", "#FBBF24"),
-            "browser": ("Network", "#FBBF24"),
-            "write_file": ("Write", "#F87171"),
-            "patch": ("Write", "#F87171"),
-            "terminal": ("Execute", "#EF4444"),
-            "run_tests": ("Execute", "#EF4444"),
-            "execute_code": ("Execute", "#EF4444"),
-            "cronjob": ("Execute", "#EF4444"),
-            "delegate_task": ("Execute", "#EF4444"),
-        }
-        return risk_map.get(tool_name, ("Unknown", "#9CA3AF"))
+        from atar_cli.rich_repl_helpers import tool_risk
+        return tool_risk(tool_name)
 
     def get_completions(self, document: Document, complete_event):
         text_before = document.text_before_cursor
@@ -189,21 +172,9 @@ session_pt = PromptSession(
 # ── Model selection ──
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
 
-MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
+from atar_cli.rich_repl_helpers import BASE_PROMPT
 
-BASE_PROMPT = (
-    "You are ATAR, an autonomous agent with tools: web_search, web_fetch, read_file, write_file, terminal.\n"
-    "Platform: Linux. Shell: bash.\n"
-    "CRITICAL:\n"
-    "- For research \u2014 call web_search IMMEDIATELY. No explanations first.\n"
-    "- For coding \u2014 call write_file IMMEDIATELY. Never say 'Saya akan buat' or 'let me'. Just act.\n"
-    "- For simple chat/greetings \u2014 respond directly.\n"
-    "- Use Linux commands (xdg-open, rm, ls, grep, etc). Never suggest open/start.\n"
-    "- Never prefix your response with 'I will' or 'Saya akan'. Just use the tool.\n"
-    "- Never assume or fabricate the user's name. Only use their name if they explicitly tell you.\n"
-    "- Be concise. One-sentence answers preferred.\n"
-    "- Match the user's language."
-)
+MODELS = [(prof.display_name, pid, prof.default_model) for pid, prof in _PROVIDERS.items()]
 
 
 def _read_config() -> dict:
@@ -479,7 +450,7 @@ def run_repl() -> None:
 
         try:
             async def on_approval(tool_name: str, arguments: dict) -> bool:
-                from atar_core.approval import get_approval, format_approval_prompt
+                from atar_core.approval import format_approval_prompt, get_approval
                 approval = get_approval()
                 file_path = arguments.get("path", "") or arguments.get("file_path", "")
                 action = approval.resolve(tool_name, file_path)
@@ -969,7 +940,6 @@ expand=True,
             if user == "/permissions" or user.startswith("/permissions set "):
                 from atar_core.approval import get_approval
                 from rich.table import Table
-                from atar_core.approval import get_approval
                 approval = get_approval()
                 if user.startswith("/permissions set "):
                     parts = user.split()
