@@ -171,6 +171,12 @@ class Agent:
 
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
+# Save checkpoint before destructive operations
+        if name in ("write_file", "patch"):
+            path = args.get("path", "")
+            if path:
+                from atar_core.checkpoint_manager import get_checkpoints
+                get_checkpoints().save(self._turn_count, name, path)
         from atar_tools.registry import execute as tool_execute
         # Interactive mode: auto-approve tool calls (user can Ctrl+C)
         approved = getattr(self, "interactive", True)

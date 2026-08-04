@@ -61,6 +61,7 @@ register_command("/memory", "Show persistent memories", category="memory")
 register_command("/remember", "Save a fact to memory", category="memory", arg_hint="[text]")
 register_command("/memory forget", "Forget a memory entry", category="memory", arg_hint="[id]")
 register_command("/search", "Search past sessions", category="session", arg_hint="[query]")
+register_command("/checkpoints", "List file checkpoints in session", category="system")
 register_command("/undo", "Undo the last turn", category="session")
 register_command("/retry", "Retry the last turn", category="session")
 register_command("/compress", "Compress conversation context", category="session")
@@ -671,8 +672,31 @@ expand=True,
                 console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
                 console.print(Rule(style="#394B59"))
                 continue
+            if user == "/checkpoints":
+                from atar_core.checkpoint_manager import get_checkpoints
+                cps = get_checkpoints().list_checkpoints()
+                if not cps:
+                    console.print("[dim]No checkpoints yet.[/]")
+                else:
+                    from rich.table import Table
+                    table = Table(title="Checkpoints")
+                    table.add_column("#")
+                    table.add_column("Turn")
+                    table.add_column("Tool")
+                    table.add_column("File")
+                    table.add_column("Time")
+                    for i, cp in enumerate(cps):
+                        table.add_row(str(i+1), str(cp["turn"]), cp["tool"], cp["file"][:40], cp["time"])
+                    console.print(table)
+                console.print(Rule(style="#394B59"))
+                continue
+            
             if user == "/undo":
                 text = agent.undo_last_turn()
+                from atar_core.checkpoint_manager import get_checkpoints
+                restored = get_checkpoints().undo(1)
+                if restored:
+                    console.print(f"[dim]↺ Restored: {', '.join(restored)}[/]")
                 if text:
                     console.print(f"[dim]↺ Undone: \"{text}...\"[/]")
                 else:
