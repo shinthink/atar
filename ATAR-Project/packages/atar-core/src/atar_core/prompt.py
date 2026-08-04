@@ -23,6 +23,19 @@ IDENTITY: PromptLayer = PromptLayer(
     stability="session",
 )
 
+ACTION: PromptLayer = PromptLayer(
+    name="action",
+    content=(
+        "CRITICAL RULES:\n"
+        "- When asked to CREATE, WRITE, BUILD, or MAKE something — use write_file IMMEDIATELY.\n"
+        "- Do NOT describe what you will do. Do NOT plan out loud. Just DO it.\n"
+        "- Always produce a working deliverable backed by real tool output — not a description.\n"
+        "- If a user asks you to create a file, write code, or build something, the deliverable "
+        "is the actual file on disk, not a description of what the file would contain."
+    ),
+    stability="session",
+)
+
 SAFETY: PromptLayer = PromptLayer(
     name="safety",
     content=(
@@ -95,7 +108,7 @@ class AssembledPrompt:
 
 def assemble(session_id: str = "", model: str = "", cwd: str = "", memory_profile: str = "default") -> AssembledPrompt:
     """Build a multi-layer system prompt with memory snapshot."""
-    session_layers = [IDENTITY, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
+    session_layers = [IDENTITY, ACTION, SAFETY, PLATFORM, TOOLS, INSTRUCTIONS]
 
 
     
