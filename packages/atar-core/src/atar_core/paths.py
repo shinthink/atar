@@ -54,7 +54,7 @@ def atar_config_file(profile: str = "default") -> Path:
 
 def atar_memory_file(profile: str = "default") -> Path:
     """Memory file path."""
-    return atar_data_dir(profile) / "memory.json"
+    return atar_data_dir(profile) / "memory.db"
 
 
 def ensure_dirs(profile: str = "default") -> None:

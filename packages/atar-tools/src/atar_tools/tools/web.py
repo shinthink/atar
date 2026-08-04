@@ -65,7 +65,7 @@ async def _web_fetch(_name: str, args: dict[str, Any], ctx: ToolContext) -> Tool
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
             resp = await client.get(url, follow_redirects=True, headers={
-                "User-Agent": "ATAR/0.1 (web-research)"
+                "User-Agent": "ATAR/0.7 (web-research)"
             })
 
             # Revalidate redirect target

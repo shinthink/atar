@@ -139,7 +139,7 @@ class TestPaths:
     def test_atar_memory_file(self) -> None:
         from atar_core.paths import atar_memory_file
         d = atar_memory_file()
-        assert "memory.json" in str(d)
+        assert "memory.db" in str(d)
 
     def test_ensure_dirs(self) -> None:
         from atar_core.paths import ensure_dirs

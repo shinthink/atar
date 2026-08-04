@@ -97,7 +97,8 @@ class Agent:
                 final_text = "".join(text_parts)
 
                 _had_tools_this_turn = bool(tool_calls)
-                # Compute narration detection early (used in both branches)
+
+                # Compute narration detection once
                 _narration_patterns = [
                     r"let me", r"i'll", r"i will", r"now let me",
                     r"writing the", r"building the", r"creating the",
@@ -113,7 +114,7 @@ class Agent:
                         tid = tc.get("id", "")
                         name = tc.get("name", "")
                         inp = tc.get("input") or {}
-                        if not name or not inp:
+                        if not name:
                             continue
                         if tid and tid in seen:
                             continue
@@ -121,9 +122,17 @@ class Agent:
                             seen.add(tid)
                         # Check repeated call budget
                         if budget.too_many_repeated(name):
-                            return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
+                            self._messages.append(Message(
+                                role="tool", tool_call_id=tid,
+                                content=f"Tool {name} skipped: too many repeated calls."
+                            ))
+                            continue
                         if budget.tools_remaining() <= 0:
-                            return RunResult(state=TerminalState.BUDGET_EXHAUSTED, budget=budget.snapshot())
+                            self._messages.append(Message(
+                                role="tool", tool_call_id=tid,
+                                content=f"Tool {name} skipped: tool call budget exhausted."
+                            ))
+                            continue
                         normalized_calls.append({"id": tid, "name": name, "arguments": inp})
 
                     self._messages.append(Message(
@@ -171,13 +180,7 @@ class Agent:
                     continue
 
                 # Check if model is narrating intent ("Let me create...") without acting
-                # Configurable phrase patterns — add more as models evolve their language
-                _narration_patterns = [
-                    r"\blet me\b", r"\bi'll\b", r"\bi will\b", r"\bnow let me\b",
-                    r"\bwriting the\b", r"\bbuilding the\b", r"\bcreating the\b",
-                    r"\bi now have\b", r"\bworking on\b", r"\bmari saya\b",
-                    r"\bsaya akan\b", r"\bakan saya\b", r"\btime to write\b",
-                ]
+                # Reuse _narration_patterns from above
                 _narration_re = re.compile("|".join(_narration_patterns), re.IGNORECASE)
                 is_narrating = bool(_narration_re.search(final_text))
                 if is_narrating and not _had_tools_this_turn and budget.turns_remaining() > 0:
@@ -242,8 +245,6 @@ class Agent:
 
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
-
-        # Save checkpoint before destructive operations
         from atar_tools.registry import execute as tool_execute
         # Interactive mode: auto-approve tool calls (user can Ctrl+C)
         approved = getattr(self, "interactive", True)
@@ -324,6 +325,8 @@ async def _extract_memory(agent, budget, bg_provider_id: str = "", bg_model: str
 
         from atar_core.provider_registry import get_provider
         bg_provider = get_provider(bg_provider_id)
+        if not bg_provider:
+            return
         req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[
             Message(role="user", content=prompt),
         ])
@@ -383,6 +386,8 @@ async def _maybe_create_skill(agent, budget, bg_provider_id: str = "", bg_model:
 
         from atar_core.provider_registry import get_provider
         bg_provider = get_provider(bg_provider_id)
+        if not bg_provider:
+            return
         req = ModelRequest(provider_id=bg_provider_id, model=bg_model, messages=[
             Message(role="user", content=prompt),
         ])
