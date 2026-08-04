@@ -38,6 +38,8 @@ class ModelRequest(BaseModel):
     messages: list[Message] = Field(default_factory=list)
     system: list[ContentBlock] = Field(default_factory=list)
     tools: list[ToolSchema] = Field(default_factory=list)
+    cache_system: bool = True  # Mark system prompt as cacheable
+    cache_tools: bool = True   # Mark tool definitions as cacheable
     tool_choice: str | None = None
     temperature: float | None = None
     max_output_tokens: int | None = None

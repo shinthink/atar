@@ -99,14 +99,20 @@ def _build_body(request: ModelRequest, model: str, max_tokens: int, *, stream: b
         "stream": stream,
     }
     if system:
-        body["system"] = system
+        if request.cache_system:
+            body["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+        else:
+            body["system"] = system
     if request.temperature is not None:
         body["temperature"] = request.temperature
     if request.tools:
-        body["tools"] = [
-            {"name": t.name, "description": t.description, "input_schema": t.parameters or {}}
-            for t in request.tools
-        ]
+        tools_out = []
+        for t in request.tools:
+            ts = {"name": t.name, "description": t.description, "input_schema": t.parameters or {}}
+            if request.cache_tools:
+                ts["cache_control"] = {"type": "ephemeral"}
+            tools_out.append(ts)
+        body["tools"] = tools_out
         body["tool_choice"] = {"type": "auto"}
     return body
 

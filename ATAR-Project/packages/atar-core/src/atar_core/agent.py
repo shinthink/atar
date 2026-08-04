@@ -74,6 +74,8 @@ class Agent:
             request = ModelRequest(
                 provider_id="atar", model="",
                 messages=self._format_messages(),
+                cache_system=True,
+                cache_tools=True,
             )
             if self.tools:
                 request.tools = self._tool_schemas()
