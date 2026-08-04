@@ -94,3 +94,21 @@ def tools_for_toolsets(toolset_names: list[str]) -> list[Any]:
 def enabled_toolsets() -> list[str]:
     """List names of currently enabled toolsets."""
     return [name for name, cfg in DEFAULT_TOOLSETS.items() if cfg.get("enabled", True)]
+
+
+_active_toolset: str = ""
+
+
+def set_active_toolset(name: str) -> None:
+    global _active_toolset
+    _active_toolset = name
+
+
+def get_active_toolset() -> str:
+    return _active_toolset
+
+
+def get_active_toolset_names() -> set[str]:
+    if not _active_toolset:
+        return set()
+    return {_active_toolset}

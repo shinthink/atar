@@ -252,7 +252,12 @@ class Agent:
         return await tool_execute(name, args, ctx)
     def _tool_schemas(self) -> list[Any]:
         from atar_tools.registry import list_all
-        return list_all()
+        from atar_tools.toolsets import get_active_toolset_names
+        active = get_active_toolset_names()
+        all_tools = list_all()
+        if active:
+            return [t for t in all_tools if getattr(t, "toolset", "") in active]
+        return all_tools
 
     def continue_conversation(self, user_input: str, callbacks: StreamCallbacks | None = None):
         return self.run(user_input, callbacks)
