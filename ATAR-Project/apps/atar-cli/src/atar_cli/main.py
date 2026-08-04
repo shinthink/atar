@@ -35,6 +35,9 @@ def default(
         asyncio.run(_c())
         return
     from atar_cli.rich_repl import run_repl
+    if yolo:
+        from atar_core.approval import get_approval
+        get_approval().yolo = True
     run_repl()
 
 

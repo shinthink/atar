@@ -790,6 +790,38 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
 
+            if user == "/yolo":
+                approval = get_approval()
+                approval.yolo = not approval.yolo
+                status = "ON" if approval.yolo else "OFF"
+                console.print(f"[bold yellow]YOLO mode: {status}[/]" + (" ⚠ Auto-approve all tool calls" if approval.yolo else ""))
+                console.print(Rule(style="#394B59"))
+                continue
+            if user == "/permissions" or user.startswith("/permissions set "):
+                from rich.table import Table
+                approval = get_approval()
+                if user.startswith("/permissions set "):
+                    parts = user.split()
+                    if len(parts) >= 4:
+                        tool_name = parts[2]
+                        mode = parts[3]
+                        if mode in ("always", "ask", "never"):
+                            approval.set_tool_mode(tool_name, mode)
+                            console.print(f"[green]✓ {tool_name} → {mode}[/]")
+                        else:
+                            console.print(f"[red]Invalid mode: {mode}. Use always/ask/never.[/]")
+                else:
+                    table = Table(title="Tool Permissions")
+                    table.add_column("Tool", style="#67D8FF")
+                    table.add_column("Mode", style="#4ADE80")
+                    table.add_column("YOLO", style="#FBBF24")
+                    for t in ["write_file", "patch", "terminal", "execute_code"]:
+                        mode = approval.tool_modes.get(t, "ask")
+                        table.add_row(t, mode, "ON" if approval.yolo else "OFF")
+                    console.print(table)
+                console.print(Rule(style="#394B59"))
+                continue
+            
             if user.startswith("/cron add "):
                 parts = user[10:].strip().split(maxsplit=2)
                 if len(parts) >= 2:

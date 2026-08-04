@@ -1,356 +1,270 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ataraxia — Ketenangan Pikiran</title>
-<style>
-  :root {
-    --bg: #0e1116;
-    --bg-soft: #161b22;
-    --gold: #d4af7a;
-    --gold-light: #e9cda0;
-    --text: #dde3ea;
-    --muted: #8b949e;
-    --line: #2a3039;
-    --blue: #58a6ff;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ataraxia — The Art of Unwavering Calm</title>
+    <style>
+        /* =========================================================
+           ATARAXIA — A minimalist, meditative single-page design
+           Inspired by classical Greek philosophy.
+           Palette: warm paper, deep ink, muted sage, aged stone
+        ========================================================= */
+        :root {
+            --ink:        #2b2825;   /* deep warm grey-black */
+            --paper:      #f5f2ec;   /* warm off-white */
+            --sage:       #8a9b8c;   /* muted sage green */
+            --stone:      #6b6b64;   /* aged stone grey */
+            --sand:       #e8e2d5;   /* light sand accent */
+            --white:      #fdfcf9;
+        }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    font-family: 'Segoe UI', 'Georgia', serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-    overflow-x: hidden;
-  }
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            color: var(--ink);
+            background: var(--paper);
+            line-height: 1.9;
+            font-size: 17px;
+        }
 
-  /* ---- Aksara Yunani dekoratif ---- */
-  .greek-bg {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 20%, #1a2230 0%, var(--bg) 70%);
-    z-index: -2;
-  }
-  .greek-bg span {
-    position: absolute;
-    font-family: 'Georgia', serif;
-    font-size: 9rem;
-    color: rgba(212,175,122,0.04);
-    user-select: none;
-    pointer-events: none;
-  }
+        /* Wide, generous negative space */
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 0 28px;
+        }
 
-  /* ---- Hero ---- */
-  header {
-    min-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2rem;
-    position: relative;
-  }
+        /* ---------- Hero ---------- */
+        .hero {
+            min-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px 20px;
+        }
 
-  .eyebrow {
-    letter-spacing: 0.5em;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    color: var(--gold);
-    margin-bottom: 1.5rem;
-  }
+        .greek-char {
+            font-size: 3.5rem;
+            color: var(--sage);
+            letter-spacing: 0.2em;
+            margin-bottom: 24px;
+            opacity: 0.85;
+            animation: breathe 6s ease-in-out infinite;
+        }
 
-  h1 {
-    font-size: clamp(3.2rem, 10vw, 7rem);
-    font-weight: 300;
-    letter-spacing: 0.08em;
-    background: linear-gradient(120deg, var(--gold-light), var(--gold), #f2e6d0);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: fadeUp 1.4s ease forwards;
-  }
+        h1 {
+            font-size: clamp(2.2rem, 6vw, 3.6rem);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            margin-bottom: 18px;
+        }
 
-  .script-char {
-    display: block;
-    font-size: clamp(1.1rem, 3vw, 1.8rem);
-    color: var(--muted);
-    letter-spacing: 0.3em;
-    margin-top: 1.2rem;
-    font-family: 'Segoe UI', sans-serif;
-    font-style: italic;
-  }
+        .tagline {
+            font-style: italic;
+            color: var(--stone);
+            font-size: 1.15rem;
+            max-width: 520px;
+            margin-bottom: 40px;
+        }
 
-  .tagline {
-    margin-top: 1.5rem;
-    color: var(--muted);
-    max-width: 600px;
-    font-size: 1.1rem;
-    animation: fadeUp 1.4s ease .3s forwards;
-    opacity: 0;
-  }
+        @keyframes breathe {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50%      { opacity: 1;   transform: scale(1.04); }
+        }
 
-  .scroll-hint {
-    margin-top: 3rem;
-    color: var(--gold);
-    animation: bounce 2s infinite;
-    font-size: 1.4rem;
-  }
+        .scroll-hint {
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-top: 10px;
+        }
 
-  /* ---- Section umum ---- */
-  section {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 4rem 2rem;
-  }
+        /* ---------- Sections ---------- */
+        section {
+            padding: 90px 0;
+            border-top: 1px solid var(--sand);
+        }
 
-  h2 {
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
-    font-weight: 400;
-    color: var(--gold-light);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  h2::before {
-    content: "";
-    width: 3px;
-    height: 1.5em;
-    background: linear-gradient(var(--gold), transparent);
-  }
+        .section-label {
+            font-size: 0.75rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 20px;
+        }
 
-  p { color: var(--muted); }
+        h2 {
+            font-size: 1.9rem;
+            font-weight: 400;
+            margin-bottom: 28px;
+            letter-spacing: 0.03em;
+        }
 
-  /* ---- Kartu ---- */
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-  }
+        p { margin-bottom: 22px; color: var(--stone); }
 
-  .card {
-    background: var(--bg-soft);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 1.8rem;
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-    cursor: default;
-  }
-  .card:hover {
-    transform: translateY(-6px);
-    border-color: var(--gold);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-  }
-  .card .icon { font-size: 2rem; margin-bottom: 0.8rem; }
-  .card h3 { color: var(--text); margin-bottom: 0.5rem; font-weight: 500; }
-  .card p { font-size: 0.95rem; color: var(--muted); }
+        .pull-quote {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--ink);
+            text-align: center;
+            padding: 48px 20px;
+            margin: 20px 0;
+        }
+        .pull-quote cite {
+            display: block;
+            font-size: 0.85rem;
+            font-style: normal;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-top: 16px;
+        }
 
-  /* ---- Kutipan ---- */
-  .quote-box {
-    background: linear-gradient(135deg, rgba(212,175,122,0.08), transparent);
-    border-left: 3px solid var(--gold);
-    border-radius: 12px;
-    padding: 2rem;
-    margin: 3rem 0;
-  }
-  .quote-box blockquote {
-    font-size: clamp(1.2rem, 3vw, 1.6rem);
-    font-style: italic;
-    color: var(--gold-light);
-    line-height: 1.6;
-  }
-  .quote-box cite {
-    display: block;
-    margin-top: 1rem;
-    color: var(--muted);
-    font-style: normal;
-    font-size: 0.9rem;
-  }
+        /* ---------- Three schools ---------- */
+        .schools {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 28px;
+            margin-top: 30px;
+        }
 
-  /* ---- Meditasi / breathing ---- */
-  .breathing {
-    text-align: center;
-    padding: 3rem 1rem;
-  }
-  .circle {
-    width: 160px;
-    height: 160px;
-    margin: 2rem auto;
-    border-radius: 50%;
-    border: 2px solid var(--gold);
-    background: radial-gradient(circle, rgba(212,175,122,0.15), transparent);
-    animation: breathe 8s ease-in-out infinite;
-  }
-  .breath-label {
-    color: var(--gold);
-    letter-spacing: 0.3em;
-    font-size: 1.1rem;
-    min-height: 1.6rem;
-  }
+        .school {
+            background: var(--white);
+            border-left: 3px solid var(--sage);
+            padding: 26px 24px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .school:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(43,40,37,0.08);
+        }
+        .school h3 {
+            font-size: 1.15rem;
+            font-weight: 400;
+            margin-bottom: 12px;
+            letter-spacing: 0.04em;
+        }
+        .school p { font-size: 0.95rem; margin-bottom: 0; }
+        .school .greek { color: var(--sage); font-style: italic; }
 
-  /* ---- Kata Yunani ---- */
-  .greek-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.2rem;
-    margin-top: 2rem;
-  }
-  .greek-item {
-    text-align: center;
-    padding: 1.5rem 1rem;
-    background: var(--bg-soft);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-  }
-  .greek-item .gr { font-size: 1.8rem; color: var(--gold-light); }
-  .greek-item .tr { font-size: 1.05rem; color: var(--text); margin-top: 0.4rem; }
-  .greek-item .de { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; }
+        /* ---------- Footer ---------- */
+        footer {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--stone);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--sand);
+        }
+        footer .greek-char { font-size: 2rem; margin-bottom: 12px; }
 
-  footer {
-    text-align: center;
-    padding: 2.5rem;
-    color: var(--muted);
-    font-size: 0.85rem;
-    border-top: 1px solid var(--line);
-  }
+        a { color: var(--sage); text-decoration: none; border-bottom: 1px solid var(--sand); }
+        a:hover { border-color: var(--sage); }
 
-  /* ---- Animasi ---- */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(10px); }
-  }
-  @keyframes breathe {
-    0%, 100% { transform: scale(0.9); }
-    50% { transform: scale(1.15); }
-  }
-
-  .reveal {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-  }
-  .reveal.active { opacity: 1; transform: translateY(0); }
-
-  @media (max-width: 600px) {
-    section { padding: 3rem 1.4rem; }
-  }
-</style>
+        @media (max-width: 500px) {
+            body { font-size: 16px; }
+            .pull-quote { font-size: 1.25rem; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="greek-bg">
-  <span style="top:8%; left:5%;">α</span>
-  <span style="top:40%; right:3%;">τ</span>
-  <span style="bottom:15%; left:8%;">α</span>
-  <span style="bottom:25%; right:8%;">ρ</span>
-  <span style="top:15%; right:15%;">α</span>
-</div>
+    <!-- HERO -->
+    <header class="hero">
+        <div class="greek-char">ἀταραξία</div>
+        <h1>Ataraxia</h1>
+        <p class="tagline">
+            &ldquo;Freedom from disturbance&rdquo; — the ancient pursuit of serene,
+            unshakable tranquility of mind.
+        </p>
+        <div class="scroll-hint">Scroll to reflect &nbsp;&#8595;</div>
+    </header>
 
-<!-- HERO -->
-<header>
-  <div class="eyebrow">Philosophy • Keheningan Jiwa</div>
-  <h1>ATARAXIA</h1>
-  <span class="script-char">ἀταραξία</span>
-  <p class="tagline">
-    Ketenangan pikiran yang murni — kebebasan jiwa dari kegelisahan,
-    kecemasan, dan goncangan. Sebuah keadaan damai yang tak tergoyahkan.
-  </p>
-  <div class="scroll-hint">▼</div>
-</header>
+    <!-- INTRO -->
+    <section>
+        <div class="container">
+            <div class="section-label">The Concept</div>
+            <h2>The Still Point of the Mind</h2>
+            <p>
+                From the Greek <em>a-</em> (without) and <em>taraxis</em> (disturbance),
+                <em>ataraxia</em> names a state of deep inner stillness — not the dull absence
+                of feeling, but a cultivated equanimity that remains calm amid the noise of life.
+            </p>
+            <p>
+                Across the Hellenistic schools it stood as both a goal and a method: the ethical
+                ideal of a good life (<em>eudaimonia</em>), reached through reason, simplicity,
+                and the wise management of desire.
+            </p>
+        </div>
+    </section>
 
-<!-- DEFINISI -->
-<section>
-  <h2>Apa Itu Ataraxia?</h2>
-  <div class="quote-box">
-    <blockquote>
-      "Ataraxia adalah keadaan tenteram dan tenang, terbebas dari gangguan emosional,
-      di mana jiwa mencapai puncak kedamaiannya."
-    </blockquote>
-    <cite>— Konsep filsafat Yunani Kuno</cite>
-  </div>
-  <p>
-    Kata <em>ataraxia</em> berasal dari bahasa Yunani: <em>a</em>- (tanpa) + <em>tarachē</em> (goncangan, gangguan).
-    Secara harfiah berarti <strong>"bebas dari kekacauan"</strong> atau <strong>"tidak terganggu"</strong>.
-    Ini adalah tujuan tertinggi kehidupan dalam dua aliran filsafat besar zaman klasik.
-  </p>
-</section>
+    <!-- THREE SCHOOLS -->
+    <section>
+        <div class="container">
+            <div class="section-label">Historical Paths</div>
+            <h2>Three Roads to Tranquility</h2>
+            <div class="schools">
+                <div class="school">
+                    <h3>Epicureanism</h3>
+                    <p class="greek">ἡδονή &middot; <em>hedonē</em></p>
+                    <p>
+                        Peace through the satisfaction of natural, necessary desires —
+                        and the dispelling of irrational fears of death and the gods.
+                    </p>
+                </div>
+                <div class="school">
+                    <h3>Stoicism</h3>
+                    <p class="greek">ἀπάθεια &middot; <em>apatheia</em></p>
+                    <p>
+                        Tranquility by living in accord with nature, focusing only on what
+                        lies within our control and accepting the rest with serenity.
+                    </p>
+                </div>
+                <div class="school">
+                    <h3>Pyrrhonian Skepticism</h3>
+                    <p class="greek">ἐποχή &middot; <em>epochē</em></p>
+                    <p>
+                        Stillness through the suspension of judgment — embracing uncertainty
+                        and releasing the torment of craving certainty.
+                    </p>
+                </div>
+            </div>
 
-<!-- PILAR -->
-<section>
-  <h2>Dua Jalan Menuju Ataraxia</h2>
-  <div class="card-grid">
-    <div class="card">
-      <div class="icon">🍇</div>
-      <h3>Epikureanisme</h3>
-      <p>Ketenangan dicapai dengan memilih kenikmatan yang sederhana dan sehat, menghindari kesenangan berlebihan, serta melepaskan takut pada kematian dan para dewa.</p>
-    </div>
-    <div class="card">
-      <div class="icon">🗿</div>
-      <h3>Stoisisme</h3>
-      <p>Ataraxia lahir dari kebijaksanaan — membedakan apa yang bisa dikendalikan dan apa yang tidak, lalu menyerahkan diri dengan tenang pada arus takdir.</p>
-    </div>
-  </div>
-</section>
+            <div class="pull-quote">
+                &ldquo;The happiness of your life depends upon the quality of your thoughts.&rdquo;
+                <cite>— Marcus Aurelius, <em>Meditations</em></cite>
+            </div>
+        </div>
+    </section>
 
-<!-- KATA YUNANI -->
-<section>
-  <h2>Esensi Kata Ini</h2>
-  <div class="greek-grid">
-    <div class="greek-item"><div class="gr">ἀ</div><div class="tr">tanpa</div><div class="de">negasi, absen</div></div>
-    <div class="greek-item"><div class="gr">ταραχή</div><div class="tr">goncangan</div><div class="de">kecemasan, keruhanan</div></div>
-    <div class="greek-item"><div class="gr">ἀταραξία</div><div class="tr">ketenangan</div><div class="de">keadaan damai murni</div></div>
-  </div>
-</section>
+    <!-- APPLICATION -->
+    <section>
+        <div class="container">
+            <div class="section-label">Today</div>
+            <h2>A Quiet Counterpoint to Noise</h2>
+            <p>
+                Ataraxia offers a gentle rebuke to a culture of constant stimulation and
+                external achievement. Its wisdom — stillness, simplicity, self-mastery —
+                speaks as clearly now as it did in antiquity.
+            </p>
+            <p>
+                The ancient ideal reminds us that peace is cultivated from within: through
+                reason, resilience, and reflective understanding, rather than from the highs
+                and lows of circumstance.
+            </p>
+        </div>
+    </section>
 
-<!-- LATIHAN -->
-<section>
-  <h2>Coba Rasakan Sendiri</h2>
-  <p style="text-align:center;">Tarik napas selama 4 detik, tahan 4 detik, hembuskan 4 detik. Biarkan pikiranmu tenang.</p>
-  <div class="breathing">
-    <div class="breath-label" id="breathText">Tarik Napas…</div>
-    <div class="circle"></div>
-  </div>
-</section>
+    <!-- FOOTER -->
+    <footer>
+        <div class="greek-char">ἀταραξία</div>
+        <p>Serenity of mind &middot; an invitation to live with less disturbance</p>
+        <p>&copy; 2025 &middot; A meditative single-page composition</p>
+    </footer>
 
-<footer>
-  <div style="color:var(--gold); font-size:1.2rem; margin-bottom:0.5rem;">ἀταραξία</div>
-  Ketenangan bukan ketiadaan, melainkan kehadiran kedamaian. © Ataraxia Page
-</footer>
-
-<script>
-  // Reveal on scroll
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) e.target.classList.add('active');
-    });
-  }, { threshold: 0.15 });
-
-  document.querySelectorAll('section').forEach(s => s.classList.add('reveal'));
-  document.querySelectorAll('section').forEach(s => observer.observe(s));
-
-  // Teks latihan pernapasan mengikuti animasi lingkaran (8s cycle)
-  const breathText = document.getElementById('breathText');
-  const phases = [
-    { t: 0,    label: "Tarik Napas…" },
-    { t: 4000, label: "Tahan…" },
-    { t: 6000, label: "Hembuskan…" },
-  ];
-  function cycle() {
-    const now = Date.now() % 8000;
-    let label = "Tarik Napas…";
-    for (const p of phases) { if (now >= p.t) label = p.label; }
-    breathText.textContent = label;
-    requestAnimationFrame(cycle);
-  }
-  cycle();
-</script>
 </body>
 </html>
