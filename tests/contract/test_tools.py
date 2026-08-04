@@ -42,7 +42,7 @@ async def test_write_file_tool() -> None:
 
 @pytest.mark.asyncio
 async def test_terminal_tool() -> None:
-    result = await execute("terminal", {"command": "echo hello"}, APPROVED)
+    result = await execute("terminal", {"command": "echo hello", "sandbox": False}, APPROVED)
     assert result.success
     assert "hello" in result.output
 
@@ -55,7 +55,7 @@ async def test_terminal_tool_failure() -> None:
 
 @pytest.mark.asyncio
 async def test_terminal_timeout() -> None:
-    result = await execute("terminal", {"command": "sleep 5", "timeout": 1}, APPROVED)
+    result = await execute("terminal", {"command": "sleep 5", "timeout": 1, "sandbox": False}, APPROVED)
     assert "Timed out" in result.error
 
 

@@ -49,14 +49,14 @@ class TestTerminalPolicy:
     @pytest.mark.asyncio
     async def test_basic_command_runs(self) -> None:
         ctx = ToolContext(metadata={"workspace": WORKSPACE})
-        result = await _run_terminal("terminal", {"command": "echo hello", "timeout": 5}, ctx)
+        result = await _run_terminal("terminal", {"command": "echo hello", "timeout": 5, "sandbox": False}, ctx)
         assert result.success
         assert "hello" in result.output
 
     @pytest.mark.asyncio
     async def test_timeout_is_honored(self) -> None:
         ctx = ToolContext(metadata={"workspace": WORKSPACE})
-        result = await _run_terminal("terminal", {"command": "sleep 30", "timeout": 1}, ctx)
+        result = await _run_terminal("terminal", {"command": "sleep 30", "timeout": 1, "sandbox": False}, ctx)
         assert not result.success
         assert "timed out" in result.error.lower()
 

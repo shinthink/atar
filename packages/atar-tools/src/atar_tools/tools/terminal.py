@@ -58,10 +58,30 @@ async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> T
     if err:
         return ToolResult(success=False, error=err)
 
-    cwd = args.get("cwd") or ctx.working_directory or os.getcwd()
+    use_sandbox = args.get("sandbox", True)  # Default: use Docker sandbox when available
+    cwd = os.path.abspath(args.get("cwd") or ctx.working_directory or os.getcwd())
     timeout = min(args.get("timeout", 30), 300)  # max 5 minutes
     max_output = 20_000
 
+    # Try Docker sandbox first
+    if use_sandbox:
+        try:
+            from atar_core.docker_sandbox import run_sandboxed
+            ok, stdout, stderr = await run_sandboxed(command, cwd=cwd, timeout=timeout)
+            output = stdout[:max_output]
+            if stderr:
+                output += f"\n[stderr]\n{stderr[:max_output]}"
+            if len(stdout) > max_output or len(stderr) > max_output:
+                output += "\n[output truncated]"
+            return ToolResult(
+                success=ok,
+                output=output,
+                metadata={"cwd": cwd, "sandbox": "docker" if ok else "docker-failed-fallback-local"},
+            )
+        except Exception:
+            pass  # Fall through to local execution
+
+    # Local execution (fallback or explicit sandbox=false)
     try:
         proc = await asyncio.create_subprocess_shell(
             command,
@@ -121,6 +141,7 @@ register("terminal", "Run a shell command", _run_terminal, parameters={
         "command": {"type": "string", "description": "Command to run"},
         "cwd": {"type": "string", "description": "Working directory"},
         "timeout": {"type": "integer", "description": "Timeout in seconds (max 300)"},
+        "sandbox": {"type": "boolean", "description": "Run in Docker sandbox (default: true, auto-fallback to local)"},
     },
     "required": ["command"],
 }, destructive=True, requires_approval=True, max_output_chars=20_000)
