@@ -242,7 +242,8 @@ class Agent:
 
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
-# Save checkpoint before destructive operations
+
+        # Save checkpoint before destructive operations
         from atar_tools.registry import execute as tool_execute
         # Interactive mode: auto-approve tool calls (user can Ctrl+C)
         approved = getattr(self, "interactive", True)
