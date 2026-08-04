@@ -53,13 +53,18 @@ def reset_approval() -> None:
 def format_approval_prompt(tool_name: str, file_path: str, diff_markup: str, stats: dict) -> str:
     """Build the Rich-formatted approval prompt with 5 choices."""
     from atar_tools.tools.diff_renderer import diff_stats_line
-    return f"""[bold]Approve {tool_name} to {file_path}?[/] {diff_stats_line(stats)}
-
-{diff_markup}
-
-[bold]Choices:[/]
+    if file_path:
+        header = f"[bold]Approve {tool_name} to {file_path}?[/] {diff_stats_line(stats)}"
+    else:
+        header = f"[bold]Approve {tool_name}?[/]"
+    
+    parts = [header]
+    if diff_markup:
+        parts.append(diff_markup)
+    parts.append("""[bold]Choices:[/]
   [1] Yes, apply this change
   [2] Yes, and don't ask again for this file this session
   [3] Yes, and don't ask again for this tool this session
   [4] No, reject and tell agent what to change
-  [5] No, and stop the task"""
+  [5] No, and stop the task""")
+    return "\n\n".join(parts)
