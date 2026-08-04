@@ -3,22 +3,24 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from typing import Any
 
-from atar_models.requests import ModelRequest
-from atar_models.responses import ModelResponse
+from atar_models.model_events import ModelEvent
+from atar_models.requests import ModelRequest, TokenCountRequest
+from atar_models.responses import ModelResponse, ProviderCapabilities, ProviderHealth
 
 
 class ProviderRouter:
     """Routes requests across providers with fallback on failure."""
 
     def __init__(self, providers: list[Any]) -> None:
-        self.providers = providers
+        self.providers: list[Any] = providers
         self._fallback_count = 0
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
         """Try providers in order until one succeeds."""
-        last_error = None
+        last_error: Exception | None = None
         for i, provider in enumerate(self.providers):
             try:
                 result = await asyncio.wait_for(
@@ -34,9 +36,9 @@ class ProviderRouter:
                 last_error = e
         raise RuntimeError(f"All providers failed. Last: {last_error}")
 
-    async def stream(self, request: ModelRequest):
+    async def stream(self, request: ModelRequest) -> AsyncIterator[ModelEvent]:
         """Stream from providers with fallback on failure."""
-        last_error = None
+        last_error: Exception | None = None
         for i, provider in enumerate(self.providers):
             try:
                 async for event in provider.stream(request):
@@ -56,17 +58,25 @@ class ProviderRouter:
     def model(self) -> str:
         return getattr(self.providers[0], "model", "router") if self.providers else "none"
 
-    async def capabilities(self):
-        return (await self.providers[0].capabilities()) if self.providers else type("C", (), {"text": True, "streaming": True, "tools": True})()
+    async def capabilities(self) -> ProviderCapabilities:
+        if self.providers:
+            return await self.providers[0].capabilities()
+        return ProviderCapabilities(text=True, streaming=True, tools=True)
 
     async def list_models(self) -> list[str]:
-        return [await p.list_models() for p in self.providers][0] if self.providers else []
+        if self.providers:
+            return await self.providers[0].list_models()
+        return []
 
-    async def count_tokens(self, request):
-        return await self.providers[0].count_tokens(request) if self.providers else 0
+    async def count_tokens(self, request: TokenCountRequest) -> int:
+        if self.providers:
+            return await self.providers[0].count_tokens(request)
+        return 0
 
-    async def health_check(self):
-        return await self.providers[0].health_check() if self.providers else type("H", (), {"provider_id": "router", "status": "unknown"})()
+    async def health_check(self) -> ProviderHealth:
+        if self.providers:
+            return await self.providers[0].health_check()
+        return ProviderHealth(provider_id="router", status="unknown")
 
 
 def create_router() -> ProviderRouter:
@@ -77,7 +87,7 @@ def create_router() -> ProviderRouter:
 
     from atar_core.config_reader import get_api_key
 
-    providers = []
+    providers: list[Any] = []
 
     # Primary: DeepSeek
     key = get_api_key("deepseek") or os.environ.get("DEEPSEEK_API_KEY")
