@@ -735,24 +735,6 @@ expand=True,
                 console.print(f"[green]✓ Saved {len(msgs)} messages ({session_id[:12]})[/]")
                 console.print(Rule(style="#394B59"))
                 continue
-            if user == "/checkpoints":
-                from atar_core.checkpoint_manager import get_checkpoints
-                cps = get_checkpoints().list_checkpoints()
-                if not cps:
-                    console.print("[dim]No checkpoints yet.[/]")
-                else:
-                    from rich.table import Table
-                    table = Table(title="Checkpoints")
-                    table.add_column("#")
-                    table.add_column("Turn")
-                    table.add_column("Tool")
-                    table.add_column("File")
-                    table.add_column("Time")
-                    for i, cp in enumerate(cps):
-                        table.add_row(str(i+1), str(cp["turn"]), cp["tool"], cp["file"][:40], cp["time"])
-                    console.print(table)
-                console.print(Rule(style="#394B59"))
-                continue
 
             if user == "/undo" or user.startswith("/undo "):
                 n = 1

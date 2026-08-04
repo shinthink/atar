@@ -43,6 +43,8 @@ async def _patch_file(name: str, args: dict, ctx: ToolContext) -> ToolResult:
             return ToolResult(success=False, error="old_string not found in file")
         new_content = new_content.replace(old_string, new_string, 1)
 
+    from atar_tools.tools.checkpoints import checkpoint_before_write
+    checkpoint_before_write(safe)
     # Generate unified diff
     old_stripped = [line.rstrip("\n") for line in old_lines]
     new_stripped = [line.rstrip("\n") for line in new_content.splitlines(keepends=True)]

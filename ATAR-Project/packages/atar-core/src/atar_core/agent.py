@@ -243,11 +243,6 @@ class Agent:
     async def _execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         from atar_models.tools import ToolContext
 # Save checkpoint before destructive operations
-        if name in ("write_file", "patch"):
-            path = args.get("path", "")
-            if path:
-                from atar_core.checkpoint_manager import get_checkpoints
-                get_checkpoints().save(self._turn_count, name, path)
         from atar_tools.registry import execute as tool_execute
         # Interactive mode: auto-approve tool calls (user can Ctrl+C)
         approved = getattr(self, "interactive", True)
@@ -269,20 +264,19 @@ class Agent:
         return self.run(user_input, callbacks)
 
     def undo_last_turn(self, n: int = 1) -> list[str]:
-        """Restore the last n checkpointed files to their pre-tool-call content.
-
-        Does NOT touch conversation history — history stays intact so the
-        agent still remembers what it tried to do and why.
-        Returns the list of file paths that were restored.
-        """
-        from atar_core.checkpoint_manager import get_checkpoints
-        restored = get_checkpoints().undo(n)
+        """Restore the last n checkpointed files (disk-based). History stays intact."""
+        from atar_tools.tools.checkpoints import list_checkpoints, restore_checkpoint
+        cps = list_checkpoints()[:n]
+        restored = []
+        for cp in cps:
+            if restore_checkpoint(cp.get("id", "")):
+                restored.append(cp.get("original", cp.get("file_path", "")))
         return restored
 
     def list_checkpoints(self) -> list[dict]:
-        """Expose recent checkpoints for the /checkpoints slash command."""
-        from atar_core.checkpoint_manager import get_checkpoints
-        return get_checkpoints().list_checkpoints()
+        """Expose recent checkpoints (disk-based)."""
+        from atar_tools.tools.checkpoints import list_checkpoints
+        return list_checkpoints()
 
     def retry_last_turn(self) -> str | None:
         """Return the last user message for retry (without modifying history)."""
