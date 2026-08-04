@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+import re
 import signal
 from typing import Any
 
@@ -20,11 +21,42 @@ _SAFE_ENV: dict[str, str] = {
     "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
 }
 
+# Dangerous patterns blocked for safety
+_DANGEROUS_PATTERNS: list[tuple[str, str]] = [
+    (r";\s*\w", "command chaining with ;"),
+    (r"&&\s*\w", "command chaining with &&"),
+    (r"\|\|\s*\w", "command chaining with ||"),
+    (r"\$\(", "command substitution $()"),
+    (r"`[^`]+`", "command substitution with backticks"),
+    (r">\s*/dev/", "redirect to system device"),
+    (r">\s*/etc/", "write to /etc/"),
+    (r">\s*/proc/", "write to /proc/"),
+    (r"rm\s+-rf\s+/", "recursive root deletion"),
+    (r"mkfs\.", "filesystem format"),
+    (r"dd\s+if=", "raw disk access"),
+    (r"chmod\s+777\s+/", "world-writable system path"),
+    (r"curl.*\|.*sh", "curl pipe to shell"),
+    (r"wget.*\|.*sh", "wget pipe to shell"),
+]
+
+
+def _validate_command(command: str) -> str | None:
+    """Validate a shell command for dangerous patterns. Returns error message or None if safe."""
+    for pattern, description in _DANGEROUS_PATTERNS:
+        if re.search(pattern, command):
+            return f"Blocked dangerous pattern: {description}"
+    return None
+
 
 async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
     command = args.get("command", "")
     if not command:
         return ToolResult(success=False, error="command required")
+
+    # Security: validate command before execution
+    err = _validate_command(command)
+    if err:
+        return ToolResult(success=False, error=err)
 
     cwd = args.get("cwd") or ctx.working_directory or os.getcwd()
     timeout = min(args.get("timeout", 30), 300)  # max 5 minutes
