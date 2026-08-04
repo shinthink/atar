@@ -147,10 +147,14 @@ class Agent:
                         result = await self._execute_tool(nc["name"], nc["arguments"])
                         if cb.on_tool_result:
                             await cb.on_tool_result(nc["name"], result.output)
+                        # Truncate output for context efficiency, save full copy
+                        from atar_core.output_truncation import truncate_tool_output, save_full_output
+                        save_full_output(self._turn_count, result.output or "")
+                        truncated = truncate_tool_output(result.output or "", tool_name=nc["name"])
                         self._messages.append(Message(
                             role="tool",
                             tool_call_id=nc["id"],
-                            content=f"Tool {nc['name']} result: {result.output}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {result.output}",
+                            content=f"Tool {nc['name']} result: {truncated}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {truncated}",
                         ))
                     # If model was narrating intent in this turn, add nudge before next turn
                     if is_narrating:

@@ -836,6 +836,23 @@ expand=True,
                 console.print(Rule(style="#394B59"))
                 continue
             
+            if user.startswith("/tools output "):
+                try:
+                    tn = int(user[13:].strip())
+                    from atar_core.output_truncation import get_full_output
+                    full = get_full_output(tn)
+                    if full:
+                        console.print(f"[bold]Turn {tn} full output:[/]")
+                        console.print(full[:10000])
+                        if len(full) > 10000:
+                            console.print(f"[dim]... truncated at 10000 chars[/]")
+                    else:
+                        console.print(f"[dim]No output saved for turn {tn}[/]")
+                except ValueError:
+                    console.print("[red]Usage: /tools output <turn_number>[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+            
             if user == "/memory on":
                 from atar_core.background import toggle_memory
                 toggle_memory()
