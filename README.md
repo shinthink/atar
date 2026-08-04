@@ -8,7 +8,7 @@
 
 ATAR is an autonomous terminal AI agent — a classic REPL with real-time tool execution, streaming responses, and persistent sessions. Inspired by the Stoic concept of **Ataraxia** (tranquility of mind), ATAR operates with calm precision.
 
-Version **v0.8.0** — 401 tests, 65% coverage, 0 ruff, 23/23 audit findings resolved.
+Version **v0.8.0** — 408 tests, 66% coverage, 0 ruff, 23/23 audit findings resolved.
 
 ## Features
 

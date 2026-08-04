@@ -197,11 +197,12 @@ async def _execute_code(_name: str, args: dict[str, Any], ctx: ToolContext) -> T
     timeout = min(args.get("timeout", 10), 30)
     max_output = 10_000
 
-    # Build restricted globals
+    # Build restricted globals using builtins module (safer than __builtins__)
+    import builtins as _builtins
     safe_globals: dict[str, Any] = {"__builtins__": {}}
     for name in _SAFE_BUILTINS:
-        if name in __builtins__:
-            safe_globals["__builtins__"][name] = __builtins__[name]
+        if hasattr(_builtins, name):
+            safe_globals["__builtins__"][name] = getattr(_builtins, name)
         elif name in ("json", "re", "math", "datetime", "collections", "itertools", "functools"):
             safe_globals[name] = __import__(name)
 
@@ -333,7 +334,11 @@ async def _memory_add(_name: str, args: dict[str, Any], ctx: ToolContext) -> Too
         return ToolResult(success=False, error="content required")
 
     category = args.get("category", "fact")
-    confidence = max(0.0, min(1.0, args.get("confidence", 1.0)))
+    confidence_raw = args.get("confidence", 1.0)
+    try:
+        confidence = max(0.0, min(1.0, float(confidence_raw)))
+    except (TypeError, ValueError):
+        confidence = 1.0
 
     from atar_core.memory import create_entry
     entry_id = create_entry(category=category, content=content, confidence=confidence)
