@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from typing import Any
+import re
 
 from atar_models.requests import Message, ModelRequest
 from atar_models.responses import ModelResponse
@@ -30,7 +31,13 @@ class Agent:
     provider: ModelProvider
     max_turns: int = 8
     tools: list[Any] | None = None
-    system_prompt: str = "You are ATAR, an AI assistant that values clarity and precision."
+    system_prompt: str = (
+        "You are ATAR, an AI assistant that values clarity and precision. "
+        "CRITICAL: Never describe an action you are about to take without immediately calling "
+        "the corresponding tool in the same response. If you say you will do something, do it "
+        "now — don't just announce it. When asked to create, write, build, or make something, "
+        "use write_file now, not words about what you will create."
+    )
     session_id: str = ""
     interactive: bool = True
     event_bus: EventBus | None = None
@@ -50,6 +57,7 @@ class Agent:
         self._messages.append(Message(role="user", content=user_input))
 
         turn = 0
+        _narration_retry = 0  # max 2 retries for "let me do it" without tool call
         import time as _time
         budget.started_at = _time.monotonic()
 
@@ -135,17 +143,28 @@ class Agent:
                         ))
                     continue
 
-                # Check if model is narrating ("Let me create...") without acting
-                narration_phrases = ["let me create", "let me write", "i'll create", "i'll write",
-                                    "i will create", "i will write", "let me build", "mari saya buat",
-                                    "saya akan membuat", "saya akan menulis", "writing the html",
-                                    "building the page", "creating the file", "i now have enough",
-                                    "let me just write", "i'll just create", "now let me", "time to write",
-                                    "writing the page", "building the html", "working on"]
-                is_narrating = any(p in final_text.lower() for p in narration_phrases)
+                # Check if model is narrating intent ("Let me create...") without acting
+                # Configurable phrase patterns — add more as models evolve their language
+                _narration_patterns = [
+                    r"\blet me\b", r"\bi'll\b", r"\bi will\b", r"\bnow let me\b",
+                    r"\bwriting the\b", r"\bbuilding the\b", r"\bcreating the\b",
+                    r"\bi now have\b", r"\bworking on\b", r"\bmari saya\b",
+                    r"\bsaya akan\b", r"\bakan saya\b", r"\btime to write\b",
+                ]
+                _narration_re = re.compile("|".join(_narration_patterns), re.IGNORECASE)
+                is_narrating = bool(_narration_re.search(final_text))
                 if is_narrating and not _had_tools_this_turn and budget.turns_remaining() > 0:
+                    if _narration_retry >= 2:
+                        return RunResult(
+                            state=TerminalState.FAILED,
+                            error="Model kept describing actions without calling tools after 2 retries.",
+                            budget=budget.snapshot(),
+                        )
+                    _narration_retry += 1
+                    self._messages.append(Message(role="assistant", content=final_text))
                     self._messages.append(Message(role="user", content=(
-                        "DO IT NOW. Use write_file immediately. Do not describe — execute."
+                        "You said you would do this — now actually call the tool instead of "
+                        "describing it. Do not narrate further, just call the tool."
                     )))
                     continue
 
