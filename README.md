@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="atar-logo.png" alt="ATAR Logo" width="200">
+</p>
+
 # ATAR
 
 > *Clarity in Complexity.*
