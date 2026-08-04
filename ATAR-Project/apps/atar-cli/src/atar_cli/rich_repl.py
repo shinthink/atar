@@ -314,17 +314,13 @@ _stats = {"turns": 0, "tools": 0, "tokens": 0, "tokens_out": 0, "start_time": No
 
 
 def _context_bar() -> str:
+    from atar_cli.rich_repl_helpers import compute_context_bar
     tokens = _stats.get("tokens") or 0
-    max_tokens = 128000
     if tokens == 0:
         est = _stats.get("text_chars") or 0
         tokens = max(tokens, est // 3)
         tokens = max(tokens, _stats["turns"] * 200)
-    pct = min(tokens / max_tokens, 1.0)
-    width = 10
-    filled = int(pct * width)
-    bar = "\u2588" * filled + "\u2591" * (width - filled)
-    return f" {tokens/1000:.1f}K/{max_tokens//1000}K [{bar}] {pct*100:.0f}%"
+    return compute_context_bar(tokens, 128000)
 
 
 def _status_bar() -> str:
