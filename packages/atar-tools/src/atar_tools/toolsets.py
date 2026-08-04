@@ -28,6 +28,13 @@ _TOOL_TOOLSETS: dict[str, str] = {
     "memory_list": "memory",
     "load_skill": "skills",
     "analyze_image": "vision",
+    "real_browser": "browser",
+    "github": "github",
+    "pdf": "documents",
+    "weather": "utility",
+    "stocks": "utility",
+    "maps": "utility",
+    "memory_semantic": "memory",
 }
 
 # Toolset definitions with defaults
@@ -44,6 +51,9 @@ DEFAULT_TOOLSETS: dict[str, dict[str, Any]] = {
     "memory": {"enabled": True, "description": "Memory add and query"},
     "skills": {"enabled": True, "description": "Skill loading"},
     "vision": {"enabled": True, "description": "Image analysis via AI vision"},
+    "github": {"enabled": True, "description": "GitHub issues, PRs, releases"},
+    "documents": {"enabled": True, "description": "PDF read/create, document ops"},
+    "utility": {"enabled": True, "description": "Weather, stocks, maps"},
 }
 
 
