@@ -4,7 +4,7 @@
 
 ATAR is an autonomous terminal AI agent — a classic REPL with real-time tool execution, streaming responses, and persistent sessions. Inspired by the Stoic concept of **Ataraxia** (tranquility of mind), ATAR operates with calm precision.
 
-Version **v0.7.0** — 353 tests, 65% coverage, 0 ruff warnings, 12 security audit findings fixed.
+Version **v0.7.0** — 371 tests, 65% coverage, 0 ruff, 12/12 security findings resolved.
 
 ## Features
 
@@ -16,8 +16,10 @@ Version **v0.7.0** — 353 tests, 65% coverage, 0 ruff warnings, 12 security aud
 - **Session persistence** — save/resume, FTS5 search across history
 - **Skills** — auto-created from sessions, registry with pending approval
 - **Scheduler** — persistent cron jobs with enable/disable, failure tracking
+- **Setup wizard** — interactive first-run configuration (`atar setup`)
 - **Checkpoints** — pre-mutation file snapshots, undo/retry, restore
 - **Approval flow** — 5-choice interactive approval with diff preview
+- **Command validation** — blocks dangerous shell patterns (chaining, substitution, system writes)
 - **Context compression** — non-recursive, token-efficient
 - **Theme engine** — atar, monochrome, high-contrast skins
 - **Plugin system** — auto-discovery across 5 categories
