@@ -138,7 +138,10 @@ class Agent:
                 # Check if model is narrating ("Let me create...") without acting
                 narration_phrases = ["let me create", "let me write", "i'll create", "i'll write",
                                     "i will create", "i will write", "let me build", "mari saya buat",
-                                    "saya akan membuat", "saya akan menulis"]
+                                    "saya akan membuat", "saya akan menulis", "writing the html",
+                                    "building the page", "creating the file", "i now have enough",
+                                    "let me just write", "i'll just create", "now let me", "time to write",
+                                    "writing the page", "building the html", "working on"]
                 is_narrating = any(p in final_text.lower() for p in narration_phrases)
                 if is_narrating and not _had_tools_this_turn and budget.turns_remaining() > 0:
                     self._messages.append(Message(role="user", content=(
