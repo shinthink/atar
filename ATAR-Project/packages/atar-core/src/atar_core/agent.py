@@ -94,6 +94,15 @@ class Agent:
                 final_text = "".join(text_parts)
 
                 _had_tools_this_turn = bool(tool_calls)
+                # Compute narration detection early (used in both branches)
+                _narration_patterns = [
+                    r"let me", r"i'll", r"i will", r"now let me",
+                    r"writing the", r"building the", r"creating the",
+                    r"i now have", r"working on", r"mari saya",
+                    r"saya akan", r"akan saya", r"time to write",
+                ]
+                _narration_re = re.compile("|".join(_narration_patterns), re.IGNORECASE)
+                is_narrating = bool(_narration_re.search(final_text))
                 if tool_calls:
                     normalized_calls = []
                     seen = set()
@@ -141,6 +150,12 @@ class Agent:
                             tool_call_id=nc["id"],
                             content=f"Tool {nc['name']} result: {result.output}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {result.output}",
                         ))
+                    # If model was narrating intent in this turn, add nudge before next turn
+                    if is_narrating:
+                        self._messages.append(Message(role="user", content=(
+                            "You have the research results. Now execute: call write_file or the "
+                            "appropriate tool immediately. Do not describe — act."
+                        )))
                     continue
 
                 # Check if model is narrating intent ("Let me create...") without acting
