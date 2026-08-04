@@ -507,8 +507,11 @@ def run_repl() -> None:
         _stats["last_response"] = _t2.time() - _t_start
 
         if not response_text.strip():
-            console.print(Rule(style="#394B59"))
-            return
+            if _had_tools:
+                response_text = "_Work completed — see tool results above._"
+            else:
+                console.print(Rule(style="#394B59"))
+                return
 
         # Hermes-style response container
         console.print()
@@ -520,7 +523,7 @@ expand=True,
             title="ATAR", border_style=c.border, padding=(1, 2),
             width=min(_TERM_WIDTH - 4, 100),
         ))
-        console.print(Rule(style=c.dim_border))
+        console.print(Rule(style="#394B59"))
         # Process pending queue
         if _pending_queue:
             nxt = _pending_queue.pop(0)
