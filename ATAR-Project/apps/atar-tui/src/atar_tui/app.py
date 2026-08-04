@@ -966,7 +966,8 @@ class PluginsScreen(Screen):
     def on_mount(self) -> None:
         log = self.query_one("#plugins-log", RichLog)
         try:
-            registered = hooks.list() if hasattr(hooks, "list") else []
+            from atar_core.hooks import load_hooks
+            registered = load_hooks().get("list", [])
             if registered:
                 for r in registered:
                     log.write(f"  • {r}")
@@ -987,9 +988,9 @@ class SkillsScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        log = self.query_one("#skills-log", RichLog)
+        self.query_one("#skills-log", RichLog)
         from atar_core.skills import get_skill_manager
-        for s in get_skill_manager().list_all():
+        for _s in get_skill_manager().list_all():
             pass  # stub
 
 

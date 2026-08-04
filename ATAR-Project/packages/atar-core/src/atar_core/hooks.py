@@ -19,12 +19,11 @@ def load_hooks() -> dict[str, list[str]]:
 
 def fire_hook(event: str, payload: dict) -> None:
     """Fire a hook event. Runs shell commands from hooks.json."""
+    import contextlib
     hooks = load_hooks().get(event, [])
     for cmd in hooks:
-        try:
+        with contextlib.suppress(Exception):
             subprocess.run(
                 cmd, shell=True, capture_output=True, timeout=10,
                 input=json.dumps(payload), text=True,
-            )
-        except Exception:
-            pass  # hooks are fire-and-forget
+            )  # hooks are fire-and-forget

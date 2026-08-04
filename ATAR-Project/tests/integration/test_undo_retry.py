@@ -5,13 +5,12 @@ from __future__ import annotations
 import os
 import tempfile
 
-import pytest
 from atar_core.agent import Agent
-from atar_tools.tools.checkpoints import (
-    checkpoint_before_write, clear_checkpoints,
-    list_checkpoints, restore_checkpoint,
-)
 from atar_models.requests import Message
+from atar_tools.tools.checkpoints import (
+    checkpoint_before_write,
+    clear_checkpoints,
+)
 
 
 class FakeSimpleProvider:
@@ -39,7 +38,7 @@ class TestUndoRetry:
 
     def test_undo_restores_file(self):
         agent = Agent(provider=FakeSimpleProvider())
-        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)  # noqa: SIM115
         tmp.write("original")
         tmp.close()
 
@@ -47,16 +46,16 @@ class TestUndoRetry:
         with open(tmp.name, "w") as f:
             f.write("modified")
 
-        restored = agent.undo_last_turn()
+        agent.undo_last_turn()
         with open(tmp.name) as f:
             assert f.read() == "original"
         os.unlink(tmp.name)
 
     def test_multiple_checkpoints(self):
-        tmp1 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        tmp1 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)  # noqa: SIM115
         tmp1.write("v1")
         tmp1.close()
-        tmp2 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        tmp2 = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)  # noqa: SIM115
         tmp2.write("v1")
         tmp2.close()
 
