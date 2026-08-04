@@ -85,6 +85,7 @@ class Agent:
 
                 final_text = "".join(text_parts)
 
+                _had_tools_this_turn = bool(tool_calls)
                 if tool_calls:
                     normalized_calls = []
                     seen = set()
@@ -132,6 +133,17 @@ class Agent:
                             tool_call_id=nc["id"],
                             content=f"Tool {nc['name']} result: {result.output}\nError: {result.error}" if result.error else f"Tool {nc['name']} result: {result.output}",
                         ))
+                    continue
+
+                # Check if model is narrating ("Let me create...") without acting
+                narration_phrases = ["let me create", "let me write", "i'll create", "i'll write",
+                                    "i will create", "i will write", "let me build", "mari saya buat",
+                                    "saya akan membuat", "saya akan menulis"]
+                is_narrating = any(p in final_text.lower() for p in narration_phrases)
+                if is_narrating and not _had_tools_this_turn and budget.turns_remaining() > 0:
+                    self._messages.append(Message(role="user", content=(
+                        "DO IT NOW. Use write_file immediately. Do not describe — execute."
+                    )))
                     continue
 
                 # Check if empty response — inject follow-up
