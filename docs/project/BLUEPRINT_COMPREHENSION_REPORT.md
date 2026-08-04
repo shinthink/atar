@@ -52,7 +52,7 @@ Section   Lines   Title
 38-49     ~5950   Audit, References, Production Gates
 50-55     ~6100   Feature-Parity, Screens, Acceptance, Production Gate
 54        6334    REVISED Immediate Execution Order (23 steps)
-56-65     6350+   Superset Audit, Hermes Registry, Differentiators, V4 Position
+56-65     6350+   Superset Audit, ATAR Registry, Differentiators, V4 Position
 ---
 Total: 65 sections, 6388 lines
 ```
@@ -102,7 +102,7 @@ ATAR must: discover the project → load context → retrieve memory → generat
 Full acceptance scenarios passing: create project → plan → approve → checkpoint → single-agent code → diff → test → verify → repair → multi-agent → audit → rollback → memory save → browser research → voice → batch evaluation → verify again → all observed issues resolved.
 
 ### What "Feature Parity" Means (Section 50)
-ATAR must implement a terminal feature superset of the audited Hermes Agent version, as measured by the Hermes feature inventory at release time.
+ATAR must implement a terminal feature superset of the audited autonomous agent runtime version, as measured by the ATAR feature inventory at release time.
 
 ### What "Superior" Means (Section 59-60)
 Better results on published benchmarks in specific named areas only. Never claim "better at everything" without evidence.
@@ -318,7 +318,7 @@ The Revised Immediate Execution Order (Section 64) defines 23 sequential steps:
 | # | Milestone | Prerequisites | Research Gate |
 |---|-----------|---------------|---------------|
 | 1 | Approve V4 baseline | None | Blueprint review |
-| 2 | Freeze Hermes feature inventory | 1 | Hermes docs retrieval |
+| 2 | Freeze ATAR feature inventory | 1 | ATAR docs retrieval |
 | 3 | Create repo, docs, ADR, CI | 1 | uv, ruff, pytest, Textual docs |
 | 4 | Build async core + typed events + storage + secrets + audit + TUI shell | 3 | Python asyncio, AnyIO, Pydantic |
 | 5 | Build provider contracts + fake servers + API-key setup + initial providers | 4 | OpenAI, Anthropic docs |
@@ -338,14 +338,14 @@ The Revised Immediate Execution Order (Section 64) defines 23 sequential steps:
 | 19 | Build official integration packs + compatibility suite | 18 | Integration docs |
 | 20 | Run all production/security/recovery/parity/benchmark scenarios | 19 | All above |
 | 21 | Package + sign + attest + SBOM + provenance + clean install test | 20 | Packaging docs |
-| 22 | Refresh Hermes feature inventory | 21 | Hermes docs (fresh) |
+| 22 | Refresh ATAR feature inventory | 21 | ATAR docs (fresh) |
 | 23 | Release ATAR Terminal v1.0 with evidence-backed claims | 22 | Final acceptance |
 
 ### Documentation Research Gates per Milestone
 
 **Milestone 4** (core): asyncio, AnyIO, Pydantic, SQLAlchemy, Alembic, SQLite WAL/FTS5
 **Milestone 5** (providers): OpenAI API, Anthropic Messages API, DeepSeek API, Z.AI, OpenRouter
-**Milestone 6** (context): Hermes prompt assembly reference, AGENTS.md/CONTEXT.md specs
+**Milestone 6** (context): ATAR prompt assembly reference, AGENTS.md/CONTEXT.md specs
 **Milestone 7** (TUI): Textual framework (App, screens, widgets, workers, CSS, testing, snapshots)
 **Milestone 8** (tools): Tool security patterns, sandbox isolation, Git safety
 **Milestone 9** (code): Tree-sitter, language server protocol, Git worktrees
@@ -413,7 +413,7 @@ Never: SQLite, logs, prompts, crash reports, command history, tool containers, p
 - Recovery tests pass
 - Packaging, signing, SBOM, provenance
 - Clean install test
-- Hermes parity inventory refreshed
+- ATAR parity inventory refreshed
 
 ---
 
@@ -432,7 +432,7 @@ Never: SQLite, logs, prompts, crash reports, command history, tool containers, p
 2. **Section 29 milestone details** — may need refresh against Section 64
 
 ### Ambiguous Requirements
-1. **"Feature parity" vs "superset"** — Section 50 says terminal feature superset, Section 59 scopes to "specific areas." Need clarification on which Hermes features must be implemented (all terminal-relevant, or only those in the inventory?).
+1. **"Feature parity" vs "superset"** — Section 50 says terminal feature superset, Section 59 scopes to "specific areas." Need clarification on which ATAR features must be implemented (all terminal-relevant, or only those in the inventory?).
 2. **"Production-grade" definition** — Section 1 calls it "production-oriented engineering specification; not executable software." Section 53 lists full acceptance scenarios. These may conflict — the document says it's a spec, not code, yet demands full production acceptance.
 
 ### Contradictory Sections
@@ -456,7 +456,7 @@ Never: SQLite, logs, prompts, crash reports, command history, tool containers, p
 ### Non-Measurable Acceptance Criteria
 1. "Clarity before action" — needs operational definition (what metric measures clarity?)
 2. "Memory without noise" — needs precision/recall targets for memory retrieval
-3. "Better than Hermes" — needs specific benchmark names and thresholds
+3. "Better than ATAR" — needs specific benchmark names and thresholds
 
 ---
 
@@ -467,7 +467,7 @@ Never: SQLite, logs, prompts, crash reports, command history, tool containers, p
 
 ### Prerequisites Already Met
 - [x] Milestone 1: V4 baseline approved (this report constitutes approval)
-- [x] Milestone 2: Hermes feature inventory... (deferred — Hermes docs accessed in prior session)
+- [x] Milestone 2: ATAR feature inventory... (deferred — ATAR docs accessed in prior session)
 - [x] Milestone 3: Repository, docs, ADR, CI created (done in prior session)
 
 ### Exact Research Files to Create Before Implementation

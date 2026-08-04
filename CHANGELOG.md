@@ -3,7 +3,7 @@
 ## v0.7.0 — "Steel & Silk" (2026-08-04)
 
 ### Features
-- **Hermes-class REPL** — streaming Markdown, tool progress cards, live status bar, slash-command autocomplete (20 commands)
+- **Streaming REPL** — streaming Markdown, tool progress cards, live status bar, slash-command autocomplete (20 commands)
 - **Autonomous agent loop** — multi-turn tool calling with narration detection, auto-nudge, retry counter
 - **12 tools**: read_file, write_file, patch, terminal, web_search, web_fetch, git, session_search, session_resume, delegate_task, run_tests, load_skill
 - **6 providers**: DeepSeek, OpenAI, Anthropic, OpenRouter, Z.AI, Custom — with provider router and fallback
@@ -38,7 +38,7 @@
 
 ## v0.6.0 — "Clarity Emerges" (2026-07)
 
-- Rich REPL with Hermes-style display
+- Rich REPL with streaming display
 - DeepSeek multi-tool streaming fix
 - Structured session persistence (SQLite)
 - Provider registry with model updates from official docs

@@ -1,4 +1,4 @@
-"""ATAR Classic REPL — Hermes-style with streaming, tools, sessions."""
+"""ATAR Classic REPL — streaming, tools, sessions."""
 
 from __future__ import annotations
 
@@ -218,7 +218,7 @@ def _switch_model(provider_id: str, model_id: str) -> str:
     return f"{name} — {model_id}"
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Hermes-style detailed startup banner."""
+    """Detailed startup banner."""
     from atar_core.theme import current_theme
     theme = current_theme()
     c = theme.colors
@@ -542,7 +542,7 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Hermes-style response container
+        # Response container
         console.print()
         from atar_core.theme import current_theme
         c = current_theme().colors

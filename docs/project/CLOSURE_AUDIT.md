@@ -35,7 +35,7 @@ Everything that could be built in this environment has been built, tested, and v
 ### Deferred (Hardware/Environment Dependent)
 - Voice mode — needs microphone + audio libraries
 - Computer-use — needs desktop GUI (X11/Wayland)
-- Hermes parity refresh — needs fresh Hermes inventory snapshot
+- ATAR parity refresh — needs fresh ATAR inventory snapshot
 
 ### Production Gaps
 - SBOM + package signing (not yet automated)

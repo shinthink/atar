@@ -13,7 +13,7 @@ Version **v0.8.0** — 408 tests, 66% coverage, 0 ruff, 23/23 audit findings res
 ## Features
 
 - **Autonomous agent loop** — multi-turn tool calling with narration detection and auto-nudge
-- **Hermes-style REPL** — streaming Markdown responses, tool progress cards, slash-command autocomplete (20 commands)
+- **Streaming REPL** — Markdown responses, tool progress cards, slash-command autocomplete (20 commands)
 - **Live status bar** — model, token usage, context bar, response time, session timer
 - **6 providers** — DeepSeek, OpenAI, Anthropic, OpenRouter, Z.AI, Custom (all with real clients)
 - **Memory system** — SQLite-backed, secret-filtered, LLM auto-extraction

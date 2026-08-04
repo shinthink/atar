@@ -1,6 +1,6 @@
-# HERMES-ATAR TERMINAL PARITY MATRIX
+# ATAR-ATAR TERMINAL PARITY MATRIX
 
-Generated: 2026-08-02 | ATAR commit: 206dd57 | Hermes: stable docs
+Generated: 2026-08-02 | ATAR commit: 206dd57 | ATAR: stable docs
 
 ## Category B — Classic Autonomous REPL
 

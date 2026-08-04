@@ -188,9 +188,9 @@
 
 ---
 
-## HERMES PARITY GAP
+## ATAR PARITY GAP
 
-| Hermes Feature | ATAR Status |
+| ATAR Feature | ATAR Status |
 |---------------|-------------|
 | Interactive CLI REPL | ✅ `atar chat` |
 | Streaming responses | ✅ SSE parsing |
@@ -209,7 +209,7 @@
 | Computer use | ❌ (skipped) |
 | Batch/evaluation | ✅ BatchRunner + Evaluator |
 
-**Hermes feature coverage:** ~12/17 terminal-relevant features
+**ATAR feature coverage:** ~12/17 terminal-relevant features
 
 ---
 

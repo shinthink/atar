@@ -155,10 +155,10 @@
 - **Status:** Deferred — requires desktop GUI environment (X11/Wayland).
 - **Verdict:** ACCEPTED DEFERRAL
 
-### M-003: Hermes Parity Refresh
+### M-003: ATAR Parity Refresh
 - **Blueprint:** Section 63, M22
-- **Status:** Not performed — requires fresh Hermes Agent feature inventory.
-- **Verdict:** ACCEPTED DEFERRAL (requires Hermes repo access and comparative analysis)
+- **Status:** Not performed — requires fresh autonomous agent runtime feature inventory.
+- **Verdict:** ACCEPTED DEFERRAL (requires ATAR repo access and comparative analysis)
 
 ---
 
@@ -230,7 +230,7 @@ All previous contradictions have been resolved:
 | Recovery tests pass | ✅ Checkpoint save/restore tested |
 | Packaging + signing + SBOM | ❌ Not implemented |
 | Clean install test | ❌ Not tested from scratch |
-| Hermes parity inventory refreshed | ❌ Deferred |
+| ATAR parity inventory refreshed | ❌ Deferred |
 | No plaintext secrets in repo | ✅ Verified |
 | Ruff 0 errors | ✅ |
 | All tests green | ✅ 34/34 |
@@ -255,7 +255,7 @@ All previous contradictions have been resolved:
 | P-003 | MCP connector test | Environment |
 | M-001 | Voice mode | New hardware |
 | M-002 | Computer-use | New environment |
-| M-003 | Hermes parity refresh | Research |
+| M-003 | ATAR parity refresh | Research |
 
 ---
 

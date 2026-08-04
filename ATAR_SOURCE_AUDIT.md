@@ -6,7 +6,7 @@
 
 ## Executive conclusion
 
-The repository is a useful early prototype, but it is **not yet equivalent to Hermes Agent's autonomous runtime** and is not production-safe.
+The repository is a useful early prototype, but it is **not yet equivalent to autonomous agent runtime's autonomous runtime** and is not production-safe.
 
 The current implementation has:
 
@@ -38,7 +38,7 @@ ATAR pre-alpha prototype with partial single-agent tool execution
 not:
 
 ```text
-Hermes-equivalent autonomous agent
+production-ready autonomous agent
 ```
 
 ---
@@ -104,7 +104,7 @@ With a manually constructed `PYTHONPATH`, the current contract and integration s
 44 passed in 1.17s
 ```
 
-This proves some internal components are importable and the fake-provider happy paths run. It does **not** prove provider correctness, security, packaging, or true Hermes parity.
+This proves some internal components are importable and the fake-provider happy paths run. It does **not** prove provider correctness, security, packaging, or true feature parity.
 
 ---
 
@@ -809,7 +809,7 @@ test_clean_uv_sync
 5. crash recovery;
 6. REPL consumes typed events.
 
-## Phase 5 — Real Hermes-quality REPL
+## Phase 5 — Real production-quality REPL
 
 1. dynamic tool/skill banner;
 2. true streaming output;
@@ -829,13 +829,13 @@ test_clean_uv_sync
 
 ## Phase 7 — Parity audit
 
-Only after P0/P1 are fixed, run the full Hermes parity audit prompt and classify every feature with evidence.
+Only after P0/P1 are fixed, run the full feature parity audit prompt and classify every feature with evidence.
 
 ---
 
 # 7. Release recommendation
 
-**Do not publish ATAR as production-ready or Hermes-equivalent yet.**
+**Do not publish ATAR as production-ready or production-ready yet.**
 
 Recommended public label:
 

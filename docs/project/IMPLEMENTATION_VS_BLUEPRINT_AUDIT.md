@@ -4,7 +4,7 @@ Generated from live repository inspection at /root/ATAR-Project/
 ## EXECUTIVE SUMMARY
 
 Entry point: `atar_cli.main:app` (Typer)
-Default behavior: `atar` → Rich REPL with Hermes-style two-column banner
+Default behavior: `atar` → Rich REPL with ATAR-style two-column banner
 TUI behavior: `atar --tui` → Textual 27-screen TUI
 Tests: 39/39 · RUFF: 0 errors
 Git: pushed to shinthink/atar
@@ -88,7 +88,7 @@ Git: pushed to shinthink/atar
 | §4 | Provider capabilities | `capabilities()` returns text/streaming/tools |
 | §5 | Textual TUI | `ATARApp(App)` with 27 screens |
 | §6 | Chat screen | Streaming chat with tool call display |
-| §7 | Rich REPL | `rich_repl.py` — Hermes banner, prompt_toolkit, streaming |
+| §7 | Rich REPL | `rich_repl.py` — ATAR banner, prompt_toolkit, streaming |
 | §8 | Slash autocomplete | `WordCompleter` with 12 commands + meta descriptions |
 | §9 | Model picker | `/model` shows 5 models, keyboard selection |
 | §9 | Session switcher | `/sessions` lists sessions, resume with messages |

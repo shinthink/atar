@@ -109,9 +109,9 @@ atar = "atar_cli.main:app"       # Typer app, not a main() function
 | `packages/atar-core/src/atar_core/session.py` | Session needs switching without new agent |
 | `packages/atar-tools/src/atar_tools/registry.py` | Tools need typed events for TUI streaming |
 
-## 9. Comparison with Hermes Interaction Baseline
+## 9. Comparison with ATAR Interaction Baseline
 
-| Hermes Feature | ATAR Equivalent | Status |
+| ATAR Feature | ATAR Equivalent | Status |
 |---------------|-----------------|--------|
 | Conversation-centered TUI | Rich REPL (not TUI) | ❌ Wrong type |
 | Instant first frame | Rich Panel banner | ✅ Works |

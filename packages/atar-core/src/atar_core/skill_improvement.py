@@ -1,6 +1,6 @@
 """ATAR skill self-improvement — usage tracking, success/failure learning, auto-update.
 
-Hermes-style: skills improve themselves by tracking what works and what doesn't.
+ATAR-style: skills improve themselves by tracking what works and what doesn't.
 """
 
 from __future__ import annotations

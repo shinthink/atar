@@ -315,11 +315,11 @@
 
 ---
 
-## HERMES FEATURE-PARITY GAP
+## ATAR FEATURE-PARITY GAP
 
-Per Section 50, ATAR must implement a terminal feature superset of the audited Hermes Agent version.
+Per Section 50, ATAR must implement a terminal feature superset of the audited autonomous agent runtime version.
 
-| Hermes Feature | ATAR Status | Gap |
+| ATAR Feature | ATAR Status | Gap |
 |---------------|-------------|-----|
 | Interactive CLI REPL | ❌ Missing | No CLI entry point |
 | Full-screen TUI | ❌ Missing | No TUI shell |
@@ -339,7 +339,7 @@ Per Section 50, ATAR must implement a terminal feature superset of the audited H
 | Batch/JSON mode | ❌ Missing | No batch mode |
 | Agent state machine | ❌ Missing | No state machine |
 
-**Coverage:** 0/17 terminal-relevant Hermes features implemented.
+**Coverage:** 0/17 terminal-relevant ATAR features implemented.
 
 ---
 
@@ -354,7 +354,7 @@ Per Section 48, 53:
 | Recovery tests pass | ❌ No recovery system |
 | Packaging + signing + SBOM | ❌ No release pipeline |
 | Clean install test | ❌ No entry point |
-| Hermes parity inventory refreshed | ❌ No inventory |
+| ATAR parity inventory refreshed | ❌ No inventory |
 | Evidence-backed superiority claims | ❌ No benchmarks |
 | All observed issues resolved | ❌ N/A |
 

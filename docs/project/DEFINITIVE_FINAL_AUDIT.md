@@ -118,7 +118,7 @@
 |----|-------------|--------|
 | M1 | Voice mode (Section 62) | Microphone/audio hardware |
 | M2 | Computer-use (Section 62) | Desktop GUI (X11/Wayland) |
-| M3 | Hermes parity refresh (Section 63) | Fresh Hermes inventory needed |
+| M3 | ATAR parity refresh (Section 63) | Fresh ATAR inventory needed |
 
 **Verdict: ACCEPTED DEFERRAL — not buildable in current environment.**
 
@@ -162,9 +162,9 @@
 
 ---
 
-## F. HERMES FEATURE PARITY
+## F. ATAR FEATURE PARITY
 
-| Hermes Feature | v0.1 | v0.3 |
+| ATAR Feature | v0.1 | v0.3 |
 |---------------|------|------|
 | Interactive CLI | ✅ | ✅ |
 | Streaming responses | ✅ | ✅ (SSE) |
@@ -214,7 +214,7 @@
 | 3 | SBOM + packaging + signing | 2h engineering |
 | 4 | Clean install test | 30min |
 | 5 | Voice mode | Hardware + libraries |
-| 6 | Hermes parity refresh | Research |
+| 6 | ATAR parity refresh | Research |
 
 ---
 

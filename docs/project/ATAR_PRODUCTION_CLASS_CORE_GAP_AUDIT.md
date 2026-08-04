@@ -1,4 +1,4 @@
-# ATAR Hermes-Class Core Gap Audit
+# ATAR ATAR-Class Core Gap Audit
 
 ## ATAR State (post P0/P1 repair)
 - **Commit**: 931935b

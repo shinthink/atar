@@ -1,6 +1,6 @@
 """ATAR memory nudge — proactive review prompts for memory maintenance.
 
-Hermes-style periodic nudges to review, update, and prune memories.
+ATAR-style periodic nudges to review, update, and prune memories.
 Tracks last review time and memory count to determine when to prompt.
 """
 
