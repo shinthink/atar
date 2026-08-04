@@ -78,10 +78,29 @@ all = [
 
 [project.scripts]
 atar = "atar_cli.main:app"
+atar-agent = "atar_cli.main:app"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "apps/atar-cli/src/atar_cli",
+    "apps/atar-tui/src/atar_tui",
+    "packages/atar-core/src/atar_core",
+    "packages/atar-models/src/atar_models",
+    "packages/atar-protocols/src/atar_protocols",
+    "packages/atar-tools/src/atar_tools",
+    "packages/atar-storage/src/atar_storage",
+    "packages/atar-security/src/atar_security",
+    "providers/atar-provider-deepseek/src/atar_provider_deepseek",
+    "providers/atar-provider-openai/src/atar_provider_openai",
+    "providers/atar-provider-anthropic/src/atar_provider_anthropic",
+    "providers/atar-provider-openrouter/src/atar_provider_openrouter",
+    "providers/atar-provider-zai/src/atar_provider_zai",
+    "providers/atar-provider-custom/src/atar_provider_custom",
+]
 
 [tool.uv.workspace]
 members = [
