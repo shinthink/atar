@@ -1,45 +1,58 @@
-# ATAR v0.1.0 — "Clarity Begins"
+# ATAR Changelog
 
-First controlled release of ATAR Terminal.
+## v0.7.0 — "Steel & Silk" (2026-08-04)
 
-## Capabilities
-- **Chat**: Real-time AI conversation via DeepSeek API (Anthropic format)
-- **Plan**: Structured task planning with risk classification and approval gates
-- **Code**: Codebase analysis with tool suggestions (git, terminal, file, test)
-- **Sessions**: Persistent conversations with `--session` resume
-- **Tools**: read_file, write_file, terminal, git, test_runner
+### Features
+- **Hermes-class REPL** — streaming Markdown, tool progress cards, live status bar, slash-command autocomplete (20 commands)
+- **Autonomous agent loop** — multi-turn tool calling with narration detection, auto-nudge, retry counter
+- **12 tools**: read_file, write_file, patch, terminal, web_search, web_fetch, git, session_search, session_resume, delegate_task, run_tests, load_skill
+- **6 providers**: DeepSeek, OpenAI, Anthropic, OpenRouter, Z.AI, Custom — with provider router and fallback
+- **Two-level /model picker** — provider selection then model within provider
+- **Memory system** — SQLite-backed, secret-filtered, auto-extraction via background LLM
+- **FTS5 session search** — ranked full-text search across conversation history
+- **Skills system** — auto-creation from sessions, registry, pending approval
+- **Scheduler** — persistent cron jobs with enable/disable, failure tracking
+- **Checkpoint system** — pre-mutation file snapshots, list/restore, undo/retry
+- **Approval flow** — 5-choice interactive approval with diff preview, per-file/per-tool remember
+- **Context compression** — non-recursive direct provider stream, token-efficient
+- **Token efficiency (P1-P6)**: background token leak fix, prompt caching, output truncation, dynamic toolsets, complexity router, /cost breakdown
+- **Interrupt-and-redirect** — Ctrl+C cancels current task with redirect prompt
+- **CLI subcommands**: `atar doctor` (diagnose), `atar config`, `atar sessions`, `atar gateway`
+- **Telegram gateway** — bot with allowlist security, streaming responses
+- **User model** — local computation, no LLM required
 
-## Architecture
+### Architecture
 - Python 3.12+, async-native (httpx + asyncio)
-- Clean architecture: models → protocols → core → adapters
-- Monorepo: 9 packages, 3 tools
-- Provider: Anthropic Messages API adapter (+ DeepSeek compatible)
+- Monorepo: 14 packages, 7 providers, 2 apps (CLI + TUI)
+- SQLite for memory + sessions + scheduler + session search
+- Safe environment: workspace-bounded file ops, SSRF-protected web fetch, process-tree kill
+- Security: secret-filtered memory, audit logging, keyring-first credential resolution
 
-## Tests
+### Quality
+- **153 tests** (contract, integration, security, TUI/PTY)
+- 57% coverage, 0 ruff warnings
+- Security audited: 12 findings, 11 fixed
+
+---
+
+## v0.6.0 — "Clarity Emerges" (2026-07)
+
+- Rich REPL with Hermes-style display
+- DeepSeek multi-tool streaming fix
+- Structured session persistence (SQLite)
+- Provider registry with model updates from official docs
+- Config system with profiles (YAML)
+- Budgets: turn/tool/time limits
+- Toolsets: composable tool groups with enable/disable
+- Command registry: dynamic slash commands
+- Prompt assembly: layered, cache-friendly
+
+---
+
+## v0.1.0 — "Clarity Begins" (2026-06)
+
+- First controlled release
+- Chat + Plan + Code modes
+- DeepSeek API via Anthropic adapter
+- Tools: read_file, write_file, terminal, git, test_runner
 - 33 contract + integration tests
-- Ruff lint clean
-- Real API integration verified with DeepSeek
-
-## Installation
-```bash
-git clone https://github.com/shinthink/atar
-cd ATAR-Project
-uv sync
-export DEEPSEEK_API_KEY="sk-..."
-uv run atar chat "hello"
-```
-
-## Commands
-- `atar chat "prompt"` — Chat with AI
-- `atar chat --session <id> "prompt"` — Resume session
-- `atar plan "goal"` — Generate structured plan
-- `atar plan --yes "goal"` — Auto-approve plan
-- `atar code "question"` — Analyze codebase
-- `atar init` — Initialize project
-
-## Known Limitations
-- Tool execution is descriptive (model describes, user runs)
-- DeepSeek Anthropic endpoint has no structured tool calling
-- No Textual TUI (CLI only for v0.1)
-- Sessions stored as JSON (SQLite coming in v0.2)
-- No multi-agent, browser, MCP, voice, skills
