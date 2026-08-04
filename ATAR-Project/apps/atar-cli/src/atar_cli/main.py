@@ -18,6 +18,7 @@ console = Console()
 def default(
     ctx: typer.Context,
     run: Annotated[str | None, typer.Option("--run", help="Run a single prompt and exit")] = None,
+    yolo: Annotated[bool, typer.Option("--yolo", help="Auto-approve all tool calls")] = False,
 ) -> None:
     """ATAR — Autonomous Terminal AI Agent. Clarity in Complexity."""
     if ctx.invoked_subcommand is not None:
