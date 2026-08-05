@@ -218,7 +218,17 @@ const App: React.FC = () => {
         body: JSON.stringify({ message: text }),
       });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        const text = await response.text();
+        const errMsg: Message = {
+          role: 'assistant',
+          content: `[Server error ${response.status}]\n${text.slice(0, 200)}`,
+        };
+        setMessages(prev => [...prev, errMsg]);
+        setStreamingState('idle');
+        setStreamingText('');
+        return;
+      }
 
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();

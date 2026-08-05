@@ -22,20 +22,35 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
 
     app = FastAPI(title="ATAR API")
 
+    # CORS for Ink frontend
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
     class ChatRequest(BaseModel):
         message: str
 
     async def _stream_agent(message: str):
         """Stream agent response via SSE (Server-Sent Events)."""
-        from atar_core.agent import Agent, StreamCallbacks
-        from atar_core.provider_registry import get_provider
-
         queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        try:
+            from atar_core.agent import Agent, StreamCallbacks
+            from atar_core.provider_registry import get_provider
+            provider = get_provider()
+        except Exception as e:
+            await queue.put(json.dumps({"type": "error", "error": f"Provider init failed: {e}"}))
+            await queue.put(None)
+            # Stream error and exit
+            while True:
+                chunk = await queue.get()
+                if chunk is None:
+                    break
+                yield f"data: {chunk}\n\n"
+            return
 
         async def on_delta(text: str) -> None:
             await queue.put(json.dumps({"type": "delta", "text": text}))
 
-        provider = get_provider()
         agent = Agent(provider=provider, max_turns=10, interactive=False)
 
         async def run_agent():
@@ -74,7 +89,13 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    @app.on_event("startup")
+    async def startup():
+        print(f"ATAR API server ready on http://{host}:{port}")
+
+    uv_config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(uv_config)
+    server.run()
 
 
 if __name__ == "__main__":
