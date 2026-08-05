@@ -402,7 +402,7 @@ def run_repl() -> None:
                 short = args_cache[name].get("path", str(args))[:60]
             elif name == "terminal":
                 short = f"$ {args.get('command', '')[:60]}"
-            console.print(f"\n  [{color}]┊[/] [{color}]{icon}[/] [{color} bold]{label}[/] [dim]{short}[/]")
+            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
             """Collect results for display after Status exits."""
@@ -427,7 +427,7 @@ def run_repl() -> None:
                         if _is_readonly_command(cmd):
                             return True
 
-                from atar_core.approval import format_approval_prompt, get_approval
+                from atar_core.approval import get_approval
                 approval = get_approval()
                 file_path = arguments.get("path", "") or arguments.get("file_path", "")
                 action = approval.resolve(tool_name, file_path)
@@ -436,49 +436,26 @@ def run_repl() -> None:
                 if action == "reject":
                     console.print(f"[red]✗ {tool_name} auto-rejected (permission: never)[/]")
                     return False
-                # action == "ask" — show diff + prompt
-                diff_markup, stats = "", {"added": 0, "removed": 0}
-                if tool_name in ("write_file", "patch") and file_path:
-                    from atar_tools.tools.diff_renderer import render_diff
-                    old_content = None
-                    try:
-                        with open(file_path) as f:
-                            old_content = f.read()
-                    except FileNotFoundError:
-                        pass
-                    new_content = arguments.get("content", "") or arguments.get("new_string", "")
-                    diff_markup, _, stats = render_diff(old_content, new_content, file_path)
-                prompt_text = format_approval_prompt(tool_name, file_path, diff_markup, stats)
-                # Clear status line + print prompt cleanly
-                console.print("\n" + prompt_text + "\n")
+                # action == "ask" — simple inline prompt
+                from atar_core.display_v2 import tool_color as _tc2
+                from atar_core.display_v2 import tool_icon as _ti2
+                from atar_core.display_v2 import tool_label as _tl2
+                console.print(f"  [{_tc2(tool_name)}]{_ti2(tool_name)}[/] [bold]{_tl2(tool_name)}[/] [dim]({file_path or str(arguments)[:60]})[/]")
                 try:
                     choice = await session_pt.prompt_async(
-                        HTML("<dim>  Choice [1-5]: </dim>"), style=PT_STYLE
+                        HTML("  <dim>Run? [</dim><b>y</b><dim>/n/a] </dim>"), style=PT_STYLE
                     )
                 except (KeyboardInterrupt, EOFError):
                     return False
-                choice = choice.strip()
-                if choice == "1":
+                choice = choice.strip().lower()
+                if choice in ("y", "yes", "1"):
                     return True
-                if choice == "2":
-                    if file_path:
-                        approval.add_file_always(file_path)
-                    return True
-                if choice == "3":
+                if choice == "a":
                     approval.set_tool_mode(tool_name, "always")
                     return True
-                if choice == "4":
-                    try:
-                        feedback = await session_pt.prompt_async(
-                            HTML("<dim>What should the agent do instead? </dim>"), style=PT_STYLE
-                        )
-                        _last_rejection_feedback["text"] = feedback
-                    except (KeyboardInterrupt, EOFError):
-                        _last_rejection_feedback["text"] = "Stop this task."
+                if choice == "n" or choice in ("no", "2", "3", "4", "5"):
                     return False
-                # choice 5 or invalid
-                approval.set_tool_mode(tool_name, "never")
-                # Approval complete — continue
+                # Default: reject
                 return False
 
             async def _capture(t: str) -> None:
