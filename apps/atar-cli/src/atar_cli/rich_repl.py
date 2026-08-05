@@ -408,7 +408,14 @@ def run_repl() -> None:
 
         try:
             async def on_approval(tool_name: str, arguments: dict) -> bool:
-                # Auto-approve safe/read-only terminal commands
+                # Auto-approve read-only / safe tools
+                _readonly_tools = {
+                    "web_search", "web_fetch", "search_files", "read_file",
+                    "session_search", "session_resume", "memory_list",
+                    "load_skill", "maps", "weather", "stocks", "cronjob",
+                }
+                if tool_name in _readonly_tools:
+                    return True
                 if tool_name == "terminal":
                     cmd = arguments.get("command", "")
                     if cmd:
