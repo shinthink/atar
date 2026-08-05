@@ -22,6 +22,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.text import Text
 
 # ── Terminal capabilities (resolved at render time) ──
 _HAS_COLOR = os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
@@ -446,8 +447,8 @@ def run_repl() -> None:
                     from atar_core.theme import current_theme
                     c = current_theme().colors
                     console.print(f"[bold {c.primary}]  ATAR[/]")
-                # Print deltas directly for real-time streaming
-                console.print(t, end="")
+                # Print deltas directly for real-time streaming (plain text, no markdown)
+                console.print(Text(t), end="")
 
             # ── Ctrl+C handler during agent run ──
             _cancel_requested = False
