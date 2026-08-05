@@ -34,7 +34,17 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
             from atar_core.provider_registry import list_available
             providers = list_available()
             if not providers:
-                raise RuntimeError("No provider configured. Run: atar setup")
+                await queue.put(json.dumps({"type": "delta", "text": "No AI provider configured.\n\n"}))
+                await queue.put(json.dumps({"type": "delta", "text": "Run: uv run atar setup\n"}))
+                await queue.put(json.dumps({"type": "done"}))
+                await queue.put(None)
+                # Stream and exit
+                while True:
+                    chunk = await queue.get()
+                    if chunk is None:
+                        break
+                    yield f"data: {chunk}\n\n"
+                return
             provider = providers[0]
         except Exception as e:
             await queue.put(json.dumps({"type": "error", "error": f"Provider init failed: {e}"}))
