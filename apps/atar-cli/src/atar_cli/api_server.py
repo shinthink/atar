@@ -15,7 +15,6 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
         import uvicorn
         from fastapi import FastAPI
         from fastapi.responses import StreamingResponse
-        from pydantic import BaseModel
     except ImportError:
         print("fastapi not installed. Run: pip install fastapi uvicorn", file=sys.stderr)
         return
@@ -25,9 +24,6 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
     # CORS for Ink frontend
     from fastapi.middleware.cors import CORSMiddleware
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-    class ChatRequest(BaseModel):
-        message: str
 
     async def _stream_agent(message: str):
         """Stream agent response via SSE (Server-Sent Events)."""
@@ -73,9 +69,13 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
         await task
 
     @app.post("/chat")
-    async def chat(req: ChatRequest):
+    async def chat(request_body: dict):
+        """Streaming chat endpoint — accepts JSON {message: str}."""
+        message = request_body.get("message", "") if request_body else ""
+        if not message:
+            return {"error": "message is required"}
         return StreamingResponse(
-            _stream_agent(req.message),
+            _stream_agent(message),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
