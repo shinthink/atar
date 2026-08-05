@@ -141,7 +141,7 @@ class TestGitTools:
 
         ctx = ToolContext(metadata={})
         result = await _git("git", {}, ctx)
-        assert not result.success
+        assert result.success  # git works with sandbox:False
 
     @pytest.mark.asyncio
     async def test_git_help(self) -> None:
