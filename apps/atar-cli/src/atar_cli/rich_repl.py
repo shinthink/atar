@@ -22,7 +22,6 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
-from rich.text import Text
 
 # ── Terminal capabilities (resolved at render time) ──
 _HAS_COLOR = os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
@@ -435,16 +434,16 @@ def run_repl() -> None:
 
             async def _capture(t: str) -> None:
                 nonlocal response_text
+                import sys
                 response_text += t
                 _stats["tokens_out"] += 1
                 # Stream text in real-time (not just buffer)
                 if len(response_text) == 1:
-                    console.print()
-                    from atar_core.theme import current_theme
-                    c = current_theme().colors
-                    console.print(f"[bold {c.primary}]  ATAR[/]")
-                # Print deltas as plain text — no parsing
-                console.print(Text(t), end="")
+                    sys.stdout.write("\n")
+                    sys.stdout.flush()
+                # Print deltas as raw text — bypass all Rich parsing
+                sys.stdout.write(t)
+                sys.stdout.flush()
 
             # ── Ctrl+C handler during agent run ──
             _cancel_requested = False
