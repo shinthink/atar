@@ -71,6 +71,18 @@ def serve(port: int = 8420) -> None:
 
 
 @app.command()
+def web(port: int = 8420) -> None:
+    """Launch ATAR Web UI — browser-based chat interface."""
+    import webbrowser
+
+    from atar_cli.api_server import start_server
+    console.print(f"[bold green]ATAR Web UI → http://127.0.0.1:{port}[/]")
+    console.print("[dim]Opening browser...[/]")
+    webbrowser.open(f"http://127.0.0.1:{port}")
+    start_server(port=port)
+
+
+@app.command()
 def sessions() -> None:
     """List saved sessions."""
     from atar_storage.sqlite_store import SqliteStore

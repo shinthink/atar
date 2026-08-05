@@ -104,7 +104,18 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
 
     @app.on_event("startup")
     async def startup():
-        print(f"ATAR API server ready on http://{host}:{port}")
+        print(f"ATAR API + Web UI → http://{host}:{port}")
+
+    @app.get("/")
+    async def index():
+        # Serve the web UI HTML
+        import os
+        html_path = os.path.join(os.path.dirname(__file__), "web_ui.html")
+        if os.path.exists(html_path):
+            from fastapi.responses import FileResponse
+            return FileResponse(html_path)
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse("<h1>ATAR Web UI</h1><p>web_ui.html not found</p>")
 
     uv_config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server = uvicorn.Server(uv_config)
