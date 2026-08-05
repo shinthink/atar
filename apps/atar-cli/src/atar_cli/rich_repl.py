@@ -474,10 +474,11 @@ def run_repl() -> None:
                     new_content = arguments.get("content", "") or arguments.get("new_string", "")
                     diff_markup, _, stats = render_diff(old_content, new_content, file_path)
                 prompt_text = format_approval_prompt(tool_name, file_path, diff_markup, stats)
-                console.print(prompt_text)
+                # Clear status line + print prompt cleanly
+                console.print("\n" + prompt_text + "\n")
                 try:
                     choice = await session_pt.prompt_async(
-                        HTML("<dim>Choice [1-5]: </dim>"), style=PT_STYLE
+                        HTML("<dim>  Choice [1-5]: </dim>"), style=PT_STYLE
                     )
                 except (KeyboardInterrupt, EOFError):
                     return False
