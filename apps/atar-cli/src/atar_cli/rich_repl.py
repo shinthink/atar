@@ -489,11 +489,7 @@ def run_repl() -> None:
                     return False
                 # choice 5 or invalid
                 approval.set_tool_mode(tool_name, "never")
-                # Restart spinner after failed approval
-                if _status_ref is not None:
-                    import contextlib
-                    with contextlib.suppress(Exception):
-                        _status_ref.start()
+                # No restart needed — _run_agent will set _status_ref=True on next iteration
                 return False
 
             async def _capture(t: str) -> None:
@@ -501,36 +497,41 @@ def run_repl() -> None:
                 response_text += t
                 _stats["tokens_out"] += 1
             from atar_core.display_v2 import ThinkingAnimator, calculate_cost
-            from rich.status import Status
             anim = ThinkingAnimator()
             use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
-            # Run agent and status spinner concurrently via asyncio.gather
-            _status_ref = None  # captured by on_approval to pause spinner
+            _status_ref = False  # Set True when spinner active (simple flag)
 
-            async def _run_with_status():
+            async def _run_agent():
+                """Run agent with inline thinking indicator (no Rich Status — avoids prompt_toolkit conflict)."""
                 nonlocal _status_ref
                 if use_anim:
-                    with Status(anim.start(), console=console, spinner="dots") as status:
-                        _status_ref = status
-                        async def _tick():
-                            while True:
-                                await asyncio.sleep(0.2)
-                                status.update(anim.tick())
-                        tick_task = asyncio.create_task(_tick())
+                    # Start thinking indicator task
+                    async def _think():
+                        while _status_ref:
+                            console.print(f"\r  {anim.tick()}", end="")
+                            await asyncio.sleep(0.2)
+                    _status_ref = True
+                    think_task = asyncio.create_task(_think())
+                    try:
                         await ag.run(prompt, StreamCallbacks(
                             on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
                             on_approval=on_approval,
                             get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
                         ))
-                        tick_task.cancel()
+                    finally:
+                        _status_ref = False
+                        think_task.cancel()
+                        with suppress(asyncio.CancelledError):
+                            await think_task
+                        # Clear thinking line
+                        console.print("\r" + " " * 60 + "\r", end="")
                 else:
-                    console.print("\n  ● thinking...", end="")
                     await ag.run(prompt, StreamCallbacks(
-                        on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                        on_delta=_capture, on_tool_call=on_tool_result, on_tool_result=on_tool_result,
                         on_approval=on_approval,
                         get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
                     ))
-            await _run_with_status()
+            await _run_agent()
             for tr in _tool_results:
                 console.print(tr)
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
