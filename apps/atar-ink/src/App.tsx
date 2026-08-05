@@ -211,16 +211,54 @@ const App: React.FC = () => {
     setInput('');
 
     try {
-      // Simulate response — in production, call Python backend via HTTP
-      await new Promise(r => setTimeout(r, 800));
+      // Connect to ATAR API server (SSE streaming)
+      const response = await fetch('http://127.0.0.1:8420/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
 
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'delta') {
+              fullText += data.text;
+              setStreamingText(fullText);
+            } else if (data.type === 'done') {
+              const assistMsg: Message = { role: 'assistant', content: fullText };
+              setMessages(prev => [...prev, assistMsg]);
+              setStats(prev => ({ ...prev, turns: prev.turns + 1 }));
+            } else if (data.type === 'error') {
+              const errMsg: Message = { role: 'assistant', content: `[Error] ${data.error}` };
+              setMessages(prev => [...prev, errMsg]);
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      // Fallback: mock response if server not running
       const assistMsg: Message = {
         role: 'assistant',
-        content: `I received: "${text}". ATAR is ready to help! Try: ask me to search the web, read a file, or run a command.`,
+        content: `Start the API server first:\n  uv run atar serve\n\nThen try again.`,
       };
       setMessages(prev => [...prev, assistMsg]);
       setStats(prev => ({ ...prev, turns: prev.turns + 1 }));
     } finally {
+      setStreamingText('');
       setStreamingState('idle');
     }
   }, []);
@@ -251,14 +289,24 @@ const App: React.FC = () => {
       {/* Messages area */}
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
         {messages.length === 0 ? (
-          <Box flexDirection="column">
-            <Text dimColor>Type your message and press Enter to send.</Text>
+          <Box flexDirection="column" paddingTop={1}>
+            <Text bold color="#4FC3F7">ATAR</Text>
+            <Text dimColor>Clarity in Complexity.</Text>
+            <Text dimColor>  </Text>
+            <Text dimColor>Type a message and press Enter.</Text>
             <Text dimColor>Ctrl+Q to quit.</Text>
           </Box>
         ) : (
           <Static items={messages}>
             {(msg: Message, idx: number) => <ChatMessage key={idx} msg={msg} />}
           </Static>
+        )}
+
+        {/* Streaming response while agent is working */}
+        {streamingText && (
+          <Box marginLeft={2} marginBottom={1}>
+            <Text>{streamingText}</Text>
+          </Box>
         )}
       </Box>
 

@@ -68,7 +68,24 @@ def ink() -> None:
         except Exception:
             console.print("[red]npm not found. Install Node.js: https://nodejs.org[/]")
             return
+    # Start API server in background
+    import threading
+    import time
+
+    from atar_cli.api_server import start_server
+    server_thread = threading.Thread(target=start_server, daemon=True)
+    server_thread.start()
+    time.sleep(0.5)  # Wait for server to boot
+
     subprocess.run(["npx", "tsx", "src/cli.tsx"], cwd=ink_dir)
+
+
+@app.command()
+def serve(port: int = 8420) -> None:
+    """Start ATAR API server for frontend connections."""
+    from atar_cli.api_server import start_server
+    console.print(f"[green]ATAR API server → http://127.0.0.1:{port}[/]")
+    start_server(port=port)
 
 
 @app.command()
