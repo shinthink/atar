@@ -33,6 +33,8 @@ dependencies = [
     "atar-storage",
     "atar-cli",
     "atar-tui",
+    "fastapi>=0.100",
+    "uvicorn>=0.20",
     "atar-security",
     "atar-provider-anthropic",
     "atar-provider-deepseek",
