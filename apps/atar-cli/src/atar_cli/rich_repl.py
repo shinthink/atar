@@ -276,6 +276,14 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
         console.print(f"[bold {c.primary}]ATAR[/] — Clarity in Complexity.")
         console.print(f"[dim]{model} · {short_cwd} · session {session_id[:8]}[/]")
         console.print(f"[dim]{tool_count} tools · {tset_count} toolsets · /help[/]")
+        # Provider health indicator
+        try:
+            from atar_core.provider_registry import list_available
+            avail = list_available()
+            health = "[green]✓[/]" if avail else "[red]✗ no key[/]"
+        except Exception:
+            health = "[dim]?[/]"
+        console.print(f"[dim]provider: {health}[/]")
     console.print("")
 
 
@@ -350,7 +358,15 @@ def run_repl() -> None:
         console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
 
-    # Fresh session — no auto-resume to avoid old context contamination
+    # Session resume: load last session if available
+    resumed = _try_resume_session()
+    if resumed:
+        console.print("[dim]Resumed session.[/]")
+        agent = resumed  # type: ignore[assignment]
+
+    # Auto-save session after each turn
+    _stats["session_id"] = session_id
+
     show_banner(model, os.getcwd(), session_id)
     import time as _t
     _stats["model"] = model
@@ -478,6 +494,9 @@ def run_repl() -> None:
                 nonlocal response_text
                 response_text += t
                 _stats["tokens_out"] += 1
+                # Stream in real-time via Rich console
+                from rich.text import Text
+                console.print(Text(t), end="")
 
             # ── Ctrl+C handler during agent run ──
             _cancel_requested = False
@@ -533,14 +552,9 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Add dim separator for visual clarity
+        # Response was streamed in real-time — add newline + done
         if response_text.strip():
-            import shutil as _sh
-            w = _sh.get_terminal_size((80, 24)).columns
-            console.print("[dim]" + "─" * min(w - 2, 60) + "[/]")
-            # Re-render cleanly with Markdown for readability
-            console.print(Markdown(response_text))
-        console.print()
+            console.print()  # end streaming line
 
 
 
@@ -620,35 +634,27 @@ def run_repl() -> None:
                 console.print()
                 continue
             if user == "/model":
-                # Step 1: pick provider
                 provs = list(_PROVIDERS.keys())
-                lines = [f"  [{i}] {_PROVIDERS[p].display_name} ({_PROVIDERS[p].default_model})" for i, p in enumerate(provs)]
-                console.print(Panel("\n".join(lines), title="Pick Provider", border_style="#394B59"))
+                names = [f"{_PROVIDERS[p].display_name} ({_PROVIDERS[p].default_model})" for p in provs]
+                from prompt_toolkit.completion import WordCompleter
+                completer = WordCompleter(names, ignore_case=True, sentence=True)
                 try:
-                    c = await _get_session().prompt_async("Provider #: ", style=PT_STYLE)
-                    pi = int(c)
-                    if 0 <= pi < len(provs):
-                        pid = provs[pi]
-                        models = PROVIDER_MODELS.get(pid, [])
-                        if len(models) == 1:
-                            # Single model — select immediately
-                            display = _switch_model(pid, models[0])
+                    choice = await _get_session().prompt_async(
+                        "Model: ", style=PT_STYLE, completer=completer,
+                        bottom_toolbar="Tab to complete · Enter to select"
+                    )
+                    # Find matching provider
+                    for i, name in enumerate(names):
+                        if name.lower() == choice.strip().lower():
+                            pid = provs[i]
+                            display = _switch_model(pid, PROVIDER_MODELS.get(pid, [PROVIDER_MODELS.get(pid, [""])[0]])[0])
                             prov, model, ag = _create_provider(session_id)
                             provider, agent = prov, ag
                             _stats["model"] = display
                             console.print(f"[green]✓ {display}[/]")
-                        else:
-                            # Step 2: pick model
-                            mlines = [f"  [{i}] {m}" for i, m in enumerate(models)]
-                            console.print(Panel("\n".join(mlines), title=f"Pick Model — {_PROVIDERS[pid].display_name}", border_style="#394B59"))
-                            c2 = await _get_session().prompt_async("Model #: ", style=PT_STYLE)
-                            mi = int(c2)
-                            if 0 <= mi < len(models):
-                                display = _switch_model(pid, models[mi])
-                                prov, model, ag = _create_provider(session_id)
-                                provider, agent = prov, ag
-                                _stats["model"] = display
-                                console.print(f"[green]✓ {display}[/]")
+                            break
+                    else:
+                        console.print(f"[yellow]Unknown: {choice}[/]")
                 except (ValueError, EOFError, KeyboardInterrupt):
                     console.print("[dim]Cancelled.[/]")
                 console.print(Rule(style="#394B59"))

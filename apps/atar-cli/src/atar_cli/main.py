@@ -39,6 +39,24 @@ def default(
     if yolo:
         from atar_core.approval import get_approval
         get_approval().yolo = True
+    # Non-TTY detection: use simple mode for pipes
+    import sys
+    if not sys.stdin.isatty():
+        import asyncio as _asyncio
+        text = sys.stdin.read().strip()
+        if text:
+            from atar_core.agent import Agent, StreamCallbacks
+            from atar_core.provider_registry import list_available
+            providers = list_available()
+            if not providers:
+                console.print("[red]No provider configured. Run: atar setup[/]")
+                return
+            agent = Agent(provider=providers[0], max_turns=5, interactive=False)
+            async def _run():
+                await agent.run(text, StreamCallbacks(on_delta=lambda t: console.print(t, end="")))
+                console.print()
+            _asyncio.run(_run())
+        return
     run_repl()
 
 
