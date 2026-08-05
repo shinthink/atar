@@ -35,7 +35,6 @@ from atar_core.commands import registry as cmd_registry  # noqa: E402
 # Register all commands
 register_command("/help", "Show available commands", aliases=["/h"], category="system")
 from atar_core.interaction import (  # noqa: E402
-    get_active_bg_count,
     get_busy_mode,
     get_pending_bg_results,
     mark_busy_hint_shown,
@@ -322,28 +321,18 @@ def _context_bar() -> str:
 
 
 def _status_bar() -> str:
-    import shutil as _sh
     import time as _t
 
     if _stats["start_time"] is None:
         _stats["start_time"] = _t.time()
-    w = _sh.get_terminal_size().columns
     e = int(_t.time() - _stats["start_time"])
-    h, r = divmod(e, 3600); m, s = divmod(r, 60)
-    d = f"{h}h{m}m" if h else f"{m}m{s}s"
+    m, s = divmod(e, 60)
+    d = f"{m}m{s:02d}s" if m > 0 else f"{s}s"
     from atar_core.display import context_bar
     ctx, _ = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
-    b = []
-    if _stats.get("compressions", 0): b.append(f"\U0001f5dc {_stats['compressions']}")
-    if get_active_bg_count() > 0: b.append(f"\u25b6 {_stats['background_tasks']}")
-    bg = " " + " ".join(b) if b else ""
-    if w >= 76:
-        return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 turns {_stats['turns']} \u2502 tools {_stats['tools']} \u2502 {c} \u2502 {d}{bg}"
-    elif w >= 52:
-        return f"\u25c6 {_stats['model']} \u2502 {ctx} \u2502 {c} \u2502 {d}{bg}"
-    else:
-        return f"\u25c6 {_stats['model']} \u2502 {d}{bg}"
+    thinking = " ● thinking..." if _stats.get("_thinking") else ""
+    return f"◆ {_stats['model']} │ {ctx} │ turns {_stats['turns']} │ tools {_stats['tools']} │ {c} │ {d}{thinking}"
 
 def _try_resume_session() -> object | None:
     """Try to resume the last session from storage."""
@@ -499,11 +488,16 @@ def run_repl() -> None:
             from atar_core.display_v2 import calculate_cost
 
             async def _run_agent():
-                await ag.run(prompt, StreamCallbacks(
-                    on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
-                    on_approval=on_approval,
-                    get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
-                ))
+                # Show "thinking" in status bar by incrementing a flag
+                _stats["_thinking"] = True
+                try:
+                    await ag.run(prompt, StreamCallbacks(
+                        on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                        on_approval=on_approval,
+                        get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
+                    ))
+                finally:
+                    _stats["_thinking"] = False
             await _run_agent()
             for tr in _tool_results:
                 console.print(tr)
