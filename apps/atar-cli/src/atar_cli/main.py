@@ -51,6 +51,15 @@ def tui() -> None:
 
 
 @app.command()
+def ink() -> None:
+    """Launch Ink/React TUI — exact Gemini CLI clone (Node.js frontend)."""
+    import subprocess
+    import os
+    ink_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "apps", "atar-ink")
+    subprocess.run(["npx", "tsx", "src/cli.tsx"], cwd=ink_dir)
+
+
+@app.command()
 def sessions() -> None:
     """List saved sessions."""
     from atar_storage.sqlite_store import SqliteStore
