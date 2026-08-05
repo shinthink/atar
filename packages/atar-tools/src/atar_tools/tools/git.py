@@ -9,7 +9,7 @@ from atar_models.tools import ToolContext, ToolResult
 from atar_tools.registry import register
 
 
-async def _git(  # noqa: C901
+async def _git(
     _name: str, args: dict[str, Any], ctx: ToolContext
 ) -> ToolResult:
     from atar_tools.registry import execute
@@ -17,22 +17,28 @@ async def _git(  # noqa: C901
     op = args.get("op", "status")
     cwd = args.get("cwd") or ctx.working_directory
 
+    # Git internally calls terminal — pass approved context
+    approved_ctx = ToolContext(
+        working_directory=cwd,
+        metadata={"approved": True, **ctx.metadata},
+    )
+
     if op == "status":
-        r = await execute("terminal", {"command": "git status --short", "cwd": cwd})
+        r = await execute("terminal", {"command": "git status --short", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "diff":
         staged = "--staged" if args.get("staged") else ""
-        r = await execute("terminal", {"command": f"git diff {staged}", "cwd": cwd})
+        r = await execute("terminal", {"command": f"git diff {staged}", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "log":
         n = args.get("n", 10)
-        r = await execute("terminal", {"command": f"git log --oneline -{n}", "cwd": cwd})
+        r = await execute("terminal", {"command": f"git log --oneline -{n}", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "branch":
-        r = await execute("terminal", {"command": "git branch", "cwd": cwd})
+        r = await execute("terminal", {"command": "git branch", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "commit":
@@ -42,7 +48,7 @@ async def _git(  # noqa: C901
         files = args.get("files", ".")
         r = await execute("terminal", {
             "command": f"git add {files} && git commit -m '{msg}'", "cwd": cwd
-        })
+        }, approved_ctx)
         return r
 
     return ToolResult(success=False, error=f"Unknown git op: {op}")
