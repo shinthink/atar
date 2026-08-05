@@ -376,11 +376,21 @@ def run_repl() -> None:
             icon = _ti(name)
             label = _tl(name)
             color = _tc(name)
-            short = str(args)[:60]
-            if name in ("read_file", "write_file"):
-                short = args_cache[name].get("path", str(args))[:60]
+            # Clean arg display — show meaningful value, not raw dict
+            if name in ("read_file", "write_file", "patch"):
+                short = args.get("path", "")[:60]
             elif name == "terminal":
                 short = f"$ {args.get('command', '')[:60]}"
+            elif name in ("web_search", "search_files"):
+                short = f"{args.get('query', args.get('pattern', ''))[:60]}"
+            elif name == "web_fetch":
+                short = f"{args.get('url', '')[:60]}"
+            elif name == "memory_add":
+                short = f"{args.get('content', '')[:60]}"
+            else:
+                # Show first meaningful value
+                vals = {k: v for k, v in args.items() if k not in ('sandbox', 'timeout', 'cwd')}
+                short = str(list(vals.values())[0])[:60] if vals else str(args)[:60]
             console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
@@ -434,16 +444,8 @@ def run_repl() -> None:
 
             async def _capture(t: str) -> None:
                 nonlocal response_text
-                import sys
                 response_text += t
                 _stats["tokens_out"] += 1
-                # Stream text in real-time (not just buffer)
-                if len(response_text) == 1:
-                    sys.stdout.write("\n")
-                    sys.stdout.flush()
-                # Print deltas as raw text — bypass all Rich parsing
-                sys.stdout.write(t)
-                sys.stdout.flush()
 
             # ── Ctrl+C handler during agent run ──
             _cancel_requested = False
@@ -498,9 +500,14 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Streaming already rendered the response — skip duplicate
-        if not _had_tools and not response_text.strip():
-            console.print()  # empty turn separator
+        # Add dim separator for visual clarity
+        if response_text.strip():
+            import shutil as _sh
+            w = _sh.get_terminal_size((80, 24)).columns
+            console.print("[dim]" + "─" * min(w - 2, 60) + "[/]")
+            # Re-render cleanly with Markdown for readability
+            console.print(Markdown(response_text))
+        console.print()
 
 
 
