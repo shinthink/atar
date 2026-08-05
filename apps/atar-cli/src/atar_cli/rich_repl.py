@@ -357,6 +357,8 @@ def run_repl() -> None:
         _tool_start_time: dict[str, float] = {}
         _last_tool_id: set[str] = set()
         _tool_results: list[str] = []
+        from atar_cli.tool_display import ToolDisplay
+        tool_display = ToolDisplay(console)
         args_cache: dict[str, dict] = {}
 
         async def on_tool(name: str, args: dict) -> None:
@@ -391,10 +393,21 @@ def run_repl() -> None:
                 # Show first meaningful value
                 vals = {k: v for k, v in args.items() if k not in ('sandbox', 'timeout', 'cwd')}
                 short = str(list(vals.values())[0])[:60] if vals else str(args)[:60]
-            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short}[/]")
+            # Add to animated display (replaces old console.print)
+            tool_display.add(label, short, color, icon)
+            if tool_display.count == 1:
+                tool_display.start()
+            else:
+                tool_display.update()
 
         async def on_tool_result(name: str, result: str) -> None:
             """Collect results for display."""
+            # Remove from animated display
+            tool_display.remove(name)
+            if tool_display.count == 0:
+                tool_display.stop()
+            else:
+                tool_display.update()
             a = args_cache.get(name, {})
             if name == "terminal":
                 preview = a.get("command", "")[:50]
@@ -492,6 +505,7 @@ def run_repl() -> None:
                     if response_text:
                         console.print("\n")
             await _run_agent()
+            tool_display.stop()  # Ensure spinner stopped
             for tr in _tool_results:
                 console.print(tr)
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
