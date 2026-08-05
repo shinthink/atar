@@ -25,8 +25,11 @@ async def _delegate_task(_name: str, args: dict[str, Any], ctx: ToolContext) -> 
 
     try:
         # Create sub-agent with same provider, isolated messages
+        provider = getattr(ctx, "provider", None) or _get_default_provider()
+        if provider is None:
+            return ToolResult(success=False, error="No provider available for delegation")
         sub = Agent(
-            provider=getattr(ctx, "provider", None) or _get_default_provider(),
+            provider=provider,
             max_turns=sub_budget.max_turns,
             tools=None,
             system_prompt=f"You are an ATAR subagent. Complete this task concisely:\n{goal}\n\nReturn only the result. Be brief.",
@@ -50,12 +53,24 @@ async def _delegate_task(_name: str, args: dict[str, Any], ctx: ToolContext) -> 
 
 
 def _get_default_provider():
-    """Get the default provider from configuration."""
-    from atar_core.provider_registry import get_provider, list_available
-    available = list_available()
-    if available:
-        return available[0]
-    return get_provider("deepseek")
+    """Get the default provider client (ModelProvider, not ProviderProfile)."""
+    from atar_core.provider_router import create_router
+    try:
+        router = create_router()
+        if router.providers:
+            return router  # Router itself acts as ModelProvider for Agent
+    except Exception:
+        pass
+    return None
+
+
+def _get_sub_provider(profile):
+    """Create a ModelProvider from a ProviderProfile."""
+    from atar_core.provider_router import _build_provider
+    try:
+        return _build_provider(profile)
+    except Exception:
+        return None
 
 
 register(
