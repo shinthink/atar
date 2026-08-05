@@ -13,7 +13,7 @@ async def _run_tests(_name: str, args: dict[str, Any], ctx: ToolContext) -> Tool
     cwd = args.get("cwd") or ctx.working_directory
     path = args.get("path", "tests/")
     approved_ctx = ToolContext(working_directory=cwd, metadata={"approved": True, **(ctx.metadata or {})})
-    r = await execute("terminal", {"command": f"uv run pytest {path} -q --tb=short", "cwd": cwd, "timeout": 120, "sandbox": False}, approved_ctx)
+    r = await execute("terminal", {"command": f"uv run pytest {path} -q --tb=short", "cwd": cwd, "timeout": 120}, approved_ctx)
     return r
 
 

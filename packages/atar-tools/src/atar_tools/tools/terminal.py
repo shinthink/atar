@@ -58,7 +58,7 @@ async def _run_terminal(_name: str, args: dict[str, Any], ctx: ToolContext) -> T
     if err:
         return ToolResult(success=False, error=err)
 
-    use_sandbox = args.get("sandbox", True)  # Default: use Docker sandbox when available
+    use_sandbox = args.get("sandbox", False)  # Default: local execution (safer for most use cases)
     cwd = os.path.abspath(args.get("cwd") or ctx.working_directory or os.getcwd())
     timeout = min(args.get("timeout", 30), 300)  # max 5 minutes
     max_output = 20_000

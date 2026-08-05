@@ -24,21 +24,21 @@ async def _git(
     )
 
     if op == "status":
-        r = await execute("terminal", {"command": "git status --short", "cwd": cwd, "sandbox": False}, approved_ctx)
+        r = await execute("terminal", {"command": "git status --short", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "diff":
         staged = "--staged" if args.get("staged") else ""
-        r = await execute("terminal", {"command": f"git diff {staged}", "cwd": cwd, "sandbox": False}, approved_ctx)
+        r = await execute("terminal", {"command": f"git diff {staged}", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "log":
         n = args.get("n", 10)
-        r = await execute("terminal", {"command": f"git log --oneline -{n}", "cwd": cwd, "sandbox": False}, approved_ctx)
+        r = await execute("terminal", {"command": f"git log --oneline -{n}", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "branch":
-        r = await execute("terminal", {"command": "git branch", "cwd": cwd, "sandbox": False}, approved_ctx)
+        r = await execute("terminal", {"command": "git branch", "cwd": cwd}, approved_ctx)
         return r
 
     if op == "commit":
@@ -47,7 +47,7 @@ async def _git(
             return ToolResult(success=False, error="commit requires message")
         files = args.get("files", ".")
         r = await execute("terminal", {
-            "command": f"git add {files} && git commit -m '{msg}'", "cwd": cwd, "sandbox": False
+            "command": f"git add {files} && git commit -m '{msg}'", "cwd": cwd
         }, approved_ctx)
         return r
 

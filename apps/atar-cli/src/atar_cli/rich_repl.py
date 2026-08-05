@@ -469,6 +469,7 @@ def run_repl() -> None:
                     "web_search", "web_fetch", "search_files", "read_file",
                     "session_search", "session_resume", "memory_list",
                     "load_skill", "maps", "weather", "stocks", "cronjob",
+                    "execute_code",  # Sandboxed Python execution
                 }
                 if tool_name in _readonly_tools:
                     return True
