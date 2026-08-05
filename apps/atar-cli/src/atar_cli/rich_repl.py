@@ -502,15 +502,9 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Response — light rail style, no heavy panel
-        console.print()
-        from atar_core.theme import current_theme
-        c = current_theme().colors
-        # Left rail prefix
-        console.print(f"[bold {c.primary}]  ATAR[/]")
-        for line in response_text.split("\n"):
-            console.print(f"  [dim]│[/] {line}")
-        console.print()
+        # Streaming already rendered the response — skip duplicate
+        if not _had_tools and not response_text.strip():
+            console.print()  # empty turn separator
 
 
 
