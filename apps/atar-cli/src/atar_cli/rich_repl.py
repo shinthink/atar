@@ -98,8 +98,23 @@ register_command("/insights", "Show cross-session insights", category="system", 
 bindings = KeyBindings()
 
 
+@bindings.add("enter")
+def _(event):
+    """Enter submits in multiline mode."""
+    buf = event.current_buffer
+    if buf.text.strip():
+        buf.validate_and_handle()
+
+
 @bindings.add("escape", "enter")
 def _(event):
+    """Alt+Enter inserts newline."""
+    event.current_buffer.insert_text("\n")
+
+
+@bindings.add("c-j")
+def _(event):
+    """Ctrl+J inserts newline."""
     event.current_buffer.insert_text("\n")
 
 
