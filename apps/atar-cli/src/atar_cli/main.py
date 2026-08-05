@@ -55,7 +55,13 @@ def ink() -> None:
     """Launch Ink/React TUI — Ink React TUI (Node.js frontend)."""
     import os
     import subprocess
-    ink_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "apps", "atar-ink")
+    # Resolve from project root (where pyproject.toml lives)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    ink_dir = os.path.join(project_root, "apps", "atar-ink")
+    # Auto-install if fresh
+    if not os.path.isdir(os.path.join(ink_dir, "node_modules")):
+        console.print("[dim]Installing dependencies...[/]")
+        subprocess.run(["npm", "install"], cwd=ink_dir, capture_output=True)
     subprocess.run(["npx", "tsx", "src/cli.tsx"], cwd=ink_dir)
 
 
