@@ -43,6 +43,14 @@ def default(
 
 
 @app.command()
+def tui() -> None:
+    """Launch Textual TUI — full-screen Gemini-style interface with 25 screens."""
+    from atar_tui.app import ATARApp
+    app_instance = ATARApp()
+    app_instance.run()
+
+
+@app.command()
 def sessions() -> None:
     """List saved sessions."""
     from atar_storage.sqlite_store import SqliteStore
