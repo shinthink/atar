@@ -440,11 +440,10 @@ def run_repl() -> None:
                 from atar_core.display_v2 import tool_color as _tc2
                 from atar_core.display_v2 import tool_icon as _ti2
                 from atar_core.display_v2 import tool_label as _tl2
+                from rich.prompt import Prompt
                 console.print(f"  [{_tc2(tool_name)}]{_ti2(tool_name)}[/] [bold]{_tl2(tool_name)}[/] [dim]({file_path or str(arguments)[:60]})[/]")
                 try:
-                    choice = await session_pt.prompt_async(
-                        HTML("  <dim>Run? [</dim><b>y</b><dim>/n/a] </dim>"), style=PT_STYLE
-                    )
+                    choice = Prompt.ask("  Run?", choices=["y", "n", "a"], default="y", show_choices=False)
                 except (KeyboardInterrupt, EOFError):
                     return False
                 choice = choice.strip().lower()
