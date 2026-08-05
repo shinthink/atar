@@ -447,7 +447,7 @@ def run_repl() -> None:
                     from atar_core.theme import current_theme
                     c = current_theme().colors
                     console.print(f"[bold {c.primary}]  ATAR[/]")
-                # Print deltas directly for real-time streaming (plain text, no markdown)
+                # Print deltas as plain text — no parsing
                 console.print(Text(t), end="")
 
             # ── Ctrl+C handler during agent run ──
