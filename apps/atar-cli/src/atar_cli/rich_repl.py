@@ -391,10 +391,10 @@ def run_repl() -> None:
                 # Show first meaningful value
                 vals = {k: v for k, v in args.items() if k not in ('sandbox', 'timeout', 'cwd')}
                 short = str(list(vals.values())[0])[:60] if vals else str(args)[:60]
-            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short}[/]")
+            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short} ⟳[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            """Collect results for display after Status exits."""
+            """Collect results for display."""
             a = args_cache.get(name, {})
             if name == "terminal":
                 preview = a.get("command", "")[:50]
