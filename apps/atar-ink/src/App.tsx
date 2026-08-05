@@ -1,5 +1,5 @@
 /**
- * ATAR Ink — Gemini CLI-style terminal UI for ATAR.
+ * ATAR Ink — React + Ink terminal UI for ATAR.
  * React + Ink declarative rendering with streaming, tool cards, approval dialogs.
  */
 import React, { useState, useCallback, useEffect, useRef } from 'react';
