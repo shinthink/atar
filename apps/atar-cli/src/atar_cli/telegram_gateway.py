@@ -187,7 +187,20 @@ async def _get_provider(provider_id: str, model: str = ""):
     except Exception:
         pass
 
-    # Last resort: try fake provider for testing
-    from atar_core.fake_provider import FakeProvider
-    print("⚠ No providers available. Using fake provider (for testing only).")
-    return FakeProvider()
+    # No providers available — guide user instead of fake fallback
+    print()
+    print("╔══════════════════════════════════════════╗")
+    print("║  ⚠ No AI provider configured           ║")
+    print("╠══════════════════════════════════════════╣")
+    print("║                                        ║")
+    print("║  Option 1 — Ollama (free, local):      ║")
+    print("║    curl -fsSL https://ollama.com/...   ║")
+    print("║    ollama pull llama3.2                ║")
+    print("║                                        ║")
+    print("║  Option 2 — DeepSeek (cheap, fast):    ║")
+    print("║    export DEEPSEEK_API_KEY=***         ║")
+    print("║                                        ║")
+    print("║  Option 3 — Run setup wizard:         ║")
+    print("║    atar setup                          ║")
+    print("╚══════════════════════════════════════════╝")
+    sys.exit(1)
