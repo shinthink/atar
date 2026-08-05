@@ -51,10 +51,10 @@ class Agent:
         if budget is None:
             budget = RunBudget()
         cb = callbacks or StreamCallbacks()
-        # Reset agent state if needed (allow re-entry from any terminal state)
-        if self.state._state in {AgentState.COMPLETED, AgentState.FAILED, AgentState.IDLE}:
+        # Reset agent state if needed (allow re-entry from any state)
+        if self.state._state != AgentState.UNDERSTANDING:
             self.state.force(AgentState.IDLE)
-        self.state.transition(AgentState.UNDERSTANDING, session_id=self.session_id)
+            self.state.transition(AgentState.UNDERSTANDING, session_id=self.session_id)
         self._messages.append(Message(role="user", content=user_input))
 
         turn = 0
