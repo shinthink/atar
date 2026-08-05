@@ -1,0 +1,1278 @@
+"""ATAR Linux Command Dictionary — comprehensive reference for 100+ essential Linux commands.
+
+Covers: file ops, text processing, system info, networking, process management,
+package management, permissions, disk, users, and advanced tools.
+Used by ATAR to understand and suggest the right command for any task.
+"""
+
+from __future__ import annotations
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Complete Linux Command Dictionary — 100+ commands with categories
+# ═══════════════════════════════════════════════════════════════════════════════
+
+LINUX_COMMAND_DICT: dict[str, dict] = {
+    # ── File & Directory ──
+    "ls": {
+        "description": "List directory contents",
+        "category": "file",
+        "examples": ["ls -la", "ls -lh", "ls -R", "ls -lt", "ls *.py"],
+        "flags": {"-l": "long format", "-a": "all files (incl. hidden)", "-h": "human-readable sizes", "-t": "sort by time", "-r": "reverse order", "-R": "recursive", "-S": "sort by size"},
+        "dangerous": False,
+    },
+    "cd": {
+        "description": "Change directory",
+        "category": "file",
+        "examples": ["cd /path", "cd ..", "cd ~", "cd -", "cd /"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "pwd": {
+        "description": "Print working directory",
+        "category": "file",
+        "examples": ["pwd", "pwd -P"],
+        "flags": {"-P": "physical (no symlinks)"},
+        "dangerous": False,
+    },
+    "mkdir": {
+        "description": "Create directory",
+        "category": "file",
+        "examples": ["mkdir dir", "mkdir -p path/to/dir", "mkdir -m 755 dir"],
+        "flags": {"-p": "create parents", "-m": "set mode"},
+        "dangerous": False,
+    },
+    "rmdir": {
+        "description": "Remove empty directory",
+        "category": "file",
+        "examples": ["rmdir dir", "rmdir -p path/to/dir"],
+        "flags": {"-p": "remove parents if empty"},
+        "dangerous": False,
+    },
+    "rm": {
+        "description": "Remove files/directories",
+        "category": "file",
+        "examples": ["rm file.txt", "rm -rf dir/", "rm -i *.log"],
+        "flags": {"-r": "recursive", "-f": "force", "-i": "interactive (confirm)", "-v": "verbose"},
+        "dangerous": True,
+        "warning": "Use -rf with caution — cannot be undone without backups.",
+    },
+    "cp": {
+        "description": "Copy files/directories",
+        "category": "file",
+        "examples": ["cp src dst", "cp -r dir/ backup/", "cp -a src dst", "cp -u src dst"],
+        "flags": {"-r": "recursive", "-a": "archive (preserve attributes)", "-u": "update (only newer)", "-v": "verbose", "-i": "interactive"},
+        "dangerous": False,
+    },
+    "mv": {
+        "description": "Move/rename files",
+        "category": "file",
+        "examples": ["mv old new", "mv file.txt /path/", "mv -i src dst"],
+        "flags": {"-i": "interactive", "-v": "verbose", "-n": "no overwrite"},
+        "dangerous": False,
+    },
+    "touch": {
+        "description": "Create empty file or update timestamp",
+        "category": "file",
+        "examples": ["touch file.txt", "touch -t 202601011200 file.txt"],
+        "flags": {"-t": "set timestamp", "-a": "change access time only", "-m": "change modification time only"},
+        "dangerous": False,
+    },
+    "ln": {
+        "description": "Create links (hard or symbolic)",
+        "category": "file",
+        "examples": ["ln -s target link", "ln target hardlink", "ln -sf target link"],
+        "flags": {"-s": "symbolic (symlink)", "-f": "force overwrite", "-n": "no dereference"},
+        "dangerous": False,
+    },
+    "find": {
+        "description": "Search for files in directory hierarchy",
+        "category": "file",
+        "examples": ["find . -name '*.py'", "find / -type f -size +100M", "find . -mtime -7", "find . -name '*.log' -delete"],
+        "flags": {"-name": "filename pattern", "-type": "f/d/l", "-size": "file size", "-mtime": "modified days ago", "-exec": "execute command", "-delete": "delete matches"},
+        "dangerous": True,
+        "warning": "find -delete is dangerous — test with -print first.",
+    },
+    "locate": {
+        "description": "Find files by name (via database, fast)",
+        "category": "file",
+        "examples": ["locate filename", "locate -i pattern", "updatedb"],
+        "flags": {"-i": "case insensitive", "-l": "limit", "-e": "existing files only"},
+        "dangerous": False,
+    },
+    "file": {
+        "description": "Determine file type",
+        "category": "file",
+        "examples": ["file unknown.bin", "file -i image.png", "file *.txt"],
+        "flags": {"-i": "MIME type", "-z": "try compressed", "-b": "brief"},
+        "dangerous": False,
+    },
+    "stat": {
+        "description": "Display file/directory status",
+        "category": "file",
+        "examples": ["stat file.txt", "stat -c '%a %n' *"],
+        "flags": {"-c": "custom format", "-f": "filesystem status"},
+        "dangerous": False,
+    },
+    "realpath": {
+        "description": "Print resolved absolute path",
+        "category": "file",
+        "examples": ["realpath file.txt", "realpath -s link"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "basename": {
+        "description": "Strip directory from filename",
+        "category": "file",
+        "examples": ["basename /path/to/file.txt", "basename -s .txt file.txt"],
+        "flags": {"-s": "strip suffix"},
+        "dangerous": False,
+    },
+    "dirname": {
+        "description": "Strip last component from path",
+        "category": "file",
+        "examples": ["dirname /path/to/file.txt"],
+        "flags": {},
+        "dangerous": False,
+    },
+
+    # ── Text Processing ──
+    "cat": {
+        "description": "Concatenate and display files",
+        "category": "text",
+        "examples": ["cat file.txt", "cat file1 file2 > combined", "cat -n file.txt"],
+        "flags": {"-n": "number lines", "-b": "number non-blank lines", "-s": "squeeze blank lines", "-A": "show all characters"},
+        "dangerous": False,
+    },
+    "tac": {
+        "description": "Concatenate and display files in reverse",
+        "category": "text",
+        "examples": ["tac file.txt", "tac -b file.txt"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "head": {
+        "description": "Output first part of files",
+        "category": "text",
+        "examples": ["head file.txt", "head -n 20 file.txt", "head -c 100 file.txt"],
+        "flags": {"-n": "number of lines", "-c": "number of bytes"},
+        "dangerous": False,
+    },
+    "tail": {
+        "description": "Output last part of files",
+        "category": "text",
+        "examples": ["tail file.txt", "tail -f log.txt (follow)", "tail -n 50 file.txt"],
+        "flags": {"-n": "number of lines", "-f": "follow (live)", "-F": "follow + retry"},
+        "dangerous": False,
+    },
+    "less": {
+        "description": "View file content (pager, scrollable)",
+        "category": "text",
+        "examples": ["less file.txt", "less -N file.txt", "less +F file.txt"],
+        "flags": {"-N": "line numbers", "-S": "no wrap", "+F": "follow mode"},
+        "dangerous": False,
+    },
+    "more": {
+        "description": "View file content (simple pager)",
+        "category": "text",
+        "examples": ["more file.txt", "more -d file.txt"],
+        "flags": {"-d": "show prompts"},
+        "dangerous": False,
+    },
+    "grep": {
+        "description": "Search text using patterns (regex)",
+        "category": "text",
+        "examples": ["grep pattern file.txt", "grep -r pattern dir/", "grep -i pattern *", "grep -v pattern file", "grep -c pattern file"],
+        "flags": {"-i": "ignore case", "-r": "recursive", "-v": "invert match", "-c": "count", "-n": "line numbers", "-l": "filenames only", "-E": "extended regex", "-A": "after ctx", "-B": "before ctx", "-w": "word"},  # noqa: E501
+        "dangerous": False,
+    },
+    "rg": {
+        "description": "Ripgrep — fast recursive text search (like grep but faster)",
+        "category": "text",
+        "examples": ["rg pattern", "rg -l pattern", "rg --type py pattern", "rg -c pattern"],
+        "flags": {"-l": "files only", "--type": "file type filter", "-c": "count", "-i": "ignore case", "-v": "invert", "--no-heading": "clean output"},
+        "dangerous": False,
+    },
+    "sed": {
+        "description": "Stream editor for filtering/transforming text",
+        "category": "text",
+        "examples": ["sed 's/old/new/g' file", "sed -i 's/old/new/g' file", "sed '/pattern/d' file", "sed -n '5,10p' file"],
+        "flags": {"-i": "edit in place", "-e": "script", "-n": "suppress output", "-r/-E": "extended regex"},
+        "dangerous": True,
+        "warning": "sed -i modifies files in-place. Test without -i first.",
+    },
+    "awk": {
+        "description": "Pattern scanning and text processing language",
+        "category": "text",
+        "examples": ["awk '{print $1}' file", "awk -F: '{print $1,$3}' /etc/passwd", "awk '/pattern/ {print $0}' file", "awk '{sum+=$1} END {print sum}' file"],
+        "flags": {"-F": "field separator", "-v": "variable", "-f": "script file"},
+        "dangerous": False,
+    },
+    "cut": {
+        "description": "Remove sections from each line",
+        "category": "text",
+        "examples": ["cut -d: -f1 /etc/passwd", "cut -c1-10 file.txt"],
+        "flags": {"-d": "delimiter", "-f": "fields", "-c": "characters"},
+        "dangerous": False,
+    },
+    "sort": {
+        "description": "Sort lines of text files",
+        "category": "text",
+        "examples": ["sort file.txt", "sort -n numbers.txt", "sort -r file.txt", "sort -u file.txt", "sort -t: -k2 file"],
+        "flags": {"-n": "numeric sort", "-r": "reverse", "-u": "unique", "-t": "separator", "-k": "key field", "-h": "human numeric"},
+        "dangerous": False,
+    },
+    "uniq": {
+        "description": "Report or omit repeated lines",
+        "category": "text",
+        "examples": ["uniq file.txt", "sort file.txt | uniq -c", "uniq -d file.txt"],
+        "flags": {"-c": "count", "-d": "duplicates only", "-u": "unique only"},
+        "dangerous": False,
+    },
+    "wc": {
+        "description": "Word/line/character count",
+        "category": "text",
+        "examples": ["wc file.txt", "wc -l file.txt", "wc -w file.txt", "wc -c file.txt"],
+        "flags": {"-l": "lines", "-w": "words", "-c": "bytes", "-m": "chars"},
+        "dangerous": False,
+    },
+    "tr": {
+        "description": "Translate or delete characters",
+        "category": "text",
+        "examples": ["echo 'hello' | tr 'a-z' 'A-Z'", "tr -d '\\r' < file", "tr -s ' ' ' '"],
+        "flags": {"-d": "delete", "-s": "squeeze repeats"},
+        "dangerous": False,
+    },
+    "tee": {
+        "description": "Read stdin and write to stdout + files",
+        "category": "text",
+        "examples": ["echo 'test' | tee file.txt", "cmd | tee -a log.txt"],
+        "flags": {"-a": "append"},
+        "dangerous": False,
+    },
+    "diff": {
+        "description": "Compare files line by line",
+        "category": "text",
+        "examples": ["diff file1 file2", "diff -u file1 file2", "diff -r dir1/ dir2/"],
+        "flags": {"-u": "unified format", "-r": "recursive", "-q": "brief", "-i": "ignore case", "-w": "ignore whitespace"},
+        "dangerous": False,
+    },
+    "patch": {
+        "description": "Apply a diff file to original",
+        "category": "text",
+        "examples": ["patch < diff.patch", "patch -p1 < diff.patch", "patch -R < diff.patch"],
+        "flags": {"-p": "strip path components", "-R": "reverse", "-b": "backup"},
+        "dangerous": True,
+    },
+    "xxd": {
+        "description": "Hex dump or reverse",
+        "category": "text",
+        "examples": ["xxd file.bin", "xxd -r hex.txt > file.bin", "xxd -g 1 file.bin"],
+        "flags": {"-r": "reverse (hex→binary)", "-g": "group bytes", "-l": "limit length"},
+        "dangerous": False,
+    },
+    "strings": {
+        "description": "Print printable strings in binary files",
+        "category": "text",
+        "examples": ["strings binary.bin", "strings -n 8 binary.bin"],
+        "flags": {"-n": "minimum length", "-t": "print offset"},
+        "dangerous": False,
+    },
+
+    # ── System Information ──
+    "uname": {
+        "description": "Print system information",
+        "category": "system",
+        "examples": ["uname -a", "uname -r (kernel)", "uname -m (architecture)"],
+        "flags": {"-a": "all info", "-s": "kernel name", "-r": "kernel release", "-m": "machine", "-p": "processor"},
+        "dangerous": False,
+    },
+    "hostname": {
+        "description": "Show or set system hostname",
+        "category": "system",
+        "examples": ["hostname", "hostname -I (IPs)", "hostname -f (FQDN)"],
+        "flags": {"-I": "all IP addresses", "-f": "fully qualified", "-s": "short"},
+        "dangerous": False,
+    },
+    "whoami": {
+        "description": "Print current user name",
+        "category": "system",
+        "examples": ["whoami"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "id": {
+        "description": "Print user and group IDs",
+        "category": "system",
+        "examples": ["id", "id username", "id -u", "id -g"],
+        "flags": {"-u": "user ID", "-g": "group ID", "-G": "all groups", "-n": "names"},
+        "dangerous": False,
+    },
+    "who": {
+        "description": "Show who is logged in",
+        "category": "system",
+        "examples": ["who", "who -b (last boot)", "who -r (runlevel)"],
+        "flags": {"-b": "boot time", "-r": "runlevel", "-u": "idle time"},
+        "dangerous": False,
+    },
+    "w": {
+        "description": "Show who is logged in and what they're doing",
+        "category": "system",
+        "examples": ["w", "w username"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "uptime": {
+        "description": "Show system uptime and load average",
+        "category": "system",
+        "examples": ["uptime", "uptime -p (pretty)"],
+        "flags": {"-p": "pretty format", "-s": "since boot"},
+        "dangerous": False,
+    },
+    "date": {
+        "description": "Print or set system date/time",
+        "category": "system",
+        "examples": ["date", "date +'%Y-%m-%d %H:%M:%S'", "date -d '2 days ago'"],
+        "flags": {"-d": "display time described", "-s": "set time", "-u": "UTC"},
+        "dangerous": False,
+    },
+    "cal": {
+        "description": "Display calendar",
+        "category": "system",
+        "examples": ["cal", "cal 2026", "cal -3"],
+        "flags": {"-3": "3 months", "-y": "year"},
+        "dangerous": False,
+    },
+    "env": {
+        "description": "Print or set environment variables",
+        "category": "system",
+        "examples": ["env", "env | grep PATH", "env VAR=value command"],
+        "flags": {"-i": "ignore inherited env", "-0": "null-separated"},
+        "dangerous": False,
+    },
+    "printenv": {
+        "description": "Print environment variables",
+        "category": "system",
+        "examples": ["printenv", "printenv HOME", "printenv PATH"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "export": {
+        "description": "Set environment variable (shell builtin)",
+        "category": "system",
+        "examples": ["export VAR=value", "export PATH=$PATH:/new/path"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "alias": {
+        "description": "Create command shortcuts (shell builtin)",
+        "category": "system",
+        "examples": ["alias ll='ls -la'", "alias", "unalias ll"],
+        "flags": {},
+        "dangerous": False,
+    },
+
+    # ── Process Management ──
+    "ps": {
+        "description": "Report process status",
+        "category": "process",
+        "examples": ["ps aux", "ps -ef", "ps -eo pid,cmd,%mem,%cpu", "ps -p 1234"],
+        "flags": {"a": "all users", "u": "user format", "x": "no terminal", "-e": "all processes", "-f": "full", "-o": "custom output"},
+        "dangerous": False,
+    },
+    "top": {
+        "description": "Display dynamic real-time process info",
+        "category": "process",
+        "examples": ["top", "top -u username", "top -p 1234"],
+        "flags": {"-u": "specific user", "-p": "specific PID", "-b": "batch mode", "-n": "iterations"},
+        "dangerous": False,
+    },
+    "htop": {
+        "description": "Interactive process viewer (prettier top)",
+        "category": "process",
+        "examples": ["htop", "htop -u username", "htop -p 1234"],
+        "flags": {"-u": "user", "-p": "PID"},
+        "dangerous": False,
+    },
+    "kill": {
+        "description": "Send signal to process",
+        "category": "process",
+        "examples": ["kill 1234", "kill -9 1234 (force)", "kill -15 1234 (graceful)", "kill -l (list signals)"],
+        "flags": {"-9": "SIGKILL (force)", "-15": "SIGTERM (default)", "-l": "list signals", "-HUP": "SIGHUP (reload)"},
+        "dangerous": True,
+    },
+    "killall": {
+        "description": "Kill processes by name",
+        "category": "process",
+        "examples": ["killall process_name", "killall -9 process_name"],
+        "flags": {"-9": "force", "-i": "interactive", "-u": "user"},
+        "dangerous": True,
+    },
+    "pkill": {
+        "description": "Signal process by name pattern",
+        "category": "process",
+        "examples": ["pkill process_name", "pkill -f pattern", "pkill -u username"],
+        "flags": {"-f": "full command match", "-u": "by user", "-9": "force"},
+        "dangerous": True,
+    },
+    "pgrep": {
+        "description": "List processes by name pattern",
+        "category": "process",
+        "examples": ["pgrep process_name", "pgrep -l process", "pgrep -u username"],
+        "flags": {"-l": "show name", "-u": "by user", "-a": "full command"},
+        "dangerous": False,
+    },
+    "nice": {
+        "description": "Run program with modified scheduling priority",
+        "category": "process",
+        "examples": ["nice -n 10 command", "nice -n -10 command (root only)"],
+        "flags": {"-n": "priority (-20 to 19, lower=higher priority)"},
+        "dangerous": False,
+    },
+    "renice": {
+        "description": "Alter priority of running processes",
+        "category": "process",
+        "examples": ["renice -n 10 -p 1234", "renice -n 5 -u username"],
+        "flags": {"-n": "new priority", "-p": "PID", "-u": "user", "-g": "group"},
+        "dangerous": False,
+    },
+    "nohup": {
+        "description": "Run command immune to hangups",
+        "category": "process",
+        "examples": ["nohup command &", "nohup command > output.log 2>&1 &"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "jobs": {
+        "description": "List background jobs (shell builtin)",
+        "category": "process",
+        "examples": ["jobs", "jobs -l"],
+        "flags": {"-l": "show PIDs"},
+        "dangerous": False,
+    },
+    "fg": {
+        "description": "Bring job to foreground",
+        "category": "process",
+        "examples": ["fg", "fg %1"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "bg": {
+        "description": "Resume suspended job in background",
+        "category": "process",
+        "examples": ["bg", "bg %1"],
+        "flags": {},
+        "dangerous": False,
+    },
+
+    # ── Disk & Storage ──
+    "df": {
+        "description": "Report filesystem disk space usage",
+        "category": "disk",
+        "examples": ["df -h", "df -i (inodes)", "df -T (type)", "df /path"],
+        "flags": {"-h": "human-readable", "-i": "inodes", "-T": "filesystem type"},
+        "dangerous": False,
+    },
+    "du": {
+        "description": "Estimate file/directory space usage",
+        "category": "disk",
+        "examples": ["du -sh dir/", "du -h --max-depth=1", "du -sh * | sort -h"],
+        "flags": {"-s": "summary", "-h": "human-readable", "--max-depth": "depth limit"},
+        "dangerous": False,
+    },
+    "mount": {
+        "description": "Mount filesystem",
+        "category": "disk",
+        "examples": ["mount", "mount /dev/sda1 /mnt", "mount -t ext4 /dev/sda1 /mnt"],
+        "flags": {"-t": "type", "-o": "options (ro,rw,noexec)", "-a": "mount all in fstab"},
+        "dangerous": True,
+    },
+    "umount": {
+        "description": "Unmount filesystem",
+        "category": "disk",
+        "examples": ["umount /mnt", "umount -l /mnt (lazy)", "umount -f /mnt (force)"],
+        "flags": {"-l": "lazy", "-f": "force", "-r": "remount readonly on fail"},
+        "dangerous": True,
+    },
+    "lsblk": {
+        "description": "List block devices",
+        "category": "disk",
+        "examples": ["lsblk", "lsblk -f (filesystems)", "lsblk -o NAME,SIZE,TYPE"],
+        "flags": {"-f": "show filesystems", "-o": "custom columns", "-a": "all devices"},
+        "dangerous": False,
+    },
+    "fdisk": {
+        "description": "Manipulate disk partition table",
+        "category": "disk",
+        "examples": ["fdisk -l", "fdisk /dev/sda (interactive)"],
+        "flags": {"-l": "list partitions"},
+        "dangerous": True,
+        "warning": "fdisk is destructive — can wipe partition tables!",
+    },
+    "dd": {
+        "description": "Convert and copy file (disk imaging)",
+        "category": "disk",
+        "examples": ["dd if=/dev/sda of=backup.img bs=4M", "dd if=/dev/zero of=file bs=1M count=100"],
+        "flags": {"if=": "input file", "of=": "output file", "bs=": "block size", "count=": "blocks"},
+        "dangerous": True,
+        "warning": "dd is extremely dangerous — wrong of= can destroy data!",
+    },
+    "sync": {
+        "description": "Flush filesystem buffers",
+        "category": "disk",
+        "examples": ["sync"],
+        "flags": {},
+        "dangerous": False,
+    },
+
+    # ── Networking ──
+    "ping": {
+        "description": "Send ICMP ECHO_REQUEST to network hosts",
+        "category": "network",
+        "examples": ["ping google.com", "ping -c 4 host", "ping -i 0.5 host"],
+        "flags": {"-c": "count", "-i": "interval", "-w": "deadline", "-s": "packet size"},
+        "dangerous": False,
+    },
+    "curl": {
+        "description": "Transfer data from/to servers (HTTP, FTP, etc.)",
+        "category": "network",
+        "examples": ["curl https://example.com", "curl -X POST -d 'key=val' url", "curl -o file url", "curl -I url (headers)", "curl -H 'Auth: Bearer token' url"],
+        "flags": {"-X": "method", "-d": "data", "-H": "header", "-o": "output", "-I": "headers only", "-L": "follow redirects", "-s": "silent", "-v": "verbose", "-k": "insecure SSL"},
+        "dangerous": False,
+        "warning": "curl | sh is blocked by ATAR — never pipe curl directly to shell.",
+    },
+    "wget": {
+        "description": "Non-interactive network downloader",
+        "category": "network",
+        "examples": ["wget https://example.com/file", "wget -r -l 2 url", "wget -O output url"],
+        "flags": {"-r": "recursive", "-l": "depth", "-O": "output", "-c": "continue", "-q": "quiet"},
+        "dangerous": False,
+        "warning": "wget | sh is blocked by ATAR.",
+    },
+    "ssh": {
+        "description": "OpenSSH remote login client",
+        "category": "network",
+        "examples": ["ssh user@host", "ssh -p 2222 user@host", "ssh -i key.pem user@host", "ssh user@host 'command'"],
+        "flags": {"-p": "port", "-i": "identity file", "-t": "force TTY", "-L/-R": "port forwarding"},
+        "dangerous": False,
+    },
+    "scp": {
+        "description": "Secure copy (remote file copy)",
+        "category": "network",
+        "examples": ["scp file.txt user@host:/path/", "scp -r dir/ user@host:/path/", "scp user@host:/path/file.txt ."],
+        "flags": {"-r": "recursive", "-P": "port", "-i": "identity file", "-C": "compress"},
+        "dangerous": False,
+    },
+    "rsync": {
+        "description": "Fast, versatile file copying tool (remote/local)",
+        "category": "network",
+        "examples": ["rsync -avz src/ dst/", "rsync -avz -e ssh src/ user@host:/path/", "rsync --delete src/ dst/"],
+        "flags": {"-a": "archive", "-v": "verbose", "-z": "compress", "--delete": "delete extras", "-n": "dry-run", "-P": "progress + partial"},
+        "dangerous": True,
+        "warning": "rsync --delete removes files in destination not in source.",
+    },
+    "netstat": {
+        "description": "Network connections, routing tables, interface stats",
+        "category": "network",
+        "examples": ["netstat -tulpn", "netstat -an", "netstat -r (routing)"],
+        "flags": {"-t": "TCP", "-u": "UDP", "-l": "listening", "-p": "program", "-n": "numeric", "-a": "all"},
+        "dangerous": False,
+    },
+    "ss": {
+        "description": "Socket statistics (modern replacement for netstat)",
+        "category": "network",
+        "examples": ["ss -tulpn", "ss -an", "ss -s (summary)"],
+        "flags": {"-t": "TCP", "-u": "UDP", "-l": "listening", "-p": "process", "-n": "numeric", "-a": "all"},
+        "dangerous": False,
+    },
+    "ip": {
+        "description": "Show/manipulate routing, devices, policy routing, tunnels",
+        "category": "network",
+        "examples": ["ip addr", "ip link", "ip route", "ip neigh"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "ifconfig": {
+        "description": "Configure network interface (legacy, use ip instead)",
+        "category": "network",
+        "examples": ["ifconfig", "ifconfig eth0"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "nslookup": {
+        "description": "Query DNS name servers",
+        "category": "network",
+        "examples": ["nslookup domain.com", "nslookup -type=mx domain.com"],
+        "flags": {"-type": "record type (A, MX, TXT, NS, etc.)"},
+        "dangerous": False,
+    },
+    "dig": {
+        "description": "DNS lookup utility (more detailed than nslookup)",
+        "category": "network",
+        "examples": ["dig domain.com", "dig +short domain.com", "dig -x 1.2.3.4 (reverse)", "dig domain.com MX"],
+        "flags": {"+short": "short output", "-x": "reverse lookup", "ANY": "all records"},
+        "dangerous": False,
+    },
+    "nc": {
+        "description": "Netcat — TCP/UDP swiss army knife",
+        "category": "network",
+        "examples": ["nc -l 8080 (listen)", "nc host 80 (connect)", "nc -zv host 22-80 (port scan)"],
+        "flags": {"-l": "listen", "-z": "zero I/O (scan)", "-v": "verbose", "-u": "UDP"},
+        "dangerous": False,
+    },
+    "traceroute": {
+        "description": "Print route packets trace to network host",
+        "category": "network",
+        "examples": ["traceroute host", "traceroute -n host"],
+        "flags": {"-n": "no DNS", "-m": "max hops", "-p": "port"},
+        "dangerous": False,
+    },
+    "ufw": {
+        "description": "Uncomplicated Firewall",
+        "category": "network",
+        "examples": ["ufw status", "ufw enable", "ufw allow 22/tcp", "ufw deny 80"],
+        "flags": {},
+        "dangerous": True,
+    },
+    "iptables": {
+        "description": "Administration tool for IPv4 packet filtering and NAT",
+        "category": "network",
+        "examples": ["iptables -L", "iptables -A INPUT -p tcp --dport 80 -j ACCEPT"],
+        "flags": {"-L": "list", "-A": "append", "-D": "delete", "-F": "flush", "-I": "insert"},
+        "dangerous": True,
+        "warning": "iptables can lock you out of SSH — use with extreme care.",
+    },
+
+    # ── Package Management ──
+    "apt": {
+        "description": "APT package manager (Debian/Ubuntu)",
+        "category": "package",
+        "examples": ["apt update", "apt install package", "apt remove package", "apt search keyword", "apt list --installed", "apt upgrade"],
+        "flags": {"-y": "auto-yes", "--no-install-recommends": "skip recommendations"},
+        "dangerous": True,
+    },
+    "apt-get": {
+        "description": "APT package handling utility (CLI)",
+        "category": "package",
+        "examples": ["apt-get update", "apt-get install package", "apt-get autoremove"],
+        "flags": {"-y": "auto-yes", "-f": "fix broken"},
+        "dangerous": True,
+    },
+    "dpkg": {
+        "description": "Debian package manager (low-level)",
+        "category": "package",
+        "examples": ["dpkg -l (list)", "dpkg -i package.deb (install)", "dpkg -r package (remove)", "dpkg -S /path/file (which package)"],
+        "flags": {"-l": "list", "-i": "install", "-r": "remove", "-S": "search"},
+        "dangerous": True,
+    },
+    "pip": {
+        "description": "Python package installer",
+        "category": "package",
+        "examples": ["pip install package", "pip install -r requirements.txt", "pip list", "pip uninstall package", "pip show package", "pip freeze > requirements.txt"],
+        "flags": {"-r": "requirements file", "-U": "upgrade", "-e": "editable", "--user": "user install"},
+        "dangerous": True,
+    },
+    "pip3": {
+        "description": "Python 3 package installer (alias for pip)",
+        "category": "package",
+        "examples": ["pip3 install package", "pip3 list"],
+        "flags": {},
+        "dangerous": True,
+    },
+    "npm": {
+        "description": "Node.js package manager",
+        "category": "package",
+        "examples": ["npm install package", "npm init", "npm run build", "npm test"],
+        "flags": {"-g": "global", "--save": "save to deps", "--save-dev": "save to devDeps"},
+        "dangerous": False,
+    },
+    "yarn": {
+        "description": "Fast, reliable dependency management (Node.js)",
+        "category": "package",
+        "examples": ["yarn add package", "yarn install", "yarn build"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "cargo": {
+        "description": "Rust package manager and build tool",
+        "category": "package",
+        "examples": ["cargo build", "cargo run", "cargo test", "cargo install package"],
+        "flags": {"--release": "release build"},
+        "dangerous": False,
+    },
+    "snap": {
+        "description": "Snap package manager (Ubuntu/universal Linux)",
+        "category": "package",
+        "examples": ["snap install package", "snap list", "snap remove package"],
+        "flags": {"--classic": "classic confinement", "--edge": "edge channel"},
+        "dangerous": True,
+    },
+
+    # ── Permissions ──
+    "chmod": {
+        "description": "Change file mode bits (permissions)",
+        "category": "permissions",
+        "examples": ["chmod 755 file", "chmod +x script.sh", "chmod -R 644 dir/", "chmod u+w file"],
+        "flags": {"-R": "recursive", "+x": "add execute", "+w": "add write", "u": "user", "g": "group", "o": "others", "a": "all"},
+        "dangerous": True,
+    },
+    "chown": {
+        "description": "Change file owner and group",
+        "category": "permissions",
+        "examples": ["chown user:group file", "chown -R user dir/", "chown :group file"],
+        "flags": {"-R": "recursive"},
+        "dangerous": True,
+    },
+    "chgrp": {
+        "description": "Change group ownership",
+        "category": "permissions",
+        "examples": ["chgrp group file", "chgrp -R group dir/"],
+        "flags": {"-R": "recursive"},
+        "dangerous": True,
+    },
+    "umask": {
+        "description": "Set default file creation mask",
+        "category": "permissions",
+        "examples": ["umask", "umask 022", "umask -S (symbolic)"],
+        "flags": {"-S": "symbolic"},
+        "dangerous": False,
+    },
+
+    # ── Users & Groups ──
+    "useradd": {
+        "description": "Create new user",
+        "category": "users",
+        "examples": ["useradd username", "useradd -m -s /bin/bash username"],
+        "flags": {"-m": "create home", "-s": "shell", "-g": "group", "-G": "extra groups"},
+        "dangerous": True,
+    },
+    "userdel": {
+        "description": "Delete user account",
+        "category": "users",
+        "examples": ["userdel username", "userdel -r username (remove home too)"],
+        "flags": {"-r": "remove home + mail"},
+        "dangerous": True,
+    },
+    "usermod": {
+        "description": "Modify user account",
+        "category": "users",
+        "examples": ["usermod -aG group username", "usermod -s /bin/zsh username"],
+        "flags": {"-aG": "append to group", "-s": "shell", "-l": "rename login"},
+        "dangerous": True,
+    },
+    "passwd": {
+        "description": "Change user password",
+        "category": "users",
+        "examples": ["passwd", "passwd username (root)", "passwd -l username (lock)"],
+        "flags": {"-l": "lock", "-u": "unlock", "-d": "delete password"},
+        "dangerous": True,
+    },
+    "groups": {
+        "description": "Print group memberships",
+        "category": "users",
+        "examples": ["groups", "groups username"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "su": {
+        "description": "Switch user (or become superuser)",
+        "category": "users",
+        "examples": ["su - username", "su - (root)", "su -c 'command' user"],
+        "flags": {"-": "login shell", "-c": "command"},
+        "dangerous": True,
+    },
+    "sudo": {
+        "description": "Execute command as another user (usually root)",
+        "category": "users",
+        "examples": ["sudo command", "sudo -u user command", "sudo -i (root shell)"],
+        "flags": {"-u": "user", "-i": "login shell", "-s": "shell", "-E": "preserve env"},
+        "dangerous": True,
+        "warning": "sudo gives root access — dangerous commands are amplified.",
+    },
+
+    # ── Compression ──
+    "tar": {
+        "description": "Tape archive — create/extract archives",
+        "category": "compression",
+        "examples": ["tar -czf archive.tar.gz dir/", "tar -xzf archive.tar.gz", "tar -czf - dir/ | ssh host 'tar -xzf - -C /path'", "tar -tf archive.tar.gz (list contents)"],
+        "flags": {"-c": "create", "-x": "extract", "-t": "list", "-z": "gzip", "-j": "bzip2", "-J": "xz", "-f": "file", "-v": "verbose", "-C": "change dir"},
+        "dangerous": False,
+    },
+    "gzip": {
+        "description": "Compress files using Lempel-Ziv (LZ77)",
+        "category": "compression",
+        "examples": ["gzip file", "gzip -d file.gz (decompress)", "gzip -c file > file.gz"],
+        "flags": {"-d": "decompress", "-c": "stdout", "-k": "keep original", "-1..-9": "compression level"},
+        "dangerous": False,
+    },
+    "gunzip": {
+        "description": "Decompress .gz files",
+        "category": "compression",
+        "examples": ["gunzip file.gz", "gunzip -k file.gz"],
+        "flags": {"-k": "keep original"},
+        "dangerous": False,
+    },
+    "zip": {
+        "description": "Package and compress files (PKZIP compatible)",
+        "category": "compression",
+        "examples": ["zip archive.zip file1 file2", "zip -r archive.zip dir/"],
+        "flags": {"-r": "recursive", "-e": "encrypt", "-9": "best compression"},
+        "dangerous": False,
+    },
+    "unzip": {
+        "description": "Extract ZIP archives",
+        "category": "compression",
+        "examples": ["unzip archive.zip", "unzip -l archive.zip (list)", "unzip -d dir/ archive.zip"],
+        "flags": {"-l": "list", "-d": "output directory", "-t": "test"},
+        "dangerous": False,
+    },
+    "bzip2": {
+        "description": "Block-sorting file compressor",
+        "category": "compression",
+        "examples": ["bzip2 file", "bzip2 -d file.bz2"],
+        "flags": {"-d": "decompress", "-k": "keep original"},
+        "dangerous": False,
+    },
+    "xz": {
+        "description": "Compress using LZMA2 (better ratio than gzip)",
+        "category": "compression",
+        "examples": ["xz file", "xz -d file.xz", "tar -cJf archive.tar.xz dir/"],
+        "flags": {"-d": "decompress", "-k": "keep original"},
+        "dangerous": False,
+    },
+
+    # ── Git ──
+    "git": {
+        "description": "Distributed version control system",
+        "category": "vcs",
+        "examples": ["git status", "git diff", "git log --oneline -10", "git add file.txt", "git commit -m msg", "git push", "git pull", "git branch", "git checkout -b branch", "git merge branch", "git clone url", "git stash"],  # noqa: E501
+        "flags": {},
+        "dangerous": True,
+    },
+
+    # ── Shell Builtins ──
+    "echo": {
+        "description": "Display a line of text",
+        "category": "shell",
+        "examples": ["echo 'hello'", "echo $VAR", "echo -n 'no newline'", "echo -e 'colored\\ntext'"],
+        "flags": {"-n": "no trailing newline", "-e": "interpret escapes"},
+        "dangerous": False,
+    },
+    "printf": {
+        "description": "Format and print data (more control than echo)",
+        "category": "shell",
+        "examples": ["printf '%s\\n' 'hello'", "printf 'Name: %s, Age: %d\\n' John 25"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "source": {
+        "description": "Execute commands from file in current shell",
+        "category": "shell",
+        "examples": ["source script.sh", ". script.sh", "source ~/.bashrc"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "history": {
+        "description": "Display command history",
+        "category": "shell",
+        "examples": ["history", "history | grep command", "!123 (rerun command #123)"],
+        "flags": {},
+        "dangerous": False,
+    },
+
+    # ── Development Tools ──
+    "python": {
+        "description": "Python interpreter",
+        "category": "dev",
+        "examples": ["python script.py", "python -c 'print(42)'", "python -m http.server 8000", "python -m pip install package"],
+        "flags": {"-c": "command", "-m": "module", "-i": "interactive", "-v": "verbose", "-u": "unbuffered"},
+        "dangerous": False,
+    },
+    "python3": {
+        "description": "Python 3 interpreter",
+        "category": "dev",
+        "examples": ["python3 script.py", "python3 -m venv .venv"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "node": {
+        "description": "Node.js JavaScript runtime",
+        "category": "dev",
+        "examples": ["node script.js", "node -e 'console.log(1)'", "node --version"],
+        "flags": {"-e": "evaluate script", "--version": "show version"},
+        "dangerous": False,
+    },
+    "make": {
+        "description": "Build automation tool",
+        "category": "dev",
+        "examples": ["make", "make install", "make -j4", "make clean"],
+        "flags": {"-j": "parallel jobs", "-C": "change directory", "-n": "dry-run"},
+        "dangerous": False,
+    },
+    "gcc": {
+        "description": "GNU C compiler",
+        "category": "dev",
+        "examples": ["gcc -o output source.c", "gcc -Wall -g source.c", "gcc -O2 source.c"],
+        "flags": {"-o": "output", "-Wall": "all warnings", "-g": "debug info", "-O2": "optimization level", "-I": "include path", "-L": "library path", "-l": "link library"},
+        "dangerous": False,
+    },
+    "g++": {
+        "description": "GNU C++ compiler",
+        "category": "dev",
+        "examples": ["g++ -o output source.cpp", "g++ -std=c++17 source.cpp"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "javac": {
+        "description": "Java compiler",
+        "category": "dev",
+        "examples": ["javac Hello.java", "javac -d bin/ src/*.java"],
+        "flags": {"-d": "output dir", "-classpath": "classpath"},
+        "dangerous": False,
+    },
+    "java": {
+        "description": "Java application launcher",
+        "category": "dev",
+        "examples": ["java Hello", "java -jar app.jar", "java -Xmx2g Hello"],
+        "flags": {"-jar": "JAR file", "-Xmx": "max heap", "-cp": "classpath"},
+        "dangerous": False,
+    },
+    "docker": {
+        "description": "Container platform (build, run, manage)",
+        "category": "dev",
+        "examples": ["docker ps", "docker build -t name .", "docker run -d --name app image", "docker logs container", "docker exec -it container sh", "docker-compose up -d"],
+        "flags": {},
+        "dangerous": True,
+    },
+    "docker-compose": {
+        "description": "Define and run multi-container Docker apps",
+        "category": "dev",
+        "examples": ["docker-compose up -d", "docker-compose down", "docker-compose ps", "docker-compose logs -f"],
+        "flags": {"-d": "detached", "-f": "follow logs"},
+        "dangerous": True,
+    },
+    "systemctl": {
+        "description": "Control systemd system and service manager",
+        "category": "dev",
+        "examples": ["systemctl status service", "systemctl start service", "systemctl stop service", "systemctl restart service", "systemctl enable service", "systemctl list-units"],
+        "flags": {},
+        "dangerous": True,
+    },
+    "journalctl": {
+        "description": "Query systemd journal logs",
+        "category": "dev",
+        "examples": ["journalctl -u service", "journalctl -f (follow)", "journalctl --since '1 hour ago'", "journalctl -n 100"],
+        "flags": {"-u": "unit", "-f": "follow", "-n": "lines", "--since": "time"},
+        "dangerous": False,
+    },
+    "crontab": {
+        "description": "Schedule periodic background jobs",
+        "category": "dev",
+        "examples": ["crontab -l (list)", "crontab -e (edit)", "crontab -r (remove)"],
+        "flags": {"-l": "list", "-e": "edit", "-r": "remove", "-u": "user"},
+        "dangerous": True,
+    },
+    "which": {
+        "description": "Locate a command (show full path)",
+        "category": "dev",
+        "examples": ["which python", "which -a python (all matches)"],
+        "flags": {"-a": "all matches"},
+        "dangerous": False,
+    },
+    "type": {
+        "description": "Display information about command type",
+        "category": "dev",
+        "examples": ["type ls", "type -a python"],
+        "flags": {"-a": "all locations", "-t": "type only"},
+        "dangerous": False,
+    },
+    "whereis": {
+        "description": "Locate binary, source, and manual for command",
+        "category": "dev",
+        "examples": ["whereis python", "whereis -b ls (binary only)"],
+        "flags": {"-b": "binary only", "-m": "manual only"},
+        "dangerous": False,
+    },
+    "ldd": {
+        "description": "Print shared library dependencies",
+        "category": "dev",
+        "examples": ["ldd /usr/bin/python", "ldd -r binary"],
+        "flags": {"-r": "unresolved symbols", "-v": "verbose"},
+        "dangerous": False,
+    },
+    "strace": {
+        "description": "Trace system calls and signals",
+        "category": "dev",
+        "examples": ["strace command", "strace -p PID", "strace -e open command", "strace -c command (summary)"],
+        "flags": {"-p": "attach to PID", "-e": "filter calls", "-c": "count + summary", "-f": "follow forks", "-t": "timestamps"},
+        "dangerous": False,
+    },
+    "ltrace": {
+        "description": "Trace library calls",
+        "category": "dev",
+        "examples": ["ltrace command", "ltrace -p PID"],
+        "flags": {"-p": "attach to PID", "-e": "filter", "-c": "summary"},
+        "dangerous": False,
+    },
+    "valgrind": {
+        "description": "Memory debugging, leak detection, profiling",
+        "category": "dev",
+        "examples": ["valgrind ./program", "valgrind --leak-check=full ./program"],
+        "flags": {"--leak-check=full": "detailed leak report", "--tool=memcheck": "memory checker"},
+        "dangerous": False,
+    },
+    "perf": {
+        "description": "Performance analysis tools for Linux",
+        "category": "dev",
+        "examples": ["perf stat command", "perf record command", "perf report"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "time": {
+        "description": "Measure command execution time",
+        "category": "dev",
+        "examples": ["time command", "/usr/bin/time -v command (verbose)"],
+        "flags": {"-v": "verbose", "-f": "format string"},
+        "dangerous": False,
+    },
+    "free": {
+        "description": "Display amount of free and used memory",
+        "category": "system",
+        "examples": ["free -h", "free -m", "free -s 2 (continuous)"],
+        "flags": {"-h": "human-readable", "-m": "megabytes", "-g": "gigabytes", "-s": "continuous"},
+        "dangerous": False,
+    },
+    "vmstat": {
+        "description": "Report virtual memory statistics",
+        "category": "system",
+        "examples": ["vmstat", "vmstat 2 5 (every 2s, 5 times)", "vmstat -s (summary)"],
+        "flags": {"-s": "summary", "-m": "slab info"},
+        "dangerous": False,
+    },
+    "iostat": {
+        "description": "Report CPU and I/O statistics",
+        "category": "system",
+        "examples": ["iostat", "iostat -x 2 5", "iostat -c (CPU only)"],
+        "flags": {"-x": "extended", "-c": "CPU only", "-d": "disk only"},
+        "dangerous": False,
+    },
+    "lsof": {
+        "description": "List open files",
+        "category": "system",
+        "examples": ["lsof", "lsof -i :80 (port)", "lsof -p PID", "lsof /path/file"],
+        "flags": {"-i": "network files", "-p": "process", "-u": "user"},
+        "dangerous": False,
+    },
+    "fuser": {
+        "description": "Identify processes using files/sockets",
+        "category": "system",
+        "examples": ["fuser /path/file", "fuser -v 80/tcp"],
+        "flags": {"-v": "verbose", "-k": "kill", "-n": "namespace"},
+        "dangerous": True,
+    },
+
+    # ── Hardware Info ──
+    "lscpu": {
+        "description": "Display CPU architecture information",
+        "category": "hardware",
+        "examples": ["lscpu", "lscpu -e (extended)"],
+        "flags": {"-e": "extended"},
+        "dangerous": False,
+    },
+    "lspci": {
+        "description": "List all PCI devices",
+        "category": "hardware",
+        "examples": ["lspci", "lspci -v", "lspci -vv (very verbose)"],
+        "flags": {"-v": "verbose", "-vv": "very verbose", "-k": "kernel drivers"},
+        "dangerous": False,
+    },
+    "lsusb": {
+        "description": "List USB devices",
+        "category": "hardware",
+        "examples": ["lsusb", "lsusb -v"],
+        "flags": {"-v": "verbose", "-t": "tree"},
+        "dangerous": False,
+    },
+    "dmidecode": {
+        "description": "Dump DMI (SMBIOS) table contents",
+        "category": "hardware",
+        "examples": ["dmidecode -t memory", "dmidecode -t bios", "dmidecode -t system"],
+        "flags": {"-t": "type (memory, bios, system, processor, etc.)"},
+        "dangerous": False,
+    },
+
+    # ── Media ──
+    "ffmpeg": {
+        "description": "Video/audio converter and streamer",
+        "category": "media",
+        "examples": ["ffmpeg -i input.mp4 output.avi", "ffmpeg -i input.mp3 -acodec copy output.wav", "ffmpeg -i input.mp4 -ss 00:01:00 -t 30 output.mp4 (clip)"],
+        "flags": {"-i": "input", "-ss": "start time", "-t": "duration", "-acodec": "audio codec", "-vcodec": "video codec"},
+        "dangerous": False,
+    },
+    "convert": {
+        "description": "ImageMagick image converter",
+        "category": "media",
+        "examples": ["convert input.png output.jpg", "convert -resize 50% input.png output.png", "convert *.png output.pdf"],
+        "flags": {"-resize": "resize", "-quality": "quality (1-100)", "-rotate": "rotate degrees"},
+        "dangerous": False,
+    },
+    "identify": {
+        "description": "Describe image format and characteristics",
+        "category": "media",
+        "examples": ["identify image.png", "identify -verbose image.png"],
+        "flags": {"-verbose": "detailed info"},
+        "dangerous": False,
+    },
+
+    # ── Monitoring ──
+    "watch": {
+        "description": "Execute program periodically, showing output",
+        "category": "monitoring",
+        "examples": ["watch -n 2 'ls -la'", "watch -d df -h"],
+        "flags": {"-n": "interval seconds", "-d": "highlight differences"},
+        "dangerous": False,
+    },
+    "dstat": {
+        "description": "Versatile system resource statistics",
+        "category": "monitoring",
+        "examples": ["dstat", "dstat -c -d -n (CPU, disk, net)", "dstat 2 5"],
+        "flags": {"-c": "CPU", "-d": "disk", "-n": "network", "-m": "memory"},
+        "dangerous": False,
+    },
+    "sar": {
+        "description": "System activity reporter",
+        "category": "monitoring",
+        "examples": ["sar", "sar -u 2 5 (CPU)", "sar -r (memory)", "sar -n DEV (network)"],
+        "flags": {"-u": "CPU", "-r": "memory", "-n": "network", "-b": "I/O"},
+        "dangerous": False,
+    },
+    "inotifywait": {
+        "description": "Wait for file system events",
+        "category": "monitoring",
+        "examples": ["inotifywait file.txt", "inotifywait -m -r dir/", "inotifywait -e modify file.txt"],
+        "flags": {"-m": "monitor continuously", "-r": "recursive", "-e": "event types"},
+        "dangerous": False,
+    },
+
+    # ── Miscellaneous ──
+    "man": {
+        "description": "Display manual pages",
+        "category": "misc",
+        "examples": ["man ls", "man -k keyword (search)", "man 5 crontab (section 5)"],
+        "flags": {"-k": "search", "-f": "whatis", "-a": "all sections"},
+        "dangerous": False,
+    },
+    "info": {
+        "description": "Read Info documents (GNU hypertext docs)",
+        "category": "misc",
+        "examples": ["info command", "info coreutils"],
+        "flags": {},
+        "dangerous": False,
+    },
+    "whatis": {
+        "description": "Display one-line manual page descriptions",
+        "category": "misc",
+        "examples": ["whatis ls", "whatis -w 'ls*'"],
+        "flags": {"-w": "wildcard"},
+        "dangerous": False,
+    },
+    "apropos": {
+        "description": "Search manual page names and descriptions",
+        "category": "misc",
+        "examples": ["apropos keyword", "apropos -s 1 keyword"],
+        "flags": {"-s": "section", "-e": "exact"},
+        "dangerous": False,
+    },
+    "shutdown": {
+        "description": "Shutdown or restart system",
+        "category": "misc",
+        "examples": ["shutdown -h now", "shutdown -r now (reboot)", "shutdown -h +5 'maintenance'"],
+        "flags": {"-h": "halt", "-r": "reboot", "-c": "cancel", "+N": "delay N minutes"},
+        "dangerous": True,
+        "warning": "shutdown affects entire system — use with extreme care.",
+    },
+    "reboot": {
+        "description": "Reboot system",
+        "category": "misc",
+        "examples": ["reboot", "reboot -f (force)"],
+        "flags": {"-f": "force"},
+        "dangerous": True,
+    },
+
+    # ── Editing ──
+    "nano": {
+        "description": "Simple terminal text editor",
+        "category": "editor",
+        "examples": ["nano file.txt", "nano -l file.txt (line numbers)"],
+        "flags": {"-l": "line numbers", "-c": "cursor position", "-m": "mouse support"},
+        "dangerous": False,
+    },
+    "vim": {
+        "description": "Vi Improved — powerful terminal editor",
+        "category": "editor",
+        "examples": ["vim file.txt", "vim +line file.txt", "vim -R file.txt (readonly)"],
+        "flags": {"-R": "readonly", "+line": "go to line", "-c": "execute command", "-O": "vertical split"},
+        "dangerous": False,
+    },
+    "vi": {
+        "description": "Visual editor (classic UNIX editor)",
+        "category": "editor",
+        "examples": ["vi file.txt"],
+        "flags": {},
+        "dangerous": False,
+    },
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Category index
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CATEGORIES = {
+    "file": "File & Directory",
+    "text": "Text Processing",
+    "system": "System Information",
+    "process": "Process Management",
+    "disk": "Disk & Storage",
+    "network": "Networking",
+    "package": "Package Management",
+    "permissions": "Permissions",
+    "users": "Users & Groups",
+    "compression": "Compression & Archives",
+    "vcs": "Version Control",
+    "shell": "Shell Builtins",
+    "dev": "Development Tools",
+    "hardware": "Hardware Info",
+    "media": "Media (Audio/Video/Image)",
+    "monitoring": "Monitoring",
+    "editor": "Text Editors",
+    "misc": "Miscellaneous",
+}
+
+
+def search_commands(query: str) -> list[tuple[str, dict]]:
+    """Search command dictionary by name or description."""
+    q = query.lower()
+    results = []
+    for name, info in LINUX_COMMAND_DICT.items():
+        if q in name.lower() or q in info["description"].lower() or q in info["category"]:
+            results.append((name, info))
+    return results
+
+
+def get_commands_by_category(category: str) -> list[tuple[str, dict]]:
+    """Get all commands in a category."""
+    return [(n, i) for n, i in LINUX_COMMAND_DICT.items() if i["category"] == category]
+
+
+def get_command_help(name: str) -> dict | None:
+    """Get full help entry for a command."""
+    return LINUX_COMMAND_DICT.get(name)
+
+
+def get_dangerous_commands() -> list[tuple[str, dict]]:
+    """Get all dangerous commands (should require approval)."""
+    return [(n, i) for n, i in LINUX_COMMAND_DICT.items() if i.get("dangerous")]
+
+
+def get_safe_commands() -> list[str]:
+    """Get all safe/read-only command names."""
+    return [n for n, i in LINUX_COMMAND_DICT.items() if not i.get("dangerous")]
