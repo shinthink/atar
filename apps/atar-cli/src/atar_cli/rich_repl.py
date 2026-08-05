@@ -489,48 +489,21 @@ def run_repl() -> None:
                     return False
                 # choice 5 or invalid
                 approval.set_tool_mode(tool_name, "never")
-                # No restart needed — _run_agent will set _status_ref=True on next iteration
+                # Approval complete — continue
                 return False
 
             async def _capture(t: str) -> None:
                 nonlocal response_text
                 response_text += t
                 _stats["tokens_out"] += 1
-            from atar_core.display_v2 import ThinkingAnimator, calculate_cost
-            anim = ThinkingAnimator()
-            use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
-            _status_ref = False  # Set True when spinner active (simple flag)
+            from atar_core.display_v2 import calculate_cost
 
             async def _run_agent():
-                """Run agent with inline thinking indicator (no Rich Status — avoids prompt_toolkit conflict)."""
-                nonlocal _status_ref
-                if use_anim:
-                    # Start thinking indicator task
-                    async def _think():
-                        while _status_ref:
-                            console.print(f"\r  {anim.tick()}", end="")
-                            await asyncio.sleep(0.2)
-                    _status_ref = True
-                    think_task = asyncio.create_task(_think())
-                    try:
-                        await ag.run(prompt, StreamCallbacks(
-                            on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
-                            on_approval=on_approval,
-                            get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
-                        ))
-                    finally:
-                        _status_ref = False
-                        think_task.cancel()
-                        with suppress(asyncio.CancelledError):
-                            await think_task
-                        # Clear thinking line
-                        console.print("\r" + " " * 60 + "\r", end="")
-                else:
-                    await ag.run(prompt, StreamCallbacks(
-                        on_delta=_capture, on_tool_call=on_tool_result, on_tool_result=on_tool_result,
-                        on_approval=on_approval,
-                        get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
-                    ))
+                await ag.run(prompt, StreamCallbacks(
+                    on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
+                    on_approval=on_approval,
+                    get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
+                ))
             await _run_agent()
             for tr in _tool_results:
                 console.print(tr)
