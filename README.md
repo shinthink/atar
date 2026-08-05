@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="atar-logo.png" alt="ATAR Logo" width="200">
+  <img src="atar-banner.png" alt="ATAR" width="100%">
 </p>
 
 # ATAR
