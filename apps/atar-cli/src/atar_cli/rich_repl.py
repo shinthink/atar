@@ -15,18 +15,42 @@ from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
-from rich.text import Text
 
-# ── Terminal capabilities ──
+# ── Terminal capabilities (resolved at render time) ──
 _HAS_COLOR = os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
-_TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
-console = Console(color_system="auto" if _HAS_COLOR else None, width=_TERM_WIDTH)
+# Width is now dynamic — call get_term_width() instead of get_term_width()
+console = Console(color_system="auto" if _HAS_COLOR else None)  # no fixed width
+
+
+def get_term_width() -> int:
+    """Current terminal width — call at render time, not import."""
+    try:
+        return shutil.get_terminal_size((80, 24)).columns
+    except Exception:
+        return 80
+
+
+# PromptSession created lazily — not at import
+_session_pt = None
+
+
+def _get_session() -> PromptSession:
+    global _session_pt
+    if _session_pt is None:
+        _session_pt = PromptSession(
+            completer=SlashCommandToolCompleter(),
+            key_bindings=bindings,
+            multiline=True,  # Real multiline
+            history=FileHistory(os.path.expanduser("~/.atar/history.txt")),
+        )
+    return _session_pt
 
 # ── Slash commands (from registry) ──
 from atar_core.commands import register_command  # noqa: E402
@@ -147,12 +171,11 @@ def _(event):
 def _(event):
     data = event.app.clipboard.get_data()
     text = data.text if isinstance(data, ClipboardData) else str(data)
+    event.current_buffer.insert_text(text)
+    # Show compact indicator without losing content
     if len(text) > 500:
-        lines = text.count("\n") + 1
-        preview = text[:200].replace("\n", "\u21b5")
-        event.current_buffer.text = f"[pasted: {lines} lines, {len(text)} chars]\n{preview}..."
-    else:
-        event.current_buffer.insert_text(text)
+        pass  # Keep full content, indicator in status bar if needed
+
 
 
 PT_STYLE = Style.from_dict({
@@ -162,11 +185,6 @@ PT_STYLE = Style.from_dict({
     "bottom-toolbar.text": "bg:default #7F8C98 noreverse",
 })
 
-session_pt = PromptSession(
-    completer=SlashCommandToolCompleter(),
-    key_bindings=bindings,
-    multiline=False,
-)
 
 # ── Model selection ──
 from atar_core.provider_registry import PROVIDERS as _PROVIDERS  # noqa: E402
@@ -217,88 +235,34 @@ def _switch_model(provider_id: str, model_id: str) -> str:
     return f"{name} — {model_id}"
 
 def show_banner(model: str, cwd: str, session_id: str) -> None:
-    """Detailed startup banner."""
+    """Compact responsive banner — 3-4 lines at any width."""
     from atar_core.theme import current_theme
     theme = current_theme()
     c = theme.colors
-
-    # Cosmike-style ATAR ASCII
-    logo = Text()
-    banner_lines = [
-        "  :::. :::::::::::::::.    :::::::..         :::.      .,-:::::/ .,:::::::::.    :::.::::::::::::",
-        "  ;;`;;;;;;;;;;'''';;`;;   ;;;;``;;;;        ;;`;;   ,;;-'````'  ;;;;''''`;;;;,  `;;;;;;;;;;;''''",
-        " ,[[ '[[,   [[    ,[[ '[[,  [[[,/[[['       ,[[ '[[, [[[   [[[[[[/[[cccc   [[[[[. '[[     [[     ",
-        "c$$$cc$$$c  $$   c$$$cc$$$c $$$$$$c        c$$$cc$$$c\"$$c.    \"$$ $$\"\"\"\"   $$$ \"Y$c$$     $$     ",
-        " 888   888, 88,   888   888,888b \"88bo,     888   888,`Y8bo,,,o88o888oo,__ 888    Y88     88,    ",
-        " YMM   \"\"`  MMM   YMM   \"\"` MMMM   \"W\"      YMM   \"\"`   `'YMUP\"YMM\"\"\"\"YUMMMMMM     YM     MMM",
-    ]
-    logo_colors = [c.primary, c.secondary, c.accent, c.primary, c.secondary, c.accent]
-    for i, line in enumerate(banner_lines):
-        logo.append(line + "\n", style=f"bold {logo_colors[min(i, len(logo_colors)-1)]}")
-    logo.append("Clarity in Complexity.\n", style="italic white")
-    console.print(logo)
-
+    w = get_term_width()
     short_cwd = cwd.replace(os.path.expanduser("~"), "~")
     if len(short_cwd) > 50:
-        short_cwd = "..." + short_cwd[-47:]
+        parts = short_cwd.split("/")
+        short_cwd = ".../" + "/".join(parts[-2:]) if len(parts) > 2 else short_cwd
 
-    # Brain-style ATAR logo — all 42 chars wide
-    globe = [
-        "                                          ",
-        "                ####  ####                ",
-        "           ####   ##   ##  ####           ",
-        "        ###      ##    ###     ###        ",
-        "      ###       ##      ##        ##      ",
-        "     ##        ##        ##        ###    ",
-        "   ###        ##          ##         ##   ",
-        "   ##         #            ##         ##  ",
-        "  ##         ##             ##        ##  ",
-        "  ##        ##      ##       ##        ## ",
-        "  #        ##      ####      ##        ## ",
-        "  #######    ######    ###### #######*### ",
-        "  ##     ##  ######    #####   ##     *#  ",
-        "   #*    #                      ##    ##  ",
-        "   ##   ##                       ##  ##   ",
-        "    #####                         ####    ",
-        "      ##                          ##      ",
-        "        ###                    ####       ",
-        "          ####              ####          ",
-        "              ##############              ",
-    ]
-
-    # Build detailed info panel (right column)
-    info = []
-    info.append(f"[bold {c.primary}]{model}[/] · [dim]{short_cwd}[/]")
-    info.append(f"[dim]Session: {session_id[:12]}[/]")
-    info.append("")
+    # Count tools from registry (real, not hardcoded)
     from atar_tools.registry import list_all as _list_tools
     from atar_tools.toolsets import enabled_toolsets
-    tools = _list_tools()
-    tool_names = [t.name for t in tools]
-    tool_count = len(tools)
-    tsets = enabled_toolsets()
-    tset_count = len(tsets)
+    all_tools = _list_tools()
+    tool_count = len(all_tools)
+    tset_count = len(enabled_toolsets())
 
-    info.append("  Available Tools")
-    line = "    " + "  ".join(tool_names[:7])
-    info.append(line)
-    if len(tool_names) > 7:
-        info.append("    " + "  ".join(tool_names[7:]))
-    info.append("")
+    if w < 60:
+        console.print(f"[bold {c.primary}]ATAR[/] [dim]— {model} · {short_cwd}[/]")
+    elif w < 80:
+        console.print(f"[bold {c.primary}]ATAR[/] — Clarity in Complexity.")
+        console.print(f"[dim]{model} · {short_cwd} · {tool_count} tools · /help[/]")
+    else:
+        console.print(f"[bold {c.primary}]ATAR[/] — Clarity in Complexity.")
+        console.print(f"[dim]{model} · {short_cwd} · session {session_id[:8]}[/]")
+        console.print(f"[dim]{tool_count} tools · {tset_count} toolsets · /help[/]")
+    console.print("")
 
-    info.append(f"  {tool_count} tools · {tset_count} toolsets · /help for commands · ATAR v0.8.0")
-    info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
-
-    panel_content = "\n".join(info)
-    panel = Panel(Text.from_markup(panel_content), border_style=c.dim_border, padding=(1, 2), width=min(_TERM_WIDTH - 48, 85))
-
-    # Render globe + panel side by side
-    from rich.columns import Columns
-    globe_text = Text()
-    for line in globe:
-        globe_text.append(line + "\n", style=f"bold {c.primary}")
-    console.print(Columns([globe_text, panel], equal=False, expand=False))
-    console.print()
 
 _last_diff: list[str] = []
 _pending_queue: list[str] = []
@@ -490,17 +454,18 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Response container
+        # Response — light rail style, no heavy panel
         console.print()
         from atar_core.theme import current_theme
         c = current_theme().colors
-        console.print(Panel(
-            Markdown(response_text),
-expand=True,
-            title="ATAR", border_style=c.border, padding=(1, 2),
-            width=min(_TERM_WIDTH - 4, 100),
-        ))
-        console.print(Rule(style="#394B59"))
+        # Left rail prefix
+        console.print(f"[bold {c.primary}]  ATAR[/]")
+        for line in response_text.split("\n"):
+            console.print(f"  [dim]│[/] {line}")
+        console.print()
+
+
+
         # Process pending queue
         if _pending_queue:
             nxt = _pending_queue.pop(0)
@@ -518,7 +483,7 @@ expand=True,
         nonlocal provider, model, agent, _current_task, _interrupt
         while True:
             try:
-                user = await session_pt.prompt_async(
+                user = await _get_session().prompt_async(
                     HTML("<prompt>\u203a </prompt>"), style=PT_STYLE, bottom_toolbar=_status_bar,
                 )
             except KeyboardInterrupt:
@@ -526,7 +491,7 @@ expand=True,
                     _current_task.cancel()
                     console.print("\n[dim]⏸ Interrupted — type your redirect (or press Ctrl+C again to cancel):[/]")
                     try:
-                        redirect = await session_pt.prompt_async(
+                        redirect = await _get_session().prompt_async(
                             HTML(""), style=PT_STYLE
                         )
                         if redirect.strip():
@@ -542,7 +507,7 @@ expand=True,
                 continue
             except EOFError:
                 try:
-                    confirm = await session_pt.prompt_async(
+                    confirm = await _get_session().prompt_async(
                         HTML("\n<dim>Exit ATAR? (y/N)</dim> "), style=PT_STYLE, bottom_toolbar=_status_bar,
                     )
                     if confirm.strip().lower() in ("y", "yes"):
@@ -582,7 +547,7 @@ expand=True,
                 lines = [f"  [{i}] {_PROVIDERS[p].display_name} ({_PROVIDERS[p].default_model})" for i, p in enumerate(provs)]
                 console.print(Panel("\n".join(lines), title="Pick Provider", border_style="#394B59"))
                 try:
-                    c = await session_pt.prompt_async("Provider #: ", style=PT_STYLE)
+                    c = await _get_session().prompt_async("Provider #: ", style=PT_STYLE)
                     pi = int(c)
                     if 0 <= pi < len(provs):
                         pid = provs[pi]
@@ -598,7 +563,7 @@ expand=True,
                             # Step 2: pick model
                             mlines = [f"  [{i}] {m}" for i, m in enumerate(models)]
                             console.print(Panel("\n".join(mlines), title=f"Pick Model — {_PROVIDERS[pid].display_name}", border_style="#394B59"))
-                            c2 = await session_pt.prompt_async("Model #: ", style=PT_STYLE)
+                            c2 = await _get_session().prompt_async("Model #: ", style=PT_STYLE)
                             mi = int(c2)
                             if 0 <= mi < len(models):
                                 display = _switch_model(pid, models[mi])
@@ -620,7 +585,7 @@ expand=True,
                     lines = [f"  [{i}] {s['title'] or s['session_id'][:12]} ({s.get('message_count','?')} msgs)" for i, s in enumerate(sessions)]
                     console.print(Panel("\n".join(lines), title="Sessions", border_style="#394B59"))
                     try:
-                        cs = await session_pt.prompt_async("Pick session: ", style=PT_STYLE)
+                        cs = await _get_session().prompt_async("Pick session: ", style=PT_STYLE)
                         idx = int(cs)
                         if 0 <= idx < len(sessions):
                             s = sessions[idx]
@@ -986,7 +951,7 @@ expand=True,
                 else:
                     console.print(Panel(content[:2000], title=f"Review: {name}", border_style="#E8C07D"))
                     try:
-                        ans = await session_pt.prompt_async(
+                        ans = await _get_session().prompt_async(
                             HTML("<yellow>Approve? (y/n)</yellow> "), style=PT_STYLE
                         )
                         if ans.strip().lower() in ("y", "yes"):
