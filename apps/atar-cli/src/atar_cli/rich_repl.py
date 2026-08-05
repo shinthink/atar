@@ -92,6 +92,7 @@ register_command("/toolset", "Switch active toolset", aliases=["/ts"], category=
 register_command("/personality", "Switch or list personas", aliases=["/p"], category="model", arg_hint="[name]")
 register_command("/usage", "Show current session usage", category="system")
 register_command("/insights", "Show cross-session insights", category="system", arg_hint="[--days N]")
+register_command("/export", "Export chat to markdown", category="session")
 
 
 # ── Keybindings ──
@@ -287,6 +288,22 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     console.print("")
 
 
+def _save_session(agent, session_id: str) -> None:
+    """Save session messages to disk for resume."""
+    try:
+        import json
+        msgs = getattr(agent, "_messages", [])
+        data = []
+        for m in msgs:
+            data.append({"role": getattr(m, "role", "?"), "content": str(getattr(m, "content", ""))[:2000]})
+        path = os.path.expanduser(f"~/.atar/sessions/{session_id}.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+
 _last_diff: list[str] = []
 _pending_queue: list[str] = []
 _last_rejection_feedback: dict[str, str] = {}
@@ -318,6 +335,10 @@ def _status_bar() -> str:
     from atar_core.display import context_bar
     ctx, _ = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
+    # Context usage warning
+    ctx_warn = ""
+    if _stats.get("tokens", 0) > 100000:
+        ctx_warn = " [yellow]⚠ 80%[/]"
     # Animated spinner + tool info in status bar
     if _stats.get("_thinking"):
         frames = ["◌", "◔", "◑", "◕", "●"]
@@ -329,7 +350,7 @@ def _status_bar() -> str:
     tool_info = ""
     if _stats.get("_last_tool"):
         tool_info = f" │ {_stats['_last_tool']}"
-    return f"◆ {_stats['model']} │ {ctx} │ turns {_stats['turns']} │ tools {_stats['tools']} │ {c} │ {d}{spinner}{tool_info}"
+    return f"◆ {_stats['model']} │ {ctx}{ctx_warn} │ turns {_stats['turns']} │ tools {_stats['tools']} │ {c} │ {d}{spinner}{tool_info}"
 
 def _try_resume_session() -> object | None:
     """Try to resume the last session from storage."""
@@ -541,8 +562,16 @@ def run_repl() -> None:
                 console.print(tr)
             _stats["cost"] += calculate_cost(_stats["model"], _stats["tokens"], _stats["tokens_out"])
         except asyncio.CancelledError:
-            console.print("\n[dim]\u23f9 Interrupted[/]")
+            console.print("\n[dim]Interrupted[/]")
             return
+        except Exception as e:
+            console.print(f"\n[red]Error: {e}[/]")
+            console.print("[dim]Recovered. Continue.[/]")
+            return
+
+        # Save session for resume
+        _save_session(ag, session_id)
+
         _stats["last_response"] = _t2.time() - _t_start
 
         if not response_text.strip():
@@ -633,6 +662,41 @@ def run_repl() -> None:
                         console.print(f"  [bold #67D8FF]{c.name}{hint}[/] {c.description}{aliases}")
                 console.print()
                 continue
+            # Attachment: @filename injects file content
+            if user.startswith("@"):
+                fname = user[1:].strip().split()[0]
+                try:
+                    with open(fname) as f:
+                        file_content = f.read()[:5000]
+                    user = "File " + fname + ":\n```\n" + file_content + "\n```\n\n" + user
+                except Exception:
+                    console.print("[dim]Cannot read: " + fname + "[/]")
+
+
+            if user == "/export":
+                _save_session(agent, session_id)
+                console.print(f"[green]Exported to ~/.atar/sessions/{session_id}.json[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+
+            if user == "/retry":
+                if hasattr(agent, "retry_last_turn"):
+                    agent.retry_last_turn()
+                    console.print("[dim]Retrying...[/]")
+                else:
+                    console.print("[dim]No previous turn to retry.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+
+            if user == "/undo":
+                if hasattr(agent, "undo_last_turn"):
+                    agent.undo_last_turn()
+                    console.print("[dim]Undone.[/]")
+                else:
+                    console.print("[dim]Nothing to undo.[/]")
+                console.print(Rule(style="#394B59"))
+                continue
+
             if user == "/model":
                 provs = list(_PROVIDERS.keys())
                 names = [f"{_PROVIDERS[p].display_name} ({_PROVIDERS[p].default_model})" for p in provs]
