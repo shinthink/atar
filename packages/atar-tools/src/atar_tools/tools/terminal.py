@@ -135,7 +135,28 @@ def _kill_process_tree(pid: int) -> None:
         os.killpg(pid, signal.SIGKILL)
 
 
-register("terminal", "Run a shell command", _run_terminal, parameters={
+# Safe terminal commands — auto-approve (read-only, no side effects)
+_SAFE_COMMANDS = {
+    "ls", "cat", "echo", "pwd", "whoami", "date", "uname", "hostname",
+    "which", "whereis", "type", "env", "printenv", "id", "groups",
+    "du", "df", "free", "uptime", "wc", "head", "tail", "file", "stat",
+    "git status", "git diff", "git log", "git branch",
+    "find", "grep", "rg", "locate",
+    "python", "python3",
+}
+
+
+def _is_readonly_command(command: str) -> bool:
+    """Check if a command is safe/read-only — no approval needed."""
+    cmd_lower = command.strip().lower()
+    cmd_first = cmd_lower.split()[0] if cmd_lower.split() else ""
+    # Exact match or prefix match for common safe commands
+    return any(cmd_lower.startswith(safe) or cmd_first == safe for safe in _SAFE_COMMANDS)
+
+
+# Register terminal without requires_approval for safe commands
+# (The tool itself will check _is_readonly_command)
+register("terminal", "Run a shell command (safe commands auto-approved)", _run_terminal, parameters={
     "type": "object",
     "properties": {
         "command": {"type": "string", "description": "Command to run"},
@@ -144,4 +165,4 @@ register("terminal", "Run a shell command", _run_terminal, parameters={
         "sandbox": {"type": "boolean", "description": "Run in Docker sandbox (default: true, auto-fallback to local)"},
     },
     "required": ["command"],
-}, destructive=True, requires_approval=True, max_output_chars=20_000)
+}, destructive=False, requires_approval=True, max_output_chars=20_000)

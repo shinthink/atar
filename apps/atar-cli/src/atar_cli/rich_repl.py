@@ -287,7 +287,7 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
         info.append("    " + "  ".join(tool_names[7:]))
     info.append("")
 
-    info.append(f"  {tool_count} tools · {tset_count} toolsets · /help for commands · ATAR v0.6.0")
+    info.append(f"  {tool_count} tools · {tset_count} toolsets · /help for commands · ATAR v0.8.0")
     info.append("[dim italic]Tip: Type /model to switch AI, /sessions to manage sessions[/]")
 
     panel_content = "\n".join(info)
@@ -444,6 +444,14 @@ def run_repl() -> None:
 
         try:
             async def on_approval(tool_name: str, arguments: dict) -> bool:
+                # Auto-approve safe/read-only terminal commands
+                if tool_name == "terminal":
+                    cmd = arguments.get("command", "")
+                    if cmd:
+                        from atar_tools.tools.terminal import _is_readonly_command
+                        if _is_readonly_command(cmd):
+                            return True
+
                 from atar_core.approval import format_approval_prompt, get_approval
                 approval = get_approval()
                 file_path = arguments.get("path", "") or arguments.get("file_path", "")
