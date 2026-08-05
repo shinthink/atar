@@ -416,12 +416,8 @@ def run_repl() -> None:
                 if action == "reject":
                     console.print(f"[red]✗ {tool_name} auto-rejected (permission: never)[/]")
                     return False
-                # action == "ask" — simple inline prompt
-                from atar_core.display_v2 import tool_color as _tc2
-                from atar_core.display_v2 import tool_icon as _ti2
-                from atar_core.display_v2 import tool_label as _tl2
+                # action == "ask" — just prompt, tool already shown by on_tool
                 from rich.prompt import Prompt
-                console.print(f"  [{_tc2(tool_name)}]{_ti2(tool_name)}[/] [bold]{_tl2(tool_name)}[/] [dim]({file_path or str(arguments)[:60]})[/]")
                 try:
                     choice = Prompt.ask("  Run?", choices=["y", "n", "a"], default="y", show_choices=False)
                 except (KeyboardInterrupt, EOFError):
