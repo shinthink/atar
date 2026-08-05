@@ -5,7 +5,7 @@ description = "ATAR — Textual TUI"
 requires-python = ">=3.12"
 dependencies = [
     "atar-core",
-    "textual>=0.70",
+    "textual>=0.70,<1.0",
 ]
 
 [build-system]
