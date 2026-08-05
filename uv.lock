@@ -22,6 +22,7 @@ members = [
     "atar-provider-anthropic",
     "atar-provider-custom",
     "atar-provider-deepseek",
+    "atar-provider-ollama",
     "atar-provider-openai",
     "atar-provider-openrouter",
     "atar-provider-zai",
@@ -457,6 +458,17 @@ requires-dist = [
     { name = "atar-models", editable = "packages/atar-models" },
     { name = "httpx" },
 ]
+
+[[package]]
+name = "atar-provider-ollama"
+version = "0.1.0"
+source = { editable = "providers/atar-provider-ollama" }
+dependencies = [
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "httpx" }]
 
 [[package]]
 name = "atar-provider-openai"

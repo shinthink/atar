@@ -104,10 +104,12 @@ def setup() -> None:
 def gateway(platform: str = "telegram") -> None:
     """Start a messaging gateway."""
     if platform == "telegram":
-        from atar_core.gateway import start_gateway
-        start_gateway()
+        import asyncio
+
+        from atar_cli.telegram_gateway import start_telegram_gateway
+        asyncio.run(start_telegram_gateway())
     else:
-        console.print(f"[red]Unknown gateway: {platform}[/]")
+        console.print(f"[red]Unknown gateway: {platform}. Supported: telegram[/]")
 
 
 if __name__ == "__main__":
