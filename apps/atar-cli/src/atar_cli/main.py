@@ -53,8 +53,8 @@ def tui() -> None:
 @app.command()
 def ink() -> None:
     """Launch Ink/React TUI — Ink React TUI (Node.js frontend)."""
-    import subprocess
     import os
+    import subprocess
     ink_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "apps", "atar-ink")
     subprocess.run(["npx", "tsx", "src/cli.tsx"], cwd=ink_dir)
 

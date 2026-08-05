@@ -105,7 +105,8 @@ packages = [
 [tool.uv.workspace]
 members = [
     ".",
-    "apps/*",
+    "apps/atar-cli",
+    "apps/atar-tui",
     "packages/atar-models",
     "packages/atar-protocols",
     "packages/atar-core",
