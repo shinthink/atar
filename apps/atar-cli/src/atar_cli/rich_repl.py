@@ -509,9 +509,6 @@ def run_repl() -> None:
                 nonlocal response_text
                 response_text += t
                 _stats["tokens_out"] += 1
-                # Stream in real-time via Rich console
-                from rich.text import Text
-                console.print(Text(t), end="")
 
             # ── Ctrl+C handler during agent run ──
             _cancel_requested = False
@@ -575,9 +572,14 @@ def run_repl() -> None:
                 console.print(Rule(style="#394B59"))
                 return
 
-        # Response was streamed in real-time — add newline + done
+        # Add subtle separator between tools and response
+        if _had_tools and response_text.strip():
+            console.print("[dim]───[/]")
+        # Re-render with clean Markdown for readability
         if response_text.strip():
-            console.print()  # end streaming line
+            console.print()
+            console.print(Markdown(response_text))
+            console.print()
 
 
 
