@@ -566,19 +566,13 @@ def run_repl() -> None:
 
         _stats["last_response"] = _t2.time() - _t_start
 
-        if not response_text.strip():
-            if _had_tools:
-                response_text = "_Work completed — see tool results above._"
-            else:
-                console.print(Rule(style="#394B59"))
-                return
+        if not response_text.strip() and not _had_tools:
+            return  # Empty response, no tools — skip
 
-        # Add subtle separator between tools and response
-        if _had_tools and response_text.strip():
-            console.print("[dim]───[/]")
-        # Re-render with clean Markdown for readability
+        # Render response cleanly
         if response_text.strip():
-            console.print()
+            if _had_tools:
+                console.print("[dim]───[/]")
             console.print(Markdown(response_text))
             console.print()
 
