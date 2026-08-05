@@ -402,45 +402,31 @@ def run_repl() -> None:
             args_cache[name] = args
             _stats["tools"] += 1
             _tool_start_time[name] = _t2.time()
-            icons = {"read_file": "\U0001f4d6", "write_file": "\u270d\ufe0f", "terminal": "\U0001f4bb", "web_fetch": "\U0001f50e", "web_search": "\U0001f50d", "patch": "\U0001f527"}
-            icon = icons.get(name, "\U0001f527")
+            from atar_core.display_v2 import tool_color as _tc
+            from atar_core.display_v2 import tool_icon as _ti
+            from atar_core.display_v2 import tool_label as _tl
+            icon = _ti(name)
+            label = _tl(name)
+            color = _tc(name)
             short = str(args)[:60]
-            # Show file path for read/write, command for terminal
             if name in ("read_file", "write_file"):
                 short = args_cache[name].get("path", str(args))[:60]
             elif name == "terminal":
                 short = f"$ {args.get('command', '')[:60]}"
-            from atar_core.theme import current_theme
-            c = current_theme().colors
-            console.print(f"\n  [bold {c.secondary}]\u250a {icon} preparing {name}\u2026[/] [dim]{short}[/]")
+            console.print(f"\n  [{color}]┊[/] [{color}]{icon}[/] [{color} bold]{label}[/] [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
             """Collect results for display after Status exits."""
-            from atar_core.theme import current_theme
-            c = current_theme().colors
-            elapsed = _t2.time() - _tool_start_time.get(name, _t2.time())
             a = args_cache.get(name, {})
             if name == "terminal":
                 preview = a.get("command", "")[:50]
                 if result:
-                    lines = result.strip().split("\n")
-                    if len(lines) > 10:
-                        _tool_results.append(f"  \u2502 [dim]{chr(10).join(lines[:10])}[/]")
-                        _tool_results.append(f"  \u2502 [dim]... {len(lines) - 10} more lines[/]")
-                _tool_results.append(f"  \u2502 \U0001f4bb [bold {c.success}]terminal[/] [dim]{preview} ({elapsed:.1f}s)[/]")
-            elif name == "write_file":
-                path = a.get("path", "")
-                size = len(result) if result else 0
-                _tool_results.append(f"  \u2502 \u270d\ufe0f [bold {c.success}]write[/] [dim]{path} ({size}B, {elapsed:.1f}s)[/]")
-            elif name == "read_file":
-                path = a.get("path", "")
-                _tool_results.append(f"  \u2502 \U0001f4d6 [bold {c.success}]read[/] [dim]{path} ({len(result)} chars, {elapsed:.1f}s)[/]")
-            elif name == "patch":
-                path = a.get("path", "")
-                _tool_results.append(f"  \u2502 \U0001f527 [bold {c.success}]patch[/] [dim]{path} ({elapsed:.1f}s)[/]")
-            else:
-                _tool_results.append(f"  \u2502 [bold {c.success}]{name}[/] [dim]({elapsed:.1f}s)[/]")
-            return
+                    preview_text = (result or "").strip()[:80].replace("\n", " ")
+                    _tool_results.append(f"  [dim]└─ {preview_text}{'...' if len(result or '') > 80 else ''}[/]")
+                else:
+                    preview = a.get("command", "")[:50] or a.get("path", "")[:50] or a.get("query", "")[:50]
+                    _tool_results.append(f"  [dim]└─ {preview}[/]")
+                return
 
         try:
             async def on_approval(tool_name: str, arguments: dict) -> bool:
@@ -509,7 +495,7 @@ def run_repl() -> None:
                 nonlocal response_text
                 response_text += t
                 _stats["tokens_out"] += 1
-            from atar_core.display import ThinkingAnimator, calculate_cost
+            from atar_core.display_v2 import ThinkingAnimator, calculate_cost
             from rich.status import Status
             anim = ThinkingAnimator()
             use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
