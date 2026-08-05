@@ -48,9 +48,9 @@ function getToolConfig(name: string) {
   return TOOL_CONFIG[name] || { icon: '🔧', color: '#B0BEC5' };
 }
 
-// ── Spinner (Gemini-style rainbow) ──
+// ── Spinner (rainbow) ──
 
-const GeminiSpinner: React.FC<{ active: boolean }> = ({ active }) => {
+const ATARSpinner: React.FC<{ active: boolean }> = ({ active }) => {
   if (!active) return null;
   return (
     <Gradient name="rainbow">
@@ -273,7 +273,7 @@ const App: React.FC = () => {
             }}
           />
         ) : streamingState === 'responding' ? (
-          <GeminiSpinner active />
+          <ATARSpinner active />
         ) : (
           <Box>
             <Text bold color="#4FC3F7">▸ </Text>

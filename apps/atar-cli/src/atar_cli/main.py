@@ -44,7 +44,7 @@ def default(
 
 @app.command()
 def tui() -> None:
-    """Launch Textual TUI — full-screen Gemini-style interface with 25 screens."""
+    """Launch Textual TUI — full-screen interface with 25 screens."""
     from atar_tui.app import ATARApp
     app_instance = ATARApp()
     app_instance.run()
@@ -52,7 +52,7 @@ def tui() -> None:
 
 @app.command()
 def ink() -> None:
-    """Launch Ink/React TUI — exact Gemini CLI clone (Node.js frontend)."""
+    """Launch Ink/React TUI — Ink React TUI (Node.js frontend)."""
     import subprocess
     import os
     ink_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "apps", "atar-ink")
