@@ -310,8 +310,18 @@ def _status_bar() -> str:
     from atar_core.display import context_bar
     ctx, _ = context_bar(_stats["tokens"] + _stats["tokens_out"], 128000)
     c = f"${_stats['cost']:.2f}" if _stats["cost"] > 0 else "$0"
-    thinking = " ● thinking..." if _stats.get("_thinking") else ""
-    return f"◆ {_stats['model']} │ {ctx} │ turns {_stats['turns']} │ tools {_stats['tools']} │ {c} │ {d}{thinking}"
+    # Animated spinner + tool info in status bar
+    if _stats.get("_thinking"):
+        frames = ["◌", "◔", "◑", "◕", "●"]
+        import time as _tt
+        idx = int(_tt.time() * 4) % len(frames)
+        spinner = f" {frames[idx]} thinking..."
+    else:
+        spinner = ""
+    tool_info = ""
+    if _stats.get("_last_tool"):
+        tool_info = f" │ {_stats['_last_tool']}"
+    return f"◆ {_stats['model']} │ {ctx} │ turns {_stats['turns']} │ tools {_stats['tools']} │ {c} │ {d}{spinner}{tool_info}"
 
 def _try_resume_session() -> object | None:
     """Try to resume the last session from storage."""
@@ -393,8 +403,9 @@ def run_repl() -> None:
                 # Show first meaningful value
                 vals = {k: v for k, v in args.items() if k not in ('sandbox', 'timeout', 'cwd')}
                 short = str(list(vals.values())[0])[:60] if vals else str(args)[:60]
-            # Add to animated display (replaces old console.print)
+            # Add to animated display + status bar
             tool_display.add(label, short, color, icon)
+            _stats["_last_tool"] = f"{icon} {label} {short[:30]}"
             if tool_display.count == 1:
                 tool_display.start()
             else:
@@ -402,8 +413,9 @@ def run_repl() -> None:
 
         async def on_tool_result(name: str, result: str) -> None:
             """Collect results for display."""
-            # Remove from animated display
+            # Remove from display + clear status
             tool_display.remove(name)
+            _stats["_last_tool"] = ""
             if tool_display.count == 0:
                 tool_display.stop()
             else:
