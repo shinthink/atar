@@ -489,6 +489,11 @@ def run_repl() -> None:
                     return False
                 # choice 5 or invalid
                 approval.set_tool_mode(tool_name, "never")
+                # Restart spinner after failed approval
+                if _status_ref is not None:
+                    import contextlib
+                    with contextlib.suppress(Exception):
+                        _status_ref.start()
                 return False
 
             async def _capture(t: str) -> None:
@@ -500,9 +505,13 @@ def run_repl() -> None:
             anim = ThinkingAnimator()
             use_anim = not os.environ.get("NO_COLOR") and not os.environ.get("ATAR_REDUCE_MOTION")
             # Run agent and status spinner concurrently via asyncio.gather
+            _status_ref = None  # captured by on_approval to pause spinner
+
             async def _run_with_status():
+                nonlocal _status_ref
                 if use_anim:
                     with Status(anim.start(), console=console, spinner="dots") as status:
+                        _status_ref = status
                         async def _tick():
                             while True:
                                 await asyncio.sleep(0.2)
