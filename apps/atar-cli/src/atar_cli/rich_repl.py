@@ -379,13 +379,7 @@ def run_repl() -> None:
         console.print("[red]Set DEEPSEEK_API_KEY.[/]")
         return
 
-    # Session resume: load last session if available
-    resumed = _try_resume_session()
-    if resumed:
-        console.print("[dim]Resumed session.[/]")
-        agent = resumed  # type: ignore[assignment]
-
-    # Auto-save session after each turn
+    # Auto-save session after each turn (resume coming soon)
     _stats["session_id"] = session_id
 
     show_banner(model, os.getcwd(), session_id)
