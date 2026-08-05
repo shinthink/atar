@@ -6,3 +6,4 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+apps/atar-ink/node_modules/

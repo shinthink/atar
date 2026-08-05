@@ -1,0 +1,24 @@
+{
+  "name": "atar-ink",
+  "version": "0.1.0",
+  "description": "ATAR Ink — Gemini CLI-style terminal UI",
+  "type": "module",
+  "main": "src/cli.tsx",
+  "scripts": {
+    "start": "node --loader ts-node/esm src/cli.tsx",
+    "build": "tsc",
+    "dev": "tsx src/cli.tsx"
+  },
+  "dependencies": {
+    "ink": "^6.0.0",
+    "ink-gradient": "^3.0.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
