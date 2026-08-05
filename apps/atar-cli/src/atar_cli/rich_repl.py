@@ -358,30 +358,6 @@ def run_repl() -> None:
         _last_tool_id: set[str] = set()
         _tool_results: list[str] = []
         args_cache: dict[str, dict] = {}
-        _active_tools: list[tuple] = []  # for spinner animation
-
-        # ── Tool spinner animation ──
-        _spinner_frames = ["◌", "◔", "◑", "◕", "●"]
-        _spinner_idx = 0
-        _spinner_running = True
-
-        async def _tool_spinner():
-            nonlocal _spinner_idx, _spinner_running
-            while _spinner_running:
-                if _active_tools:
-                    frame = _spinner_frames[_spinner_idx % len(_spinner_frames)]
-                    _spinner_idx += 1
-                    # Refresh all active tool lines
-                    for i, tinfo in enumerate(_active_tools):
-                        name, short, color, icon = tinfo
-                        console.print(
-                            f"\r  [{color}]{icon}[/] [bold {color}]{name}[/] [dim]{short} {frame}[/]",
-                            end="" if i == 0 else "\n",
-                        )
-                    if _active_tools:
-                        console.print("", end="")  # finalize line
-                await asyncio.sleep(0.2)
-        spinner_task = asyncio.create_task(_tool_spinner())
 
         async def on_tool(name: str, args: dict) -> None:
             nonlocal response_text, _had_tools
@@ -415,13 +391,10 @@ def run_repl() -> None:
                 # Show first meaningful value
                 vals = {k: v for k, v in args.items() if k not in ('sandbox', 'timeout', 'cwd')}
                 short = str(list(vals.values())[0])[:60] if vals else str(args)[:60]
-            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short} ⟳[/]")
-            _active_tools.append((label, short, color, icon))
+            console.print(f"\n  [{color}]{icon}[/] [bold {color}]{label}[/] [dim]{short}[/]")
 
         async def on_tool_result(name: str, result: str) -> None:
-            """Collect results + remove from spinner."""
-            # Remove from active spinner list
-            _active_tools[:] = [t for t in _active_tools if t[0] != name]
+            """Collect results for display."""
             a = args_cache.get(name, {})
             if name == "terminal":
                 preview = a.get("command", "")[:50]
@@ -533,13 +506,6 @@ def run_repl() -> None:
             else:
                 console.print(Rule(style="#394B59"))
                 return
-
-        # Stop tool spinner + clear active tools
-        _spinner_running = False
-        _active_tools.clear()
-        spinner_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await spinner_task
 
         # Add dim separator for visual clarity
         if response_text.strip():
