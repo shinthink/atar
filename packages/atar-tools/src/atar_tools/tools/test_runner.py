@@ -12,7 +12,7 @@ from atar_tools.registry import execute, register
 async def _run_tests(_name: str, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
     cwd = args.get("cwd") or ctx.working_directory
     path = args.get("path", "tests/")
-    approved_ctx = ToolContext(working_directory=cwd, metadata={"approved": True, **ctx.metadata})
+    approved_ctx = ToolContext(working_directory=cwd, metadata={"approved": True, **(ctx.metadata or {})})
     r = await execute("terminal", {"command": f"pytest {path} -q --tb=short", "cwd": cwd, "timeout": 120}, approved_ctx)
     return r
 

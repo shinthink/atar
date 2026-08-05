@@ -20,7 +20,7 @@ async def _git(
     # Git internally calls terminal — pass approved context
     approved_ctx = ToolContext(
         working_directory=cwd,
-        metadata={"approved": True, **ctx.metadata},
+        metadata={"approved": True, **(ctx.metadata or {})},
     )
 
     if op == "status":
