@@ -48,4 +48,4 @@ class ToolDisplay:
         if not self._tools:
             return Text("")
         lines = [self._render_one(t) for t in self._tools]
-        return Text("\n".join(lines))
+        return Text.from_markup("\n".join(lines))
