@@ -31,8 +31,11 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
 
         try:
             from atar_core.agent import Agent, StreamCallbacks
-            from atar_core.provider_registry import get_provider
-            provider = get_provider()
+            from atar_core.provider_registry import list_available
+            providers = list_available()
+            if not providers:
+                raise RuntimeError("No provider configured. Run: atar setup")
+            provider = providers[0]
         except Exception as e:
             await queue.put(json.dumps({"type": "error", "error": f"Provider init failed: {e}"}))
             await queue.put(None)
@@ -82,10 +85,10 @@ def start_server(host: str = "127.0.0.1", port: int = 8420):
 
     @app.get("/health")
     async def health():
-        from atar_core.provider_registry import get_provider
+        from atar_core.provider_registry import list_available
         try:
-            p = get_provider()
-            return {"status": "ok", "provider": p.model or "loaded"}
+            providers = list_available()
+            return {"status": "ok", "providers": len(providers)}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
