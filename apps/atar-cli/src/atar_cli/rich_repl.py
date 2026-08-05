@@ -425,19 +425,52 @@ def run_repl() -> None:
                 nonlocal response_text
                 response_text += t
                 _stats["tokens_out"] += 1
+                # Stream text in real-time (not just buffer)
+                if len(response_text) == 1:
+                    console.print()
+                    from atar_core.theme import current_theme
+                    c = current_theme().colors
+                    console.print(f"[bold {c.primary}]  ATAR[/]")
+                # Print deltas directly for real-time streaming
+                console.print(t, end="")
+
+            # ── Ctrl+C handler during agent run ──
+            _cancel_requested = False
+
+            def _on_sigint(signum, frame):
+                nonlocal _cancel_requested
+                _cancel_requested = True
+
+            import signal
+            old_handler = signal.signal(signal.SIGINT, _on_sigint)
             from atar_core.display_v2 import calculate_cost
 
             async def _run_agent():
-                # Show "thinking" in status bar by incrementing a flag
+                # Show "thinking" in status bar
                 _stats["_thinking"] = True
                 try:
-                    await ag.run(prompt, StreamCallbacks(
+                    # Run agent with cancellation support
+                    agent_task = asyncio.create_task(ag.run(prompt, StreamCallbacks(
                         on_delta=_capture, on_tool_call=on_tool, on_tool_result=on_tool_result,
                         on_approval=on_approval,
                         get_rejection_feedback=lambda: _last_rejection_feedback.get("text"),
-                    ))
+                    )))
+                    # Poll for cancellation
+                    while not agent_task.done():
+                        if _cancel_requested:
+                            agent_task.cancel()
+                            console.print("\n[dim]⏸ Cancelled.[/]")
+                            break
+                        await asyncio.sleep(0.1)
+                    if not _cancel_requested:
+                        await agent_task
                 finally:
                     _stats["_thinking"] = False
+                    # Restore signal handler
+                    signal.signal(signal.SIGINT, old_handler)
+                    # End streaming line
+                    if response_text:
+                        console.print("\n")
             await _run_agent()
             for tr in _tool_results:
                 console.print(tr)
