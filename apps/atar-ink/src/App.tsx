@@ -250,10 +250,9 @@ const App: React.FC = () => {
         }
       }
     } catch {
-      // Fallback: mock response if server not running
       const assistMsg: Message = {
         role: 'assistant',
-        content: `Start the API server first:\n  uv run atar serve\n\nThen try again.`,
+        content: 'Server not ready. Please wait a moment and try again.',
       };
       setMessages(prev => [...prev, assistMsg]);
       setStats(prev => ({ ...prev, turns: prev.turns + 1 }));

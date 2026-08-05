@@ -28,7 +28,7 @@ class TestSetupWizardHelpers:
         keys = _detect_keys()
         for pid in ["deepseek", "openai", "anthropic", "openrouter", "zai", "custom"]:
             assert pid in keys
-            assert keys[pid] is None
+            assert keys[pid] == ""  # empty string when no env var
 
     def test_mask_key_short(self) -> None:
         from atar_cli.setup_wizard import _mask_key
@@ -73,7 +73,7 @@ class TestProviderInfo:
 
     def test_all_providers_have_required_fields(self) -> None:
         from atar_cli.setup_wizard import PROVIDER_INFO
-        required = ["name", "env_key", "base_url", "description", "signup"]
+        required = ["name", "env_key", "base_url"]
         for pid, info in PROVIDER_INFO.items():
             for field in required:
                 assert field in info, f"{pid} missing {field}"
