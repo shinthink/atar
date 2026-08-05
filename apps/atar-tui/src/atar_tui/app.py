@@ -1152,7 +1152,7 @@ class ATARApp(App):
         for screen_id, screen_cls in SCREENS.items():
             self.install_screen(screen_cls(), screen_id)
         from atar_core.config_reader import is_first_run
-        start = "setup" if is_first_run() else "welcome"
+        start = "setup" if is_first_run() else "chat"
         self.push_screen(start)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
