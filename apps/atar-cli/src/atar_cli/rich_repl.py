@@ -268,14 +268,23 @@ def show_banner(model: str, cwd: str, session_id: str) -> None:
     tool_count = len(all_tools)
     tset_count = len(enabled_toolsets())
 
+    # Count saved sessions
+    session_count = 0
+    try:
+        sess_dir = os.path.expanduser("~/.atar/sessions")
+        if os.path.isdir(sess_dir):
+            session_count = len([f for f in os.listdir(sess_dir) if f.endswith(".json")])
+    except Exception:
+        pass
+
     if w < 60:
         console.print(f"[bold {c.primary}]ATAR[/] [dim]— {model} · {short_cwd}[/]")
     elif w < 80:
         console.print(f"[bold {c.primary}]ATAR[/] — Clarity in Complexity.")
-        console.print(f"[dim]{model} · {short_cwd} · {tool_count} tools · /help[/]")
+        console.print(f"[dim]{model} · {short_cwd} · {tool_count} tools · {session_count} sessions[/]")
     else:
         console.print(f"[bold {c.primary}]ATAR[/] — Clarity in Complexity.")
-        console.print(f"[dim]{model} · {short_cwd} · session {session_id[:8]}[/]")
+        console.print(f"[dim]{model} · {short_cwd} · session {session_id[:8]} ({session_count} saved)[/]")
         console.print(f"[dim]{tool_count} tools · {tset_count} toolsets · /help[/]")
         # Provider health indicator
         try:
